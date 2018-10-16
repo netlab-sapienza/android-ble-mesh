@@ -1,0 +1,7 @@
+#Tue Oct 16 14:31:17 CEST 2018
+base.0=/home/zeus/Desktop/android-BluetoothAdvertisements-master/Application/build/intermediates/transforms/dexMerger/debug/0
+path.1=classes.dex
+renamed.1=classes2.dex
+path.0=classes.dex
+renamed.0=classes.dex
+base.1=/home/zeus/Desktop/android-BluetoothAdvertisements-master/Application/build/intermediates/transforms/dexMerger/debug/1

@@ -131,10 +131,6 @@ public class ScannerFragment extends ListFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        getListView().setDivider(null);
-        getListView().setDividerHeight(0);
-
         setEmptyText(getString(R.string.empty_list));
 
         // Trigger refresh on app's 1st load

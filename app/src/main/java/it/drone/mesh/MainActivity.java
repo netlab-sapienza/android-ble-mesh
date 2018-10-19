@@ -5,10 +5,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,7 +33,8 @@ public class MainActivity extends FragmentActivity {
         setContentView(R.layout.activity_main);
         setTitle(R.string.activity_main_title);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
@@ -120,7 +123,6 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void showErrorText(int messageId) {
-        TextView view = findViewById(R.id.error_textview);
-        view.setText(getString(messageId));
+        ((TextView) findViewById(R.id.error_textview)).setText(getString(messageId));
     }
 }

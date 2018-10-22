@@ -35,14 +35,14 @@ public class AcceptBLETask {
             // DO SOMETHING WHEN THE CONNECTION UPDATES
             @Override
             public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-                Log.d(TAG_BLE_TASK, "I'm the server, I've connected to" + device.getName());
+                Log.d(TAG_BLE_TASK, "I'm the server, I've connected to " + device.getName());
                 super.onConnectionStateChange(device, status, newState);
             }
 
             // DO SOMETHING WHEN A SERVICE IS ADDED
             @Override
             public void onServiceAdded(int status, BluetoothGattService service) {
-                Log.d(TAG_BLE_TASK, "I've added a service" + service.toString());
+                Log.d(TAG_BLE_TASK, "I've added a service " + service.toString());
                 super.onServiceAdded(status, service);
             }
 
@@ -116,8 +116,8 @@ public class AcceptBLETask {
         try {
             wait(600);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         user.setBluetoothGattServer(this.mGattServer);
-        return;
     }
 }

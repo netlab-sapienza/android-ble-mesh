@@ -54,7 +54,7 @@ public class ConnectBLETask {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                                    chars.setValue("Test String");
+                                    chars.setValue("COMPILATO DA ANDREA");
                                     gatt.beginReliableWrite();
                                     gatt.writeCharacteristic(chars);
                                     gatt.executeReliableWrite();
@@ -124,14 +124,14 @@ public class ConnectBLETask {
             e.printStackTrace();
         }
         mmUser.setBluetoothGatt(this.mGatt);
-        //mmUser.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
-        //mmUser.getBluetoothGatt().connect();
+        mmUser.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+        mmUser.getBluetoothGatt().connect();
         try {
             wait(600);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //this.mGatt.discoverServices();
+        this.mGatt.discoverServices();
     }
 }
 

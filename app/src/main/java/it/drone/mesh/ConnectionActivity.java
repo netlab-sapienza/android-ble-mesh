@@ -120,6 +120,7 @@ public class ConnectionActivity extends Activity {
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
         for (BluetoothGattService service : gatt.getServices()) {
+            Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: inizio ciclo");
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                 Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {

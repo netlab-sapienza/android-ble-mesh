@@ -5,10 +5,10 @@ import java.util.LinkedList;
 import it.drone.mesh.models.User;
 
 public class UserList {
-    static LinkedList<User> userlist = new LinkedList<>();
+    private static LinkedList<User> users = new LinkedList<>();
 
     public static User getUser(String name) {
-        for (User temp : userlist)
+        for (User temp : users)
             if (temp.getUserName().equals(name))
                 return temp;
 
@@ -16,7 +16,7 @@ public class UserList {
     }
 
     public static void addUser(User user) {
-        userlist.add(user);
+        users.add(user);
     }
 
 }

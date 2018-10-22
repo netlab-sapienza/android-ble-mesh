@@ -53,7 +53,6 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
 
                     } else {
-
                         // Bluetooth Advertisements are not supported.
                         showErrorText(R.string.bt_ads_not_supported);
                     }
@@ -87,7 +86,6 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
 
                     } else {
-
                         // Bluetooth Advertisements are not supported.
                         showErrorText(R.string.bt_ads_not_supported);
                     }

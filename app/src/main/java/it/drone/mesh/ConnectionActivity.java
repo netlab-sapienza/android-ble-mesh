@@ -97,15 +97,20 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.e(TAG, "Unable to initialize BluetoothManager.");
+                Log.d(TAG, "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+            Log.d(TAG, "Unable to obtain a BluetoothAdapter.");
             return;
         }
+
+        user = UserList.getUser(mDeviceName);
+
+        //ConnectBLETask connectBLETask = new ConnectBLETask(UserList.getUser(mDeviceName), this);
+        //connectBLETask.startClient();
 
         //outputText.setText(user.getBluetoothDevice().getName());
 
@@ -117,11 +122,13 @@ public class ConnectionActivity extends Activity {
     private void sendMessage(String message) {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
+
         Log.d(TAG, "sendMessage: Inizio invio messaggio");
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
+        boolean res = gatt.connect();
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "sendMessage: inizio ciclo");
+            Log.d(TAG, "sendMessage: inizio ciclo" + res);
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                 Log.d(TAG, "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {

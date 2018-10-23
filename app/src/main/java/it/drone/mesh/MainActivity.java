@@ -99,7 +99,7 @@ public class MainActivity extends FragmentActivity {
                     // User declined to enable Bluetooth, exit the app.
                     Toast.makeText(this, R.string.bt_not_enabled_leaving,
                             Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
+                    Log.d(TAG, "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
                     finish();
                 }
 

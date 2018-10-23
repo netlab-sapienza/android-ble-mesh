@@ -263,11 +263,11 @@ public class ScannerFragment extends ListFragment {
             AcceptBLETask acceptBLETask = new AcceptBLETask(newUser, mBluetoothManager, getContext());
             acceptBLETask.startServer();
             // WAIT 600 MILLIS
-            try {
+            /*try {
                 wait(600);
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }*/
             // STARTS THE GATT
             ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
             connectBLETask.startClient();

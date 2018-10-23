@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.utility.Constants;
@@ -24,7 +25,7 @@ public class AcceptBLETask {
     private BluetoothManager mBluetoothManager;
     private Context context;
 
-    public AcceptBLETask(User user, BluetoothManager mBluetoothManager, Context context) {
+    public AcceptBLETask(User user, BluetoothManager mBluetoothManager, final Context context) {
         this.user = user;
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
@@ -72,6 +73,7 @@ public class AcceptBLETask {
             @Override
             public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 Log.d(TAG_BLE_TASK, "I've been asked to write descriptor from " + device.getName());
+                Toast.makeText(context, new String(value), Toast.LENGTH_LONG).show();
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
 
@@ -113,11 +115,11 @@ public class AcceptBLETask {
         // I START OPEN THE GATT SERVER
         this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
         this.mGattServer.addService(this.mGattService);
-        try {
+        /*try {
             wait(600);
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
         user.setBluetoothGattServer(this.mGattServer);
     }
 }

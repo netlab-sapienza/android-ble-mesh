@@ -59,6 +59,7 @@ public class ScannerFragment extends ListFragment {
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
             }
+
         }
     };
     private BluetoothAdapter mBluetoothAdapter;

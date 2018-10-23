@@ -122,7 +122,6 @@ public class ConnectionActivity extends Activity {
     private void sendMessage(String message) {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
-
         Log.d(TAG, "sendMessage: Inizio invio messaggio");
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
@@ -140,6 +139,9 @@ public class ConnectionActivity extends Activity {
                             gatt.writeCharacteristic(chars);
                             gatt.executeReliableWrite();
                             Log.d(TAG, "sendMessage: Messaggio inviato");
+                            String s = new String(chars.getValue());
+                            Log.d(TAG, s);
+                            Log.d(TAG, gatt.getDevice().getName());
                         }
                     }
                 }
@@ -147,6 +149,7 @@ public class ConnectionActivity extends Activity {
 
         }
         Log.d(TAG, "sendMessage: end ");
+
     }
 
     private void doUpdate() {

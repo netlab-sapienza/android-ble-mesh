@@ -11,12 +11,14 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import it.drone.mesh.advertiser.AdvertiserFragment;
 import it.drone.mesh.scanner.ScannerFragment;
-import it.drone.mesh.utility.Constants;
+
+import static it.drone.mesh.utility.Constants.REQUEST_ENABLE_BT;
 
 /**
  * Setup display fragments and ensure the device supports Bluetooth.
@@ -24,6 +26,7 @@ import it.drone.mesh.utility.Constants;
 public class MainActivity extends FragmentActivity {
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    private static final String TAG = MainActivity.class.getSimpleName();
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothManager mBluetoothManager;
 
@@ -63,10 +66,9 @@ public class MainActivity extends FragmentActivity {
 
                     // Prompt user to turn on Bluetooth (logic continues in onActivityResult()).
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBtIntent, Constants.REQUEST_ENABLE_BT);
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
             } else {
-
                 // Bluetooth is not supported.
                 showErrorText(R.string.bt_not_supported);
             }
@@ -77,7 +79,7 @@ public class MainActivity extends FragmentActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case Constants.REQUEST_ENABLE_BT:
+            case REQUEST_ENABLE_BT:
 
                 if (resultCode == RESULT_OK) {
 
@@ -97,6 +99,7 @@ public class MainActivity extends FragmentActivity {
                     // User declined to enable Bluetooth, exit the app.
                     Toast.makeText(this, R.string.bt_not_enabled_leaving,
                             Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
                     finish();
                 }
 

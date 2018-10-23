@@ -28,7 +28,7 @@ import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
 
 public class ConnectionActivity extends Activity {
 
-    private final static String TAG_CONNECTION_ACTIVITY = ConnectionActivity.class.getSimpleName();
+    private final static String TAG = ConnectionActivity.class.getSimpleName();
     private final static int DO_UPDATE_TEXT = 0;
     private final static int DO_THAT = 1;
     // Create a BroadcastReceiver for ACTION_FOUND.
@@ -80,6 +80,7 @@ public class ConnectionActivity extends Activity {
             @Override
             public void handleMessage(Message msg) {
                 final int what = msg.what;
+                Log.d(TAG, "handleMessage: SONO ENTRATO NELL'HANDLER");
                 switch (what) {
                     case DO_UPDATE_TEXT:
                         doUpdate();
@@ -96,13 +97,13 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.e(TAG_CONNECTION_ACTIVITY, "Unable to initialize BluetoothManager.");
+                Log.e(TAG, "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.e(TAG_CONNECTION_ACTIVITY, "Unable to obtain a BluetoothAdapter.");
+            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return;
         }
 
@@ -116,29 +117,29 @@ public class ConnectionActivity extends Activity {
     private void sendMessage(String message) {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
-        Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: Inizio invio messaggio");
+        Log.d(TAG, "sendMessage: Inizio invio messaggio");
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: inizio ciclo");
+            Log.d(TAG, "sendMessage: inizio ciclo");
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
-                Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: service.equals");
+                Log.d(TAG, "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
-                    Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: service.getCharact != null");
+                    Log.d(TAG, "sendMessage: service.getCharact != null");
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                             chars.setValue(message);
                             gatt.beginReliableWrite();
                             gatt.writeCharacteristic(chars);
                             gatt.executeReliableWrite();
-                            Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: Messaggio inviato");
+                            Log.d(TAG, "sendMessage: Messaggio inviato");
                         }
                     }
                 }
             }
 
         }
-        Log.d(TAG_CONNECTION_ACTIVITY, "sendMessage: end ");
+        Log.d(TAG, "sendMessage: end ");
     }
 
     private void doUpdate() {

@@ -15,7 +15,7 @@ import it.drone.mesh.utility.Constants;
 public class ConnectBLETask {
     private final static String TAG = ConnectBLETask.class.getName();
 
-    private User mmUser;
+    private User user;
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
@@ -24,7 +24,7 @@ public class ConnectBLETask {
     public ConnectBLETask(User user, Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
-        mmUser = user;
+        this.user = user;
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
@@ -63,7 +63,6 @@ public class ConnectBLETask {
                         }
                     }
                 }
-
                 super.onServicesDiscovered(gatt, status);
             }
 
@@ -117,20 +116,23 @@ public class ConnectBLETask {
     }
 
     public void startClient() {
-        this.mGatt = mmUser.getBluetoothDevice().connectGatt(context, false, mGattCallback);
+        // TODO: 23/10/18 perchè auto connect è false?
+        this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
         try {
             wait(600);
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        mmUser.setBluetoothGatt(this.mGatt);
-        mmUser.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
-        mmUser.getBluetoothGatt().connect();
+        user.setBluetoothGatt(this.mGatt);
+        user.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+        user.getBluetoothGatt().connect();
+
         try {
             wait(600);
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
         this.mGatt.discoverServices();
     }
 }

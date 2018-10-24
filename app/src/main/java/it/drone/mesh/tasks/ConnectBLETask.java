@@ -110,13 +110,17 @@ public class ConnectBLETask {
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
                 Log.d(TAG, "I wrote a descriptor");
+                Log.d(TAG, gatt.getDevice().getName());
                 for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                                     chars.setValue("test string");
-                                    gatt.writeCharacteristic(chars);
+                                    gatt.beginReliableWrite();
+                                    boolean res = gatt.writeCharacteristic(chars);
+                                    gatt.executeReliableWrite();
+                                    Log.d(TAG, res + "");
                                 }
                             }
                         }

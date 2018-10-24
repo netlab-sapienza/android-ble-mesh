@@ -9,14 +9,13 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.utility.Constants;
 
 public class AcceptBLETask {
     private final static String TAG_BLE_TASK = AcceptBLETask.class.getName();
-    private User user;
+    //private User user;
     private BluetoothGattServer mGattServer;
     private BluetoothGattServerCallback mGattServerCallback;
     private BluetoothGattService mGattService;
@@ -26,7 +25,7 @@ public class AcceptBLETask {
     private Context context;
 
     public AcceptBLETask(User user, BluetoothManager mBluetoothManager, final Context context) {
-        this.user = user;
+        //this.user = user;
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
         mGattService = new BluetoothGattService(Constants.Service_UUID.getUuid(), 0);
@@ -36,7 +35,11 @@ public class AcceptBLETask {
             // DO SOMETHING WHEN THE CONNECTION UPDATES
             @Override
             public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-                Log.d(TAG_BLE_TASK, "I'm the server, I've connected to " + device.getName());
+                if (newState == 0) {
+                    Log.d(TAG_BLE_TASK, "I'm the server, I've connected to " + device.getName());
+                } else {
+                    Log.d(TAG_BLE_TASK, "onConnectionStateChange: DISCONNECTED from" + device.getName());
+                }
                 super.onConnectionStateChange(device, status, newState);
             }
 
@@ -73,7 +76,6 @@ public class AcceptBLETask {
             @Override
             public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 Log.d(TAG_BLE_TASK, "I've been asked to write descriptor from " + device.getName());
-                Toast.makeText(context, new String(value), Toast.LENGTH_LONG).show();
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
 
@@ -120,6 +122,6 @@ public class AcceptBLETask {
         } catch (Exception e) {
             e.printStackTrace();
         }*/
-        user.setBluetoothGattServer(this.mGattServer);
+        //user.setBluetoothGattServer(this.mGattServer);
     }
 }

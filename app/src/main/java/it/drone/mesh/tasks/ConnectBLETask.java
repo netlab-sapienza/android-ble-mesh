@@ -39,10 +39,10 @@ public class ConnectBLETask {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "Connected to GATT client. Attempting to start service discovery");
+                    Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.i(TAG, "Disconnected from GATT client");
+                    Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
             }
 
@@ -66,8 +66,6 @@ public class ConnectBLETask {
                                             if (desc.getUuid().toString().equals(Constants.Descriptor_UUID.toString())) {
                                                 desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                                                 boolean res = mGatt.writeDescriptor(desc);
-                                                Log.d(TAG, gatt.getDevice().getName());
-                                                Log.d(TAG, mGatt.getDevice().getName());
                                                 Log.d(TAG, "Desc Discovered: " + res);
                                             }
                                         }

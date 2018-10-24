@@ -141,6 +141,8 @@ public class AdvertiserService extends Service {
                         mAdvertiseCallback);
             }
         }
+
+        Log.d(TAG, "Server: Start initialize the server");
     }
 
     /**

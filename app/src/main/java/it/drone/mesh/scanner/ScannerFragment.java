@@ -33,7 +33,6 @@ import it.drone.mesh.ConnectionActivity;
 import it.drone.mesh.R;
 import it.drone.mesh.UserList;
 import it.drone.mesh.models.User;
-import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
 
@@ -261,8 +260,8 @@ public class ScannerFragment extends ListFragment {
             mAdapter.add(result);
 
             // STARTS THE GATT SERVER
-            AcceptBLETask acceptBLETask = new AcceptBLETask(newUser, mBluetoothManager, getContext());
-            acceptBLETask.startServer();
+            //AcceptBLETask acceptBLETask = new AcceptBLETask(newUser, mBluetoothManager, getContext());
+            //acceptBLETask.startServer();
             // WAIT 600 MILLIS
             /*try {
                 wait(600);

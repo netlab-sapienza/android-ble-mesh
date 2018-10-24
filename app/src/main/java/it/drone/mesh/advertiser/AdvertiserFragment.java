@@ -1,5 +1,6 @@
 package it.drone.mesh.advertiser;
 
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertiseCallback;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +16,7 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import it.drone.mesh.R;
+import it.drone.mesh.tasks.AcceptBLETask;
 
 /**
  * Allows user to start & stop Bluetooth LE Advertising of their device.
@@ -23,7 +26,10 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
     /**
      * Lets user toggle BLE Advertising.
      */
+    private static final String TAG = AdvertiserFragment.class.getSimpleName();
     private Switch mSwitch;
+
+    private BluetoothManager mBluetoothManager;
 
     /**
      * Listens for notifications that the {@code AdvertiserService} has failed to start advertising.
@@ -37,6 +43,10 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
      */
     private static Intent getServiceIntent(Context c) {
         return new Intent(c, AdvertiserService.class);
+    }
+
+    public void setBluetoothManager(BluetoothManager btManager) {
+        this.mBluetoothManager = btManager;
     }
 
     @Override
@@ -147,6 +157,9 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
     private void startAdvertising() {
         Context c = getActivity();
         c.startService(getServiceIntent(c));
+        Log.d(TAG, "startAdvertising: StART Server");
+        AcceptBLETask acceptBLETask = new AcceptBLETask(null, mBluetoothManager, getContext());
+        acceptBLETask.startServer();
     }
 
     /**

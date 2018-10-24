@@ -18,6 +18,7 @@ public class ConnectBLETask {
     private User user;
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
+    private BluetoothGattCharacteristic mChar;
     private Context context;
 
 
@@ -50,11 +51,13 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service" + mGatt.getServices());
+
                 for (BluetoothGattService service : mGatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                                    Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                                     mGatt.setCharacteristicNotification(chars, true);
                                     chars.setValue("COMPILATO DA GIGI");
                                     gatt.beginReliableWrite();
@@ -148,6 +151,8 @@ public class ConnectBLETask {
 
     public void startClient() {
         // TODO: 23/10/18 perchè auto connect è false?
+        // PERCHÈ LUDOVICO HA DETTO CHE ALTRIMENTI SFACIOLA ¯\_(ツ)_/¯
+
         this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
 
         /*try {

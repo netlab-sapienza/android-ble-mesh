@@ -64,9 +64,13 @@ public class AcceptBLETask {
             // WHAT HAPPENS WHEN I GET A CHARACTERISTIC WRITE REQ
             @Override
             public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-                final BluetoothDevice tempdev = device;
-                final String tempval = new String(value);
-                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to write from " + tempdev.getName() + " " + tempval);
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to write from " + device.getName() + "    " + device.getAddress());
+                Log.d(TAG_BLE_TASK, "OUD: " + "Device address: " + device.getAddress());
+                Log.d(TAG_BLE_TASK, "OUD: " + "ReqId: " + requestId);
+                Log.d(TAG_BLE_TASK, "OUD: " + "PreparedWrite: " + preparedWrite);
+                Log.d(TAG_BLE_TASK, "OUD: " + "offset: " + offset);
+                Log.d(TAG_BLE_TASK, "OUD: " + "BytesN: " + value.length);
+                Log.d(TAG_BLE_TASK, "OUD: " + new String(value));
                 super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
             }
 
@@ -133,5 +137,10 @@ public class AcceptBLETask {
             e.printStackTrace();
         }*/
         //user.setBluetoothGattServer(this.mGattServer);
+    }
+
+    public void stopServer() {
+        this.mGattServer.clearServices();
+        this.mGattServer.close();
     }
 }

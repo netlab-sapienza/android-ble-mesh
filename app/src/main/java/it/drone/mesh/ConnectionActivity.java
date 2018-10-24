@@ -124,22 +124,25 @@ public class ConnectionActivity extends Activity {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
-        final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
-        boolean res = gatt.connect();
-        Log.d(TAG, "OUD: " + "State: " + mBluetoothManager.getConnectionState(device, BluetoothProfile.GATT_SERVER));
+        //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
+        final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+        boolean res1 = gatt.connect();
+        Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
+        Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
+
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo" + res);
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo" + res1);
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                 Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
+                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                             chars.setValue(message);
                             gatt.beginReliableWrite();
-                            gatt.writeCharacteristic(chars);
+                            boolean res = gatt.writeCharacteristic(chars);
                             gatt.executeReliableWrite();
-                            Log.d(TAG, "OUD: " + "sendMessage: Messaggio inviato");
+                            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
                         }
                     }
                 }

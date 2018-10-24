@@ -42,6 +42,7 @@ import it.drone.mesh.utility.Constants;
  */
 public class ScannerFragment extends ListFragment {
 
+
     private static final String TAG = ScannerFragment.class.getSimpleName();
 
     /**

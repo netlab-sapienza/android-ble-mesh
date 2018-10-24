@@ -11,6 +11,8 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.util.Log;
 
+import java.nio.charset.Charset;
+
 import it.drone.mesh.models.User;
 import it.drone.mesh.utility.Constants;
 
@@ -37,9 +39,9 @@ public class AcceptBLETask {
             @Override
             public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d(TAG_BLE_TASK, "I'm the server, I've connected to " + device.getName());
+                    Log.d(TAG_BLE_TASK, "OUD: " + "I'm the server, I've connected to " + device.getName());
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.d(TAG_BLE_TASK, "onConnectionStateChange: DISCONNECTED from" + device.getName());
+                    Log.d(TAG_BLE_TASK, "OUD: " + "onConnectionStateChange: DISCONNECTED from" + device.getName());
                 }
                 super.onConnectionStateChange(device, status, newState);
             }
@@ -47,7 +49,7 @@ public class AcceptBLETask {
             // DO SOMETHING WHEN A SERVICE IS ADDED
             @Override
             public void onServiceAdded(int status, BluetoothGattService service) {
-                Log.d(TAG_BLE_TASK, "I've added a service " + service.toString());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've added a service " + service.toString());
                 super.onServiceAdded(status, service);
             }
 
@@ -55,7 +57,7 @@ public class AcceptBLETask {
             @Override
             public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
                 final BluetoothDevice tempdev = device;
-                Log.d(TAG_BLE_TASK, "I've been asked to read from " + tempdev.getName());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to read from " + tempdev.getName());
                 super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             }
 
@@ -64,32 +66,39 @@ public class AcceptBLETask {
             public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 final BluetoothDevice tempdev = device;
                 final String tempval = new String(value);
-                Log.d(TAG_BLE_TASK, "I've been asked to write from " + tempdev.getName() + " " + tempval);
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to write from " + tempdev.getName() + " " + tempval);
                 super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
             }
 
             @Override
             public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
-                Log.d(TAG_BLE_TASK, "I've been asked to read descriptor from " + device.getName());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to read descriptor from " + device.getName());
                 super.onDescriptorReadRequest(device, requestId, offset, descriptor);
             }
 
             @Override
             public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-                Log.d(TAG_BLE_TASK, "I've been asked to write descriptor from " + device.getName() + "    " + device.getAddress());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to write descriptor from " + device.getName() + "    " + device.getAddress());
+                Log.d(TAG_BLE_TASK, "OUD: " + "Device address: " + device.getAddress());
+                Log.d(TAG_BLE_TASK, "OUD: " + "ReqId: " + requestId);
+                Log.d(TAG_BLE_TASK, "OUD: " + "PreparedWrite: " + preparedWrite);
+                Log.d(TAG_BLE_TASK, "OUD: " + "offset: " + offset);
+                Log.d(TAG_BLE_TASK, "OUD: " + "BytesN: " + value.length);
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've been asked to write descriptor from " + device.getName());
+                Log.d(TAG_BLE_TASK, "OUD: " + new String(descriptor.getCharacteristic().getValue(), Charset.defaultCharset()));
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
 
             @Override
             public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
                 final BluetoothDevice tempdev = device;
-                Log.d(TAG_BLE_TASK, "I'm writing from " + tempdev.getName());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I'm writing from " + tempdev.getName());
                 super.onExecuteWrite(device, requestId, execute);
             }
 
             @Override
             public void onNotificationSent(BluetoothDevice device, int status) {
-                Log.d(TAG_BLE_TASK, "I've notified " + device.getName());
+                Log.d(TAG_BLE_TASK, "OUD: " + "I've notified " + device.getName());
                 super.onNotificationSent(device, status);
             }
 

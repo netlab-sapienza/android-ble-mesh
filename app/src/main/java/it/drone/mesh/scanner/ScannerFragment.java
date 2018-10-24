@@ -165,7 +165,7 @@ public class ScannerFragment extends ListFragment {
      */
     public void startScanning() {
         if (mScanCallback == null) {
-            Log.d(TAG, "Starting Scanning");
+            Log.d(TAG, "OUD: " + "Starting Scanning");
 
             // Will stop the scanning after a set time.
             mHandler.postDelayed(new Runnable() {
@@ -192,7 +192,7 @@ public class ScannerFragment extends ListFragment {
      * Stop scanning for BLE Advertisements.
      */
     public void stopScanning() {
-        Log.d(TAG, "Stopping Scanning");
+        Log.d(TAG, "OUD: " + "Stopping Scanning");
 
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -246,7 +246,7 @@ public class ScannerFragment extends ListFragment {
             super.onScanResult(callbackType, result);
             mAdapter.notifyDataSetChanged();
 
-            Log.d(TAG, result.toString());
+            Log.d(TAG, "OUD: " + result.toString());
 
             // IF THE NEWLY DISCOVERED USER IS IN MY LIST OF USER, RETURNS
             for (User temp : usersFound) {
@@ -299,13 +299,13 @@ public class ScannerFragment extends ListFragment {
             //ConnectBtTask connectBtTask = new ConnectBtTask(newUser);
             //connectBtTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-            Log.d(TAG, "It worked");
+            Log.d(TAG, "OUD: " + "It worked");
         }
 
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
-            Log.d(TAG, "Scan failed with error: " + errorCode);
+            Log.d(TAG, "OUD: " + "Scan failed with error: " + errorCode);
         }
 
     }

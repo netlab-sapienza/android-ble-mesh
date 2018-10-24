@@ -157,7 +157,7 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
     private void startAdvertising() {
         Context c = getActivity();
         c.startService(getServiceIntent(c));
-        Log.d(TAG, "startAdvertising: StART Server");
+        Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
         AcceptBLETask acceptBLETask = new AcceptBLETask(null, mBluetoothManager, getContext());
         acceptBLETask.startServer();
     }

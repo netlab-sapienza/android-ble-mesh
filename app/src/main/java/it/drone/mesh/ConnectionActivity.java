@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -80,7 +81,7 @@ public class ConnectionActivity extends Activity {
             @Override
             public void handleMessage(Message msg) {
                 final int what = msg.what;
-                Log.d(TAG, "handleMessage: SONO ENTRATO NELL'HANDLER");
+                Log.d(TAG, "OUD: " + "handleMessage: SONO ENTRATO NELL'HANDLER");
                 switch (what) {
                     case DO_UPDATE_TEXT:
                         doUpdate();
@@ -97,13 +98,13 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.d(TAG, "Unable to initialize BluetoothManager.");
+                Log.d(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.d(TAG, "Unable to obtain a BluetoothAdapter.");
+            Log.d(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
             return;
         }
 
@@ -122,33 +123,30 @@ public class ConnectionActivity extends Activity {
     private void sendMessage(String message) {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
-        Log.d(TAG, "sendMessage: Inizio invio messaggio");
+        Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = UserList.getUser(device.getName()).getBluetoothGatt();
         boolean res = gatt.connect();
+        Log.d(TAG, "OUD: " + "State: " + mBluetoothManager.getConnectionState(device, BluetoothProfile.GATT_SERVER));
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "sendMessage: inizio ciclo" + res);
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo" + res);
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
-                Log.d(TAG, "sendMessage: service.equals");
+                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
-                    Log.d(TAG, "sendMessage: service.getCharact != null");
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                             chars.setValue(message);
                             gatt.beginReliableWrite();
                             gatt.writeCharacteristic(chars);
                             gatt.executeReliableWrite();
-                            Log.d(TAG, "sendMessage: Messaggio inviato");
-                            String s = new String(chars.getValue());
-                            Log.d(TAG, s);
-                            Log.d(TAG, gatt.getDevice().getName());
+                            Log.d(TAG, "OUD: " + "sendMessage: Messaggio inviato");
                         }
                     }
                 }
             }
 
         }
-        Log.d(TAG, "sendMessage: end ");
+        Log.d(TAG, "OUD: " + "sendMessage: end ");
 
     }
 

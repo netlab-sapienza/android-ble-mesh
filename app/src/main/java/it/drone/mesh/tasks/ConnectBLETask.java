@@ -48,30 +48,29 @@ public class ConnectBLETask {
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                Log.d(TAG, "I discovered a service" + mGatt.getServices());
+                Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
+                Log.d(TAG, "OUD: " + "I discovered a service" + mGatt.getServices());
                 for (BluetoothGattService service : mGatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                                    /*chars.setValue("COMPILATO DA GIGI");
+                                    mGatt.setCharacteristicNotification(chars, true);
+                                    chars.setValue("COMPILATO DA GIGI");
                                     gatt.beginReliableWrite();
                                     gatt.writeCharacteristic(chars);
                                     gatt.executeReliableWrite();
-                                    Log.d(TAG,"caratteristica ok");*/
-                                    mGatt.setCharacteristicNotification(chars, true);
-                                    Log.d(TAG, "Discovered charatt ");
-                                    if (chars.getDescriptors() != null) {
+                                    Log.d(TAG, "OUD: " + "caratteristica ok");
+                                    /*if (chars.getDescriptors() != null) {
                                         for (BluetoothGattDescriptor desc : chars.getDescriptors()) {
                                             if (desc.getUuid().toString().equals(Constants.Descriptor_UUID.toString())) {
                                                 desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                                                 boolean res = mGatt.writeDescriptor(desc);
-                                                Log.d(TAG, "Desc Discovered: " + res);
+                                                Log.d(TAG, "OUD: " +  "Desc Discovered: " + res);
                                             }
                                         }
 
-                                    }
-
+                                    }*/
                                 }
                             }
                         }
@@ -82,33 +81,33 @@ public class ConnectBLETask {
 
             @Override
             public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                Log.d(TAG, "I read a characteristic");
+                Log.d(TAG, "OUD: " + "I read a characteristic");
                 super.onCharacteristicRead(gatt, characteristic, status);
             }
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                Log.d(TAG, "I wrote a characteristic");
+                Log.d(TAG, "OUD: " + "I wrote a characteristic");
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
 
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-                Log.d(TAG, "Characteristic changed");
-                Log.d(TAG, new String(characteristic.getValue()));
+                Log.d(TAG, "OUD: " + "Characteristic changed");
+                Log.d(TAG, "OUD: " + new String(characteristic.getValue()));
                 super.onCharacteristicChanged(gatt, characteristic);
             }
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "I read a descriptor");
+                Log.d(TAG, "OUD: " + "I read a descriptor");
                 super.onDescriptorRead(gatt, descriptor, status);
             }
 
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "I wrote a descriptor");
-                Log.d(TAG, mGatt.getDevice().getName());
+                Log.d(TAG, "OUD: " + "I wrote a descriptor");
+                Log.d(TAG, "OUD: " + mGatt.getDevice().getName());
                 for (BluetoothGattService service : mGatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
@@ -119,7 +118,7 @@ public class ConnectBLETask {
                                     gatt.beginReliableWrite();
                                     boolean res = mGatt.writeCharacteristic(chars);
                                     gatt.executeReliableWrite();
-                                    Log.d(TAG, res + "");
+                                    Log.d(TAG, "OUD: " + res + "");
                                 }
                             }
                         }
@@ -130,13 +129,13 @@ public class ConnectBLETask {
 
             @Override
             public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
-                Log.d(TAG, "I reliably wrote ");
+                Log.d(TAG, "OUD: " + "I reliably wrote ");
                 super.onReliableWriteCompleted(gatt, status);
             }
 
             @Override
             public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-                Log.d(TAG, "I read the remote rssi");
+                Log.d(TAG, "OUD: " + "I read the remote rssi");
                 super.onReadRemoteRssi(gatt, rssi, status);
             }
 

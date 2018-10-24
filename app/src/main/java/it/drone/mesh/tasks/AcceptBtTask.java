@@ -37,26 +37,26 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         try {
             user.setBluetoothServerSocket(mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("HIRO-NET", Constants.Service_UUID.getUuid()));
         } catch (IOException e) {
-            Log.d(TAG, "Couldn't create a Socket");
+            Log.d(TAG, "OUD: " + "Couldn't create a Socket");
         }
 
         while (true) {
             try {
                 socket = user.getBluetoothServerSocket().accept();
             } catch (IOException e) {
-                Log.d(TAG, "Socket's accept() method failed", e);
+                Log.d(TAG, "OUD: " + "Socket's accept() method failed", e);
                 break;
             }
 
             if (socket != null) {
                 // A connection was accepted. Perform work associated with
                 // the connection in a separate thread.
-                Log.d(TAG, "Socket's accept()");
+                Log.d(TAG, "OUD: " + "Socket's accept()");
                 // manageMyConnectedSocket(socket);
                 try {
                     user.getBluetoothServerSocket().close();
                 } catch (IOException e) {
-                    Log.d(TAG, "Socket's accept() method failed", e);
+                    Log.d(TAG, "OUD: " + "Socket's accept() method failed", e);
                 }
                 break;
             }
@@ -84,16 +84,16 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
                 try {
                     tmpIn = user.getBluetoothSocket().getInputStream();
                 } catch (IOException closeException) {
-                    Log.d(TAG, "Couldn't get an Inputstream", closeException);
+                    Log.d(TAG, "OUD: " + "Couldn't get an Inputstream", closeException);
                 }
                 try {
                     bytes = tmpIn.available();
                     bytes = tmpIn.read(buffer);
                 } catch (IOException closeException) {
-                    Log.d(TAG, "Couldn't print anything", closeException);
+                    Log.d(TAG, "OUD: " + "Couldn't print anything", closeException);
                 }
                 // output in logger
-                Log.d(TAG, "processBtAccept: " + new String(buffer) + "from" + socket.getRemoteDevice().toString());
+                Log.d(TAG, "OUD: " + "processBtAccept: " + new String(buffer) + "from" + socket.getRemoteDevice().toString());
             }
         };
 

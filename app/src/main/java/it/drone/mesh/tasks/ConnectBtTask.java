@@ -32,7 +32,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         try {
             tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.Service_UUID.getUuid());
         } catch (IOException e) {
-            Log.d(TAG, e.toString());
+            Log.d(TAG, "OUD: " + e.toString());
         }
         try {
             // Connect to the remote device through the socket. This call blocks
@@ -43,7 +43,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
             try {
                 tmp.close();
             } catch (IOException closeException) {
-                Log.d(TAG, "Could not close the client socket", closeException);
+                Log.d(TAG, "OUD: " + "Could not close the client socket", closeException);
             }
             return null;
         }
@@ -61,7 +61,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         try {
             mmUser.getBluetoothServerSocket().close();
         } catch (IOException e) {
-            Log.d(TAG, "couldn't close socket", e);
+            Log.d(TAG, "OUD: " + "couldn't close socket", e);
         }
         processBtConnect(result);
     }
@@ -77,16 +77,16 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
                 try {
                     tmpOut = mmUser.getBluetoothSocket().getOutputStream();
                 } catch (IOException closeException) {
-                    Log.d(TAG, "Couldn't get an Inputstream", closeException);
+                    Log.d(TAG, "OUD: " + "Couldn't get an Inputstream", closeException);
                 }
                 try {
                     new Random().nextBytes(buffer);
                     tmpOut.write(buffer);
                 } catch (IOException closeException) {
-                    Log.d(TAG, "Couldn't print anything", closeException);
+                    Log.d(TAG, "OUD: " + "Couldn't print anything", closeException);
                 }
                 // output nel logger per ora
-                Log.d(TAG, "processBtConnect: " + new String(buffer) + "to" + socket.getRemoteDevice().toString());
+                Log.d(TAG, "OUD: " + "processBtConnect: " + new String(buffer) + "to" + socket.getRemoteDevice().toString());
             }
         };
 

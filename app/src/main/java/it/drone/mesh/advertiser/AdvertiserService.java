@@ -115,7 +115,7 @@ public class AdvertiserService extends Service {
         timeoutRunnable = new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "AdvertiserService has reached timeout of " + TIMEOUT + " milliseconds, stopping advertising.");
+                Log.d(TAG, "OUD: " + "AdvertiserService has reached timeout of " + TIMEOUT + " milliseconds, stopping advertising.");
                 sendFailureIntent(ADVERTISING_TIMED_OUT);
                 stopSelf();
             }
@@ -129,7 +129,7 @@ public class AdvertiserService extends Service {
     private void startAdvertising() {
         goForeground();
 
-        Log.d(TAG, "Service: Starting Advertising");
+        Log.d(TAG, "OUD: " + "Service: Starting Advertising");
 
         if (mAdvertiseCallback == null) {
             AdvertiseSettings settings = buildAdvertiseSettings();
@@ -142,7 +142,7 @@ public class AdvertiserService extends Service {
             }
         }
 
-        Log.d(TAG, "Server: Start initialize the server");
+        Log.d(TAG, "OUD: " + "Server: Start initialize the server");
     }
 
     /**
@@ -167,7 +167,7 @@ public class AdvertiserService extends Service {
      * Stops BLE Advertising.
      */
     private void stopAdvertising() {
-        Log.d(TAG, "Service: Stopping Advertising");
+        Log.d(TAG, "OUD: " + "Service: Stopping Advertising");
         if (mBluetoothLeAdvertiser != null) {
             mBluetoothLeAdvertiser.stopAdvertising(mAdvertiseCallback);
             mAdvertiseCallback = null;
@@ -233,7 +233,7 @@ public class AdvertiserService extends Service {
         public void onStartFailure(int errorCode) {
             super.onStartFailure(errorCode);
 
-            Log.d(TAG, "Advertising failed");
+            Log.d(TAG, "OUD: " + "Advertising failed");
             sendFailureIntent(errorCode);
             stopSelf();
 
@@ -242,7 +242,7 @@ public class AdvertiserService extends Service {
         @Override
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             super.onStartSuccess(settingsInEffect);
-            Log.d(TAG, "Advertising successfully started");
+            Log.d(TAG, "OUD: " + "Advertising successfully started");
         }
     }
 

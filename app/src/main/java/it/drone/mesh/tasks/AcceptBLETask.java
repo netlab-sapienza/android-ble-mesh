@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.util.Log;
 
@@ -35,9 +36,9 @@ public class AcceptBLETask {
             // DO SOMETHING WHEN THE CONNECTION UPDATES
             @Override
             public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-                if (newState == 0) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.d(TAG_BLE_TASK, "I'm the server, I've connected to " + device.getName());
-                } else {
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG_BLE_TASK, "onConnectionStateChange: DISCONNECTED from" + device.getName());
                 }
                 super.onConnectionStateChange(device, status, newState);
@@ -75,7 +76,7 @@ public class AcceptBLETask {
 
             @Override
             public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-                Log.d(TAG_BLE_TASK, "I've been asked to write descriptor from " + device.getName());
+                Log.d(TAG_BLE_TASK, "I've been asked to write descriptor from " + device.getName() + "    " + device.getAddress());
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
 

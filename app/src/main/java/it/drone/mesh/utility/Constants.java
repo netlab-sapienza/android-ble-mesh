@@ -14,10 +14,19 @@ public class Constants {
      * The official specification can be found here:
      * {@link https://www.bluetooth.org/en-us/specification/assigned-numbers/service-discovery}
      */
-    public static final ParcelUuid Service_UUID = ParcelUuid
+    /*public static final ParcelUuid Service_UUID = ParcelUuid
             .fromString("0000b81d-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Service_UUID_client = ParcelUuid
             .fromString("9999b81d-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid Characteristic_UUID = ParcelUuid
+            .fromString("1111b81d-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid Descriptor_UUID = ParcelUuid
+            .fromString("2222b81d-0000-1000-8000-00805f9b34fb");*/
+
+    public static final ParcelUuid Service_UUID = ParcelUuid
+            .fromString("00001814-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid Service_UUID_client = ParcelUuid
+            .fromString("00002A14-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Characteristic_UUID = ParcelUuid
             .fromString("1111b81d-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Descriptor_UUID = ParcelUuid

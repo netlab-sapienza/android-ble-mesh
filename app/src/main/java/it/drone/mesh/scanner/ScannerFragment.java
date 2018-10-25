@@ -167,6 +167,7 @@ public class ScannerFragment extends ListFragment {
     public void startScanning() {
         if (mScanCallback == null) {
             Log.d(TAG, "OUD: " + "Starting Scanning");
+            UserList.clean();
 
             // Will stop the scanning after a set time.
             mHandler.postDelayed(new Runnable() {
@@ -250,15 +251,14 @@ public class ScannerFragment extends ListFragment {
             Log.d(TAG, "OUD: " + result.toString());
 
             // IF THE NEWLY DISCOVERED USER IS IN MY LIST OF USER, RETURNS
-            for (User temp : usersFound) {
+            for (User temp : UserList.getUserList()) {
                 if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                     return;
             }
             // ADD THE USER
-            final User newUser = new User(result.getDevice());
-            newUser.setUserName(result.getDevice().getName());
-            usersFound.add(newUser);
+            final User newUser = new User(result.getDevice(), result.getDevice().getName());
             mAdapter.add(result);
+            Log.d(TAG, "onScanResult: Nuovo SERVER");
 
             // STARTS THE GATT SERVER
             //AcceptBLETask acceptBLETask = new AcceptBLETask(newUser, mBluetoothManager, getContext());
@@ -272,6 +272,7 @@ public class ScannerFragment extends ListFragment {
             // STARTS THE GATT
             ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
             connectBLETask.startClient();
+            usersFound.add(newUser);
             UserList.addUser(newUser);
 
 //            CODE TO SET UP A TIMED THREAD

@@ -1,5 +1,6 @@
 package it.drone.mesh.advertiser;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertiseCallback;
 import android.content.BroadcastReceiver;
@@ -30,6 +31,7 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
     private Switch mSwitch;
 
     private BluetoothManager mBluetoothManager;
+    private BluetoothAdapter mBluetoothAdapter;
 
     /**
      * Listens for notifications that the {@code AdvertiserService} has failed to start advertising.
@@ -47,6 +49,10 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
 
     public void setBluetoothManager(BluetoothManager btManager) {
         this.mBluetoothManager = btManager;
+    }
+
+    public void setBluetoothAdapter(BluetoothAdapter btAdapter) {
+        this.mBluetoothAdapter = btAdapter;
     }
 
     @Override
@@ -158,7 +164,7 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
         Context c = getActivity();
         c.startService(getServiceIntent(c));
         Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
-        AcceptBLETask acceptBLETask = new AcceptBLETask(null, mBluetoothManager, getContext());
+        AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
         acceptBLETask.startServer();
     }
 

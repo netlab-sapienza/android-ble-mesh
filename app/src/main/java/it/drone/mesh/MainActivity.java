@@ -121,6 +121,7 @@ public class MainActivity extends FragmentActivity {
 
         AdvertiserFragment advertiserFragment = new AdvertiserFragment();
         advertiserFragment.setBluetoothManager(mBluetoothManager);
+        advertiserFragment.setBluetoothAdapter(mBluetoothAdapter);
         transaction.replace(R.id.advertiser_fragment_container, advertiserFragment);
 
         transaction.commit();

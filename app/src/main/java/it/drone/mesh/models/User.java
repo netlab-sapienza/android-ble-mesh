@@ -28,6 +28,15 @@ public class User {
         this.bluetoothGatt = null;
     }
 
+    public User(BluetoothDevice mBluetoothDevice, String name) {
+        this.bluetoothDevice = mBluetoothDevice;
+        this.userName = name;
+        this.bluetoothServerSocket = null;
+        this.bluetoothSocket = null;
+        this.bluetoothGattServer = null;
+        this.bluetoothGatt = null;
+    }
+
     public String getUserName() {
         return userName;
     }

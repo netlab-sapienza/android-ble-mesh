@@ -127,8 +127,11 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
-        ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
-        connectBLETask.startClient();
+
+        if (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) && !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
+            ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+            connectBLETask.startClient();
+        }
         Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
         Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
 
@@ -141,9 +144,9 @@ public class ConnectionActivity extends Activity {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                             chars.setValue(message);
-                            gatt.beginReliableWrite();
+                            //gatt.beginReliableWrite();
                             boolean res = gatt.writeCharacteristic(chars);
-                            gatt.executeReliableWrite();
+                            //gatt.executeReliableWrite();
                             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
                         }
                     }

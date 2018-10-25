@@ -60,7 +60,8 @@ public class MainActivity extends FragmentActivity {
 
                     } else {
                         // Bluetooth Advertisements are not supported.
-                        showErrorText(R.string.bt_ads_not_supported);
+                        setupFragments();
+                        //showErrorText(R.string.bt_ads_not_supported);
                     }
                 } else {
 
@@ -92,7 +93,8 @@ public class MainActivity extends FragmentActivity {
 
                     } else {
                         // Bluetooth Advertisements are not supported.
-                        showErrorText(R.string.bt_ads_not_supported);
+                        setupFragments();
+                        //showErrorText(R.string.bt_ads_not_supported);
                     }
                 } else {
 

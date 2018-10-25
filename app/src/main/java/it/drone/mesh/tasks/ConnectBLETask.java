@@ -57,14 +57,14 @@ public class ConnectBLETask {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                                    Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                                    /*Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                                     mGatt.setCharacteristicNotification(chars, true);
                                     chars.setValue("COMPILATO DA GIGI");
                                     gatt.beginReliableWrite();
                                     gatt.writeCharacteristic(chars);
                                     gatt.executeReliableWrite();
                                     Log.d(TAG, "OUD: " + "caratteristica ok");
-                                    /*if (chars.getDescriptors() != null) {
+                                    if (chars.getDescriptors() != null) {
                                         for (BluetoothGattDescriptor desc : chars.getDescriptors()) {
                                             if (desc.getUuid().toString().equals(Constants.Descriptor_UUID.toString())) {
                                                 desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);

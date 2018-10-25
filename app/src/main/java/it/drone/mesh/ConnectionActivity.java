@@ -22,6 +22,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import it.drone.mesh.models.User;
+import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
 
 import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_ADDRESS;
@@ -126,12 +127,13 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
-        boolean res1 = gatt.connect();
+        ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+        connectBLETask.startClient();
         Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
         Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
 
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo" + res1);
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                 Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {

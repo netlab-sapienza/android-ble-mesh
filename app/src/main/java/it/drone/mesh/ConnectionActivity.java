@@ -3,7 +3,11 @@ package it.drone.mesh;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,12 +16,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+
+import it.drone.mesh.models.User;
+import it.drone.mesh.tasks.ConnectBLETask;
+import it.drone.mesh.utility.Constants;
+
+import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_ADDRESS;
+import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
 
 public class ConnectionActivity extends Activity {
 
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     private final static String TAG = ConnectionActivity.class.getSimpleName();
     private final static int DO_UPDATE_TEXT = 0;
     private final static int DO_THAT = 1;
@@ -40,24 +52,37 @@ public class ConnectionActivity extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mBluetoothSocket;
     private Handler mHandler;
-    private TextView textViewData;
+    private User user;
 
-    private void doUpdate() {
-        textViewData.setText(String.valueOf(System.currentTimeMillis()));
-    }
+    private TextView outputText;
+    private EditText inputText;
+    private Button sendButton;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connection);
-        textViewData = findViewById(R.id.textView);
-        final Intent intent = getIntent();
-        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        outputText = findViewById(R.id.outputText);
+        inputText = findViewById(R.id.inputText);
+        sendButton = findViewById(R.id.sendButton);
+
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendMessage(inputText.getText().toString());
+                inputText.setText("");
+            }
+        });
+
+        mDeviceName = getIntent().getStringExtra(EXTRAS_DEVICE_NAME);
+        mDeviceAddress = getIntent().getStringExtra(EXTRAS_DEVICE_ADDRESS);
+
         mHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 final int what = msg.what;
+                Log.d(TAG, "OUD: " + "handleMessage: SONO ENTRATO NELL'HANDLER");
                 switch (what) {
                     case DO_UPDATE_TEXT:
                         doUpdate();
@@ -74,18 +99,67 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.e(TAG, "Unable to initialize BluetoothManager.");
+                Log.d(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+            Log.d(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
             return;
         }
 
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
+        user = UserList.getUser(mDeviceName);
+
+        //ConnectBLETask connectBLETask = new ConnectBLETask(UserList.getUser(mDeviceName), this);
+        //connectBLETask.startClient();
+
+        //outputText.setText(user.getBluetoothDevice().getName());
+
+
         //ConnectTask connectTask = new ConnectTask(device);
         //connectTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
+
+    private void sendMessage(String message) {
+        // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+
+        Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
+        //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
+        final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+
+        if (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) && !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
+            ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+            connectBLETask.startClient();
+        }
+        Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
+        Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
+
+        for (BluetoothGattService service : gatt.getServices()) {
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
+            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
+                if (service.getCharacteristics() != null) {
+                    for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
+                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                            chars.setValue(message);
+                            //gatt.beginReliableWrite();
+                            boolean res = gatt.writeCharacteristic(chars);
+                            //gatt.executeReliableWrite();
+                            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                        }
+                    }
+                }
+            }
+
+        }
+        Log.d(TAG, "OUD: " + "sendMessage: end ");
+
+    }
+
+    private void doUpdate() {
+        outputText.setText(String.valueOf(System.currentTimeMillis()));
+    }
+
 }

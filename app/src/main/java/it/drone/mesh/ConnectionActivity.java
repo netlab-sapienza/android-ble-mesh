@@ -21,7 +21,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.NoSuchElementException;
+
 import it.drone.mesh.models.User;
+import it.drone.mesh.models.UserList;
 import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
 
@@ -109,7 +112,13 @@ public class ConnectionActivity extends Activity {
             return;
         }
 
-        user = UserList.getUser(mDeviceName);
+        try {
+            user = UserList.getUser(mDeviceName);
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Lista :" + UserList.printList());
+        }
+
 
         //ConnectBLETask connectBLETask = new ConnectBLETask(UserList.getUser(mDeviceName), this);
         //connectBLETask.startClient();

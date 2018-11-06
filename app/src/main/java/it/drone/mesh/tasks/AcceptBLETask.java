@@ -26,8 +26,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import it.drone.mesh.UserList;
 import it.drone.mesh.models.User;
+import it.drone.mesh.models.UserList;
 import it.drone.mesh.utility.Constants;
 
 public class AcceptBLETask {
@@ -186,7 +186,7 @@ public class AcceptBLETask {
 
                         }
                     }, 5000);
-                    UserList.clean();
+                    UserList.cleanUserList();
                     mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
                 }
                 super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);

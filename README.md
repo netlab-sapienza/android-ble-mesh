@@ -2,13 +2,13 @@
 drone-ble-mesh
 ===================================
 
+
 Pre-requisites
 --------------
-
-- Android SDK 27
-- Android Build Tools v27.0.2
-- Android Support Repository
+- The phone must support multipleAdvertisment
+- Android SDK >= 21
 
 Getting Started
 ---------------
-TTD
+
+TBA

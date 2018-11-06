@@ -37,10 +37,4 @@ public class Constants {
     // Strings for data exchange activity
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-    public static final String EXTRAS_USER_USERNAME = "USER_USERNAME";
-    public static final String EXTRAS_USER_DEVICE = "USER_DEVICE";
-    public static final String EXTRAS_USER_SOCKET = "USER_SOCKET";
-    public static final String EXTRAS_USER_SERVER_SOCKET = "USER_SERVER_SOCKET";
-    public static final String EXTRAS_USER_GATT_SERVER = "USER_GATT_SERVER";
-    public static final String EXTRAS_USER_GATT = "USER_GATT";
 }

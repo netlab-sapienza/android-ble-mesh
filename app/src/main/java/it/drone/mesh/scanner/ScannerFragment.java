@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.ConnectionActivity;
 import it.drone.mesh.R;
-import it.drone.mesh.UserList;
 import it.drone.mesh.models.User;
+import it.drone.mesh.models.UserList;
 import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
 
@@ -167,7 +167,7 @@ public class ScannerFragment extends ListFragment {
     public void startScanning() {
         if (mScanCallback == null) {
             Log.d(TAG, "OUD: " + "Starting Scanning");
-            UserList.clean();
+            UserList.cleanUserList();
 
             // Will stop the scanning after a set time.
             mHandler.postDelayed(new Runnable() {

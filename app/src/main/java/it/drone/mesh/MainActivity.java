@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.PermissionChecker;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,11 +37,48 @@ public class MainActivity extends FragmentActivity {
         setContentView(R.layout.activity_main);
         setTitle(R.string.activity_main_title);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                checkBluetoothAvailability(savedInstanceState);
+            } else {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+            }
+            // fix per API < 23
+        } else if (PermissionChecker.PERMISSION_GRANTED == PermissionChecker.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            checkBluetoothAvailability(savedInstanceState);
+        } else {
+            // permission not granted, we must decide what to do
+            Toast.makeText(this, "Permissions not granted API < 23", Toast.LENGTH_LONG).show();
         }
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (resultCode == RESULT_OK) {
+                    checkBluetoothAvailability();
+                } else {
+                    // User declined to enable Bluetooth, exit the app.
+                    Toast.makeText(this, R.string.bt_not_enabled_leaving,
+                            Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "OUD: " + "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
+                    finish();
+                }
+
+            default:
+                super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    private void checkBluetoothAvailability() {
+        checkBluetoothAvailability(null);
+    }
+
+
+    private void checkBluetoothAvailability(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager != null)
@@ -54,12 +92,12 @@ public class MainActivity extends FragmentActivity {
 
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
-
                         // Everything is supported and enabled, load the fragments.
                         setupFragments();
-
                     } else {
-                        // Bluetooth Advertisements are not supported.
+                        // Bluetooth Advertisements are not supported, you can be only client
+                        // TODO: 07/11/18 capire se sta cosa funfa o distrugge tutto
+                        Toast.makeText(this, "Your device does not support multiple advertisement, you can be only client do not broadcast", Toast.LENGTH_LONG).show();
                         setupFragments();
                         //showErrorText(R.string.bt_ads_not_supported);
                     }
@@ -73,40 +111,6 @@ public class MainActivity extends FragmentActivity {
                 // Bluetooth is not supported.
                 showErrorText(R.string.bt_not_supported);
             }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case REQUEST_ENABLE_BT:
-
-                if (resultCode == RESULT_OK) {
-
-                    // Bluetooth is now Enabled, are Bluetooth Advertisements supported on
-                    // this device?
-                    if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
-
-                        // Everything is supported and enabled, load the fragments.
-                        setupFragments();
-
-                    } else {
-                        // Bluetooth Advertisements are not supported.
-                        setupFragments();
-                        //showErrorText(R.string.bt_ads_not_supported);
-                    }
-                } else {
-
-                    // User declined to enable Bluetooth, exit the app.
-                    Toast.makeText(this, R.string.bt_not_enabled_leaving,
-                            Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "OUD: " + "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
-                    finish();
-                }
-
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
         }
     }
 

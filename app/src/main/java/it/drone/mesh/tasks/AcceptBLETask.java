@@ -147,7 +147,7 @@ public class AcceptBLETask {
                                                     if (service.getCharacteristics() != null) {
                                                         for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                                             //Log.d(TAG, "OUD: " + "CharCHar: " + chars.getUuid().toString());
-                                                            if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                                                            if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
                                                                 Log.d(TAG, "OUD: " + "Char: " + chars.toString());
                                                                 gatt.setCharacteristicNotification(chars, true);
                                                                 chars.setValue(valueReceived);

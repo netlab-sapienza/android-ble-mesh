@@ -57,11 +57,12 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices());
+                // TODO: 07/11/18 marked to be deleted, please @Nero or @Locatelli check and delete 
                 /*for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                    /*if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                                    /*if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
                                     Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                                     gatt.setCharacteristicNotification(chars, true);
                                     chars.setValue("COMPILATO DA GIGI");
@@ -107,10 +108,10 @@ public class ConnectBLETask {
                 Log.d(TAG, "OUD: " + "I wrote a descriptor");
                 Log.d(TAG, "OUD: " + gatt.getDevice().getName());
                 for (BluetoothGattService service : gatt.getServices()) {
-                    if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+                    if (service.getUuid().equals(Constants.Service_UUID.getUuid())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                                if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
                                     gatt.setCharacteristicNotification(chars, true);
                                     chars.setValue("test string");
                                     gatt.beginReliableWrite();
@@ -145,9 +146,6 @@ public class ConnectBLETask {
     }
 
     public void startClient() {
-        // TODO: 23/10/18 perchè auto connect è false?
-        // PERCHÈ LUDOVICO HA DETTO CHE ALTRIMENTI SFACIOLA ¯\_(ツ)_/¯
-
         this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
 
         /*try {

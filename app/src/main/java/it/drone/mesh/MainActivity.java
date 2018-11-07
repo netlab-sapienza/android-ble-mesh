@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
@@ -53,6 +54,39 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+
+    /**
+     * Cattura la risposta asincrona di richiesta dei permessi e se è tutto ok passa a controllare il bluetooth
+     *
+     * @param requestCode  codice richiesta ( per coarse location = PERMISSION_REQUEST_COARSE_LOCATION )
+     * @param permissions  permessi richiesti. NB If request is cancelled, the result arrays are empty.
+     * @param grantResults int [] rappresentati gli esiti delle richieste
+     */
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "onRequestPermissionsResult: OK");
+                    checkBluetoothAvailability();
+                } else {
+                    Log.e(TAG, "onRequestPermissionsResult: Permission denied");
+                }
+            }
+
+        }
+    }
+
+    /**
+     * Controlla che il Bluetooth sia attivo dopo che dentro checkBluetoothAvailability è stata fatta la richiesta di accendere il bluetooth
+     *
+     * @param requestCode codice richiesta (per bluetooth vedi Constants.REQUEST_ENABLE_BT)
+     * @param resultCode  (RESULT_OK se tutto è andato bene)
+     * @param data        (Intent di partenza)
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -73,11 +107,19 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+
+    /**
+     * Controlla che il cellulare supporti l'app e il multiple advertisement. Maschera per onActivityResult e onRequestPermissionsResult
+     */
     private void checkBluetoothAvailability() {
         checkBluetoothAvailability(null);
     }
 
-
+    /**
+     * Controlla che il cellulare supporti l'app e il multiple advertisement.
+     *
+     * @param savedInstanceState se l'app era già attiva non devo reinizializzare tutto
+     */
     private void checkBluetoothAvailability(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -96,7 +138,7 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
                     } else {
                         // Bluetooth Advertisements are not supported, you can be only client
-                        // TODO: 07/11/18 capire se sta cosa funfa o distrugge tutto
+                        // TODO: 07/11/18 capire se sta cosa funfa o distrugge tutto @Nero
                         Toast.makeText(this, "Your device does not support multiple advertisement, you can be only client do not broadcast", Toast.LENGTH_LONG).show();
                         setupFragments();
                         //showErrorText(R.string.bt_ads_not_supported);
@@ -114,6 +156,9 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+    /**
+     * Crea i fragment e popola l'Activity
+     */
     private void setupFragments() {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
@@ -131,6 +176,11 @@ public class MainActivity extends FragmentActivity {
         transaction.commit();
     }
 
+    /**
+     * Setta l'errorText a messageId
+     *
+     * @param messageId valore della stringa del messaggio
+     */
     private void showErrorText(int messageId) {
         ((TextView) findViewById(R.id.error_textview)).setText(getString(messageId));
     }

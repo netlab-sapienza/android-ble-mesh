@@ -54,7 +54,7 @@ public class ConnectionActivity extends Activity {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mBluetoothSocket;
-    private Handler mHandler;
+    private Handler mHandler; // TODO: 07/11/2018 che fa l'handler 
     private User user;
 
     private TextView outputText;
@@ -102,13 +102,13 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.d(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
+                Log.e(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.d(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
+            Log.e(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
             return;
         }
 
@@ -130,6 +130,11 @@ public class ConnectionActivity extends Activity {
         //connectTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    /**
+     * Invia il messaggio messagge al device selezionato nella schermata precedente
+     *
+     * @param message messaggio da inviare
+     */
     private void sendMessage(String message) {
         // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
 
@@ -145,18 +150,27 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
 
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
-            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
-                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
+            Log.d(TAG, "OUD: sendMessage: inizio ciclo");
+            if (service.getUuid().equals(Constants.Service_UUID.getUuid())) {
+                Log.d(TAG, "OUD: sendMessage: service.equals");
+
+                Log.d(TAG, "OUD: Service UUID                 : " + service.getUuid());
+                Log.d(TAG, "OUD: Constants Service UUID       : " + Constants.Service_UUID.getUuid());
+                Log.d(TAG, "OUD: Constants Service UUID client: " + Constants.Service_UUID_client.getUuid());
+
                 if (service.getCharacteristics() != null) {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                        Log.d(TAG, "OUD: Chars UUID    : " + chars.getUuid());
+                        Log.d(TAG, "OUD: Constants UUID: " + Constants.Characteristic_UUID.getUuid());
+                        if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
+                            // TODO: 07/11/2018 pare che con beginReliableWrite si creino code di messaggi, vedere per ulteriori riferimenti: https://stackoverflow.com/a/31011052/4575505
+                            // gatt.beginReliableWrite();
                             chars.setValue(message);
-                            //gatt.beginReliableWrite();
                             boolean res = gatt.writeCharacteristic(chars);
-                            //gatt.executeReliableWrite();
+                            // gatt.executeReliableWrite();
                             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                            if (res)
+                                addOutputMessage(message);
                         }
                     }
                 }
@@ -164,11 +178,38 @@ public class ConnectionActivity extends Activity {
 
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
+    }
 
+    /*
+     quando s6 scrive (log di s6)
+     OUD: Service UUID                 : 00001814-0000-1000-8000-00805f9b34fb
+     OUD: Constants Service UUID       : 00001814-0000-1000-8000-00805f9b34fb
+     OUD: Constants Service UUID client: 00002a14-0000-1000-8000-00805f9b34fb
+     OUD: Chars UUID    : 00000000-0000-1000-8000-00805f9b34fb // da dove dovrebbe uscire l'indirizzo di default?
+     OUD: Constants UUID: 1111b81d-0000-1000-8000-00805f9b34fb
+
+     quando J5 scrive (log di J5)
+     OUD: Service UUID                 : 00001814-0000-1000-8000-00805f9b34fb
+     OUD: Constants Service UUID       : 00001814-0000-1000-8000-00805f9b34fb
+     OUD: Constants Service UUID client: 00002a14-0000-1000-8000-00805f9b34fb
+     OUD:Chars UUID    : 1111b81d-0000-1000-8000-00805f9b34fb
+     OUD:Constants UUID: 1111b81d-0000-1000-8000-00805f9b34fb
+
+     */
+
+    /**
+     * Aggiorna l'output con il messaggio nuovo
+     * <p>
+     * NB questo metodo viene invocato se e solo se c'è stata un'effettiva scrittura, quindi potrebbe non comparire subito
+     *
+     * @param message messaggio da aggiungere
+     */
+    private void addOutputMessage(String message) {
+        outputText.setText(outputText.getText().toString().concat("\n").concat(message));
     }
 
     private void doUpdate() {
-        outputText.setText(String.valueOf(System.currentTimeMillis()));
+        outputText.setText(outputText.getText().toString().concat("\n").concat(String.valueOf(System.currentTimeMillis())));
     }
 
 }

@@ -82,7 +82,7 @@ public class AcceptBLETask {
             @Override
             public void onCharacteristicWriteRequest(final BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 final String valueReceived;
-                Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "    " + device.getAddress());
+                Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "  address:  " + device.getAddress());
                 Log.d(TAG, "OUD: " + "Device address: " + device.getAddress());
                 Log.d(TAG, "OUD: " + "ReqId: " + requestId);
                 Log.d(TAG, "OUD: " + "PreparedWrite: " + preparedWrite);
@@ -98,7 +98,8 @@ public class AcceptBLETask {
                         public void onScanResult(int callbackType, ScanResult result) {
                             super.onScanResult(callbackType, result);
 
-                            Log.d(TAG, "OUD: " + result.toString());
+                            Log.d(TAG, "OUD: Messaggio: " + result.toString());
+
 
                             // IF THE NEWLY DISCOVERED USER IS IN MY LIST OF USER, RETURNS
                             final User user = new User(result.getDevice(), result.getDevice().getName());
@@ -109,11 +110,9 @@ public class AcceptBLETask {
                                 }
                             }
 
-                            Log.d(TAG, "onScanResult: Nuovo SERVER");
-
                             // STARTS THE GATT+
-
                             if (newUser) {
+                                Log.d(TAG, "onScanResult: Nuovo SERVER");
                                 UserList.addUser(user);
                                 ConnectBLETask connectBLETask = new ConnectBLETask(user, context, new BluetoothGattCallback() {
                                     @Override
@@ -186,6 +185,7 @@ public class AcceptBLETask {
 
                         }
                     }, 5000);
+                    // TODO: 07/11/2018 perchè ogni volta si pulice la lista?
                     UserList.cleanUserList();
                     mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
                 }

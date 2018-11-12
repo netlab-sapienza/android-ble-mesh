@@ -36,7 +36,7 @@ public class ScanResultAdapter extends BaseAdapter {
      * Takes in a number of nanoseconds and returns a human-readable string giving a vague
      * description of how long ago that was.
      */
-    public static String getTimeSinceString(Context context, long timeNanoseconds) {
+    private static String getTimeSinceString(Context context, long timeNanoseconds) {
         String lastSeenText = context.getResources().getString(R.string.last_seen) + " ";
 
         long timeSince = SystemClock.elapsedRealtimeNanos() - timeNanoseconds;

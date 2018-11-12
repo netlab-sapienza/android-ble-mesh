@@ -12,7 +12,7 @@ public class Constants {
      * <p>
      * Bluetooth requires a certain format for UUIDs associated with Services.
      * The official specification can be found here:
-     * {@link https://www.bluetooth.org/en-us/specification/assigned-numbers/service-discovery}
+     * {https://www.bluetooth.org/en-us/specification/assigned-numbers/service-discovery}
      */
 
     /*public static final ParcelUuid Service_UUID = ParcelUuid

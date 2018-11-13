@@ -5,10 +5,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,7 +22,8 @@ import java.util.List;
 
 import it.drone.mesh.advertiser.AdvertiserFragment;
 import it.drone.mesh.scanner.ScannerFragment;
-import it.drone.mesh.utility.Constants;
+
+import static it.drone.mesh.utility.Constants.REQUEST_ENABLE_BT;
 
 /**
  * Setup display fragments and ensure the device supports Bluetooth.
@@ -27,6 +31,7 @@ import it.drone.mesh.utility.Constants;
 public class MainActivity extends FragmentActivity {
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    private static final String TAG = MainActivity.class.getSimpleName();
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothManager mBluetoothManager;
 
@@ -36,7 +41,8 @@ public class MainActivity extends FragmentActivity {
         setContentView(R.layout.activity_main);
         setTitle(R.string.activity_main_title);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
@@ -58,18 +64,17 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
 
                     } else {
-
                         // Bluetooth Advertisements are not supported.
-                        showErrorText(R.string.bt_ads_not_supported);
+                        setupFragments();
+                        //showErrorText(R.string.bt_ads_not_supported);
                     }
                 } else {
 
                     // Prompt user to turn on Bluetooth (logic continues in onActivityResult()).
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBtIntent, Constants.REQUEST_ENABLE_BT);
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
             } else {
-
                 // Bluetooth is not supported.
                 showErrorText(R.string.bt_not_supported);
             }
@@ -80,7 +85,7 @@ public class MainActivity extends FragmentActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case Constants.REQUEST_ENABLE_BT:
+            case REQUEST_ENABLE_BT:
 
                 if (resultCode == RESULT_OK) {
 
@@ -92,15 +97,16 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
 
                     } else {
-
                         // Bluetooth Advertisements are not supported.
-                        showErrorText(R.string.bt_ads_not_supported);
+                        setupFragments();
+                        //showErrorText(R.string.bt_ads_not_supported);
                     }
                 } else {
 
                     // User declined to enable Bluetooth, exit the app.
                     Toast.makeText(this, R.string.bt_not_enabled_leaving,
                             Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "OUD: " + "onActivityResult: " + getResources().getString(R.string.bt_not_enabled_leaving));
                     finish();
                 }
 
@@ -119,6 +125,8 @@ public class MainActivity extends FragmentActivity {
         transaction.replace(R.id.scanner_fragment_container, scannerFragment);
 
         AdvertiserFragment advertiserFragment = new AdvertiserFragment();
+        advertiserFragment.setBluetoothManager(mBluetoothManager);
+        advertiserFragment.setBluetoothAdapter(mBluetoothAdapter);
         transaction.replace(R.id.advertiser_fragment_container, advertiserFragment);
 
         try {
@@ -144,7 +152,6 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void showErrorText(int messageId) {
-        TextView view = findViewById(R.id.error_textview);
-        view.setText(getString(messageId));
+        ((TextView) findViewById(R.id.error_textview)).setText(getString(messageId));
     }
 }

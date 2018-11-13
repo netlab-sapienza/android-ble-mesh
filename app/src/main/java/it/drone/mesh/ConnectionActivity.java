@@ -21,10 +21,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
-
 import it.drone.mesh.models.User;
 import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
@@ -113,9 +109,10 @@ public class ConnectionActivity extends Activity {
             return;
         }
 
-        this.user = UserList.getUser(mDeviceName);
-        Log.d(TAG, "OUD: " + user.getUserName());
-        Log.d(TAG, "OUD: " + user.getBluetoothDevice());
+        user = UserList.getUser(mDeviceName);
+
+        //ConnectBLETask connectBLETask = new ConnectBLETask(UserList.getUser(mDeviceName), this);
+        //connectBLETask.startClient();
 
         //outputText.setText(user.getBluetoothDevice().getName());
 
@@ -125,30 +122,40 @@ public class ConnectionActivity extends Activity {
     }
 
     private void sendMessage(String message) {
-        StringBuilder sb = null;
-        try {
-            Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces();
-            if (list != null) {
-                while(list.hasMoreElements()) {
-                    byte[] mac = list.nextElement().getHardwareAddress();
-                    if (mac != null) {
-                        sb = new StringBuilder();
-                        for (int i = 0; i < mac.length; i++)
-                            sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
-                        Log.d(TAG, "OUD: " + "MAC ADDRESS : " + sb.toString());
-                        break;
+        // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
+
+        Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
+        //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
+        final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+
+        if (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) && !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
+            ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+            connectBLETask.startClient();
+        }
+        Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
+        Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
+
+        for (BluetoothGattService service : gatt.getServices()) {
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
+            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
+                if (service.getCharacteristics() != null) {
+                    for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
+                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                            chars.setValue(message);
+                            //gatt.beginReliableWrite();
+                            boolean res = gatt.writeCharacteristic(chars);
+                            //gatt.executeReliableWrite();
+                            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                        }
                     }
                 }
             }
+
         }
-        catch(SocketException e){
-            Log.e(TAG, "setupFragments: Socket exception" + e);
-        }
-        String macAddress = null;
-        if (sb != null) {
-            macAddress = sb.toString();
-        }
-        Constants.sendMessage(macAddress,message,mBluetoothManager,this.user,getApplicationContext());
+        Log.d(TAG, "OUD: " + "sendMessage: end ");
+
     }
 
     private void doUpdate() {

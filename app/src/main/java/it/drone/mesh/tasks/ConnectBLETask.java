@@ -19,21 +19,19 @@ public class ConnectBLETask {
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
-    private boolean serviceDiscovered;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.mGattCallback = callback;
-        this.serviceDiscovered = false;
+
     }
 
     public ConnectBLETask(User user, Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
-        this.serviceDiscovered = false;
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
@@ -59,17 +57,23 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices());
-                for (BluetoothGattService service : gatt.getServices()) {
+                /*for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                    if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                                        setServiceDiscovered(true);
+                                    /*if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                                    Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                                    gatt.setCharacteristicNotification(chars, true);
+                                    chars.setValue("COMPILATO DA GIGI");
+                                    gatt.beginReliableWrite();
+                                    gatt.writeCharacteristic(chars);
+                                    gatt.executeReliableWrite();
+                                    Log.d(TAG, "OUD: " + "caratteristica ok");
                                     }
                             }
                         }
                     }
-                }
+                }*/
                 super.onServicesDiscovered(gatt, status);
             }
 
@@ -164,13 +168,6 @@ public class ConnectBLETask {
 
         this.mGatt.discoverServices();
 
-    }
-
-    private void setServiceDiscovered(boolean b) {
-        serviceDiscovered = b;
-    }
-    public boolean getServiceDiscovered() {
-        return serviceDiscovered;
     }
 
     public void stopClient() {

@@ -31,9 +31,9 @@
         <service
             android:name="it.drone.mesh.advertiser.AdvertiserService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false" />
 
-        <activity android:name="it.drone.mesh.ConnectionActivity"></activity>
+        <activity android:name="it.drone.mesh.ConnectionActivity" />
     </application>
 
 </manifest>

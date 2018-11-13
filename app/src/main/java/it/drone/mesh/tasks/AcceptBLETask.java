@@ -53,10 +53,9 @@ public class AcceptBLETask {
             @Override
             public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d(TAG, "OUD: " + "I'm the server, I've connected to " + device.getAddress() + " UUID: " + device.getUuids().toString());
+                    Log.d(TAG, "OUD: " + "I'm the server, I've connected to " + device.getName());
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.d(TAG, "OUD: " + "onConnectionStateChange: DISCONNECTED from " + device.getAddress());
-
+                    Log.d(TAG, "OUD: " + "onConnectionStateChange: DISCONNECTED from" + device.getName());
                 }
                 super.onConnectionStateChange(device, status, newState);
             }

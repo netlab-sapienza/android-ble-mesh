@@ -12,6 +12,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.List;
+
 import it.drone.mesh.advertiser.AdvertiserFragment;
 import it.drone.mesh.scanner.ScannerFragment;
 import it.drone.mesh.utility.Constants;
@@ -115,6 +120,25 @@ public class MainActivity extends FragmentActivity {
 
         AdvertiserFragment advertiserFragment = new AdvertiserFragment();
         transaction.replace(R.id.advertiser_fragment_container, advertiserFragment);
+
+        try {
+            Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces();
+            if (list != null) {
+                while(list.hasMoreElements()) {
+                    byte[] mac = list.nextElement().getHardwareAddress();
+                    if (mac != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < mac.length; i++)
+                            sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
+                        Log.d(TAG, "OUD: " + "MAC ADDRESS : " + sb.toString());
+                    }
+                }
+            }
+        }
+        catch(SocketException e){
+            Log.e(TAG, "setupFragments: Socket exception" + e);
+        }
+
 
         transaction.commit();
     }

@@ -2,6 +2,8 @@ package it.drone.mesh.utility;
 
 import android.os.ParcelUuid;
 
+import java.util.UUID;
+
 /**
  * Constants for use in the Bluetooth Advertisements sample
  */
@@ -24,12 +26,21 @@ public class Constants {
     public static final ParcelUuid Descriptor_UUID = ParcelUuid
             .fromString("2222b81d-0000-1000-8000-00805f9b34fb");*/
 
+    public static final UUID NEXT_ID = UUID.fromString("2122b81d-0000-1000-8000-00805f9b34fb");
+
+    public static final UUID ServiceUUID = UUID.fromString("00001814-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Service_UUID = ParcelUuid
             .fromString("00001814-0000-1000-8000-00805f9b34fb");
+
+    public static final UUID ServiceUUIDClient = UUID.fromString("00002A14-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Service_UUID_client = ParcelUuid
             .fromString("00002A14-0000-1000-8000-00805f9b34fb");
+
+    public static final UUID CharacteristicUUID = UUID.fromString("1111b81d-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Characteristic_UUID = ParcelUuid
             .fromString("1111b81d-0000-1000-8000-00805f9b34fb");
+
+    public static final UUID DescriptorUUID = UUID.fromString("2222b81d-0000-1000-8000-00805f9b34fb");
     public static final ParcelUuid Descriptor_UUID = ParcelUuid
             .fromString("2222b81d-0000-1000-8000-00805f9b34fb");
 

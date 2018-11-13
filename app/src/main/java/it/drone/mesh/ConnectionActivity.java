@@ -136,41 +136,54 @@ public class ConnectionActivity extends Activity {
      * @param message messaggio da inviare
      */
     private void sendMessage(String message) {
-        // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
-
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+        ConnectBLETask connectBLETask = null;
 
-        if (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) && !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
-            ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+        while (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) || !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
+            connectBLETask = new ConnectBLETask(user, this);
             connectBLETask.startClient();
+            try {
+                Thread.sleep(200);
+            } catch (Exception e) {
+                Log.d(TAG, "OUD: " + "Andata male la wait");
+            }
+            Log.d(TAG, "OUD: " + "Restauro connessione");
+            Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
+            Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
         }
-        Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
-        Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
+
+        if (connectBLETask != null) {
+            while (!connectBLETask.getServiceDiscovered()) {
+                Log.d(TAG, "OUD: " + "Wait for services");
+            }
+        }
 
         for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "OUD: sendMessage: inizio ciclo");
-            if (service.getUuid().equals(Constants.Service_UUID.getUuid())) {
-                Log.d(TAG, "OUD: sendMessage: service.equals");
-
-                Log.d(TAG, "OUD: Service UUID                 : " + service.getUuid());
-                Log.d(TAG, "OUD: Constants Service UUID       : " + Constants.Service_UUID.getUuid());
-                Log.d(TAG, "OUD: Constants Service UUID client: " + Constants.Service_UUID_client.getUuid());
-
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
+            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                        Log.d(TAG, "OUD: Chars UUID    : " + chars.getUuid());
-                        Log.d(TAG, "OUD: Constants UUID: " + Constants.Characteristic_UUID.getUuid());
-                        if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
-                            // TODO: 07/11/2018 pare che con beginReliableWrite si creino code di messaggi, vedere per ulteriori riferimenti: https://stackoverflow.com/a/31011052/4575505
-                            // gatt.beginReliableWrite();
-                            chars.setValue(message);
-                            boolean res = gatt.writeCharacteristic(chars);
-                            // gatt.executeReliableWrite();
-                            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
-                            if (res)
-                                addOutputMessage(message);
+                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                            int i = 0;
+                            while (i < 3) {
+                                chars.setValue(message + i);
+                                gatt.beginReliableWrite();
+                                boolean res = gatt.writeCharacteristic(chars);
+                                gatt.executeReliableWrite();
+                                Log.d(TAG, "OUD: " + message + i);
+                                Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                                try {
+                                    Thread.sleep(500);
+                                } catch (Exception e) {
+                                    Log.d(TAG, "OUD: " + "Andata male la wait");
+                                }
+                                i++;
+                            }
+
                         }
                     }
                 }

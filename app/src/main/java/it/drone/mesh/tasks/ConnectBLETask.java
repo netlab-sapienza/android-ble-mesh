@@ -9,6 +9,8 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.util.Log;
 
+import java.nio.charset.Charset;
+
 import it.drone.mesh.models.User;
 import it.drone.mesh.utility.Constants;
 
@@ -19,19 +21,24 @@ public class ConnectBLETask {
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
+    private boolean serviceDiscovered;
+    private String id;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.mGattCallback = callback;
-
+        this.serviceDiscovered = false;
+        this.id = null;
     }
 
     public ConnectBLETask(User user, Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
+        this.serviceDiscovered = false;
+        this.id = null;
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
@@ -57,24 +64,33 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices());
-                // TODO: 07/11/18 marked to be deleted, please @Nero or @Locatelli check and delete 
-                /*for (BluetoothGattService service : gatt.getServices()) {
+                serviceDiscovered = true;
+                for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                    /*if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
-                                    Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                                    gatt.setCharacteristicNotification(chars, true);
-                                    chars.setValue("COMPILATO DA GIGI");
-                                    gatt.beginReliableWrite();
-                                    gatt.writeCharacteristic(chars);
-                                    gatt.executeReliableWrite();
-                                    Log.d(TAG, "OUD: " + "caratteristica ok");
+                                if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
+                                    BluetoothGattDescriptor desc = chars.getDescriptor(Constants.DescriptorUUID);
+                                    if (getId() == null && desc != null) {
+                                        boolean res = gatt.readDescriptor(desc);
+                                        Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
+                                    } else {
+                                        Log.d(TAG, "OUD: " + "id gia inizializzato");
+                                    }
+                                        /*
+                                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                                        gatt.setCharacteristicNotification(chars, true);
+                                        chars.setValue("COMPILATO DA GIGI");
+                                        gatt.beginReliableWrite();
+                                        gatt.writeCharacteristic(chars);
+                                        gatt.executeReliableWrite();
+                                        Log.d(TAG, "OUD: " + "caratteristica ok");
+                                        }*/
                                     }
                             }
                         }
                     }
-                }*/
+                }
                 super.onServicesDiscovered(gatt, status);
             }
 
@@ -99,7 +115,18 @@ public class ConnectBLETask {
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "OUD: " + "I read a descriptor");
+                Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
+                if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
+                    setId(new String(descriptor.getValue(), Charset.defaultCharset()));
+                    Log.d(TAG, "OUD: " + "id : " + getId());
+                    boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.NEXT_ID));
+                    Log.d(TAG, "OUD: " + "read next id descriptor : " + res);
+                } else if (descriptor.getUuid().toString().equals(Constants.NEXT_ID.toString())) {
+                    setId(getId() + new String(descriptor.getValue(), Charset.defaultCharset()));
+                    Log.d(TAG, "OUD: " + "id : " + getId());
+                } else {
+                    Log.d(TAG, "OUD: " + "Nessun operazione con tale descrittore : " + descriptor.getUuid().toString());
+                }
                 super.onDescriptorRead(gatt, descriptor, status);
             }
 
@@ -168,9 +195,22 @@ public class ConnectBLETask {
 
     }
 
+    public boolean getServiceDiscovered() {
+        return serviceDiscovered;
+    }
+
     public void stopClient() {
         this.mGatt.disconnect();
         this.mGatt = null;
+    }
+
+    public String getId() {
+        if (id == null) return null;
+        else return this.id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
 

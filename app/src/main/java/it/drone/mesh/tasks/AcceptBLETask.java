@@ -21,6 +21,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class AcceptBLETask {
     private BluetoothGattService mGattService;
     private BluetoothGattCharacteristic mGattCharacteristic;
     private BluetoothGattDescriptor mGattDescriptor;
+    private BluetoothGattDescriptor mGattDescriptorNextId;
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private Context context;
@@ -47,7 +49,8 @@ public class AcceptBLETask {
         this.context = context;
         mGattService = new BluetoothGattService(Constants.Service_UUID.getUuid(), 0);
         mGattCharacteristic = new BluetoothGattCharacteristic(Constants.Characteristic_UUID.getUuid(), BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
-        mGattDescriptor = new BluetoothGattDescriptor(Constants.Descriptor_UUID.getUuid(), BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattDescriptor = new BluetoothGattDescriptor(Constants.DescriptorUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattDescriptorNextId = new BluetoothGattDescriptor(Constants.NEXT_ID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattServerCallback = new BluetoothGattServerCallback() {
             // DO SOMETHING WHEN THE CONNECTION UPDATES
             @Override
@@ -82,6 +85,7 @@ public class AcceptBLETask {
             @Override
             public void onCharacteristicWriteRequest(final BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 final String valueReceived;
+
                 Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "  address:  " + device.getAddress());
                 Log.d(TAG, "OUD: " + "Device address: " + device.getAddress());
                 Log.d(TAG, "OUD: " + "ReqId: " + requestId);
@@ -89,22 +93,26 @@ public class AcceptBLETask {
                 Log.d(TAG, "OUD: " + "offset: " + offset);
                 Log.d(TAG, "OUD: " + "BytesN: " + value.length);
                 if (value.length > 0) {
+                    mGattServer.sendResponse(device, requestId, 200, 0, null);
                     valueReceived = new String(value);
                     Log.d(TAG, "OUD: " + valueReceived);
-
+                    Handler mHandler = new Handler(Looper.getMainLooper());
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Messaggio ricevuto da " + device.getName() + ": " + valueReceived, Toast.LENGTH_LONG).show();
+                        }
+                    });
                     final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
                     final ScanCallback mScanCallback = new ScanCallback() {
                         @Override
-                        public void onScanResult(int callbackType, ScanResult result) {
+                        public void onScanResult(int callbackType, final ScanResult result) {
                             super.onScanResult(callbackType, result);
-
-                            Log.d(TAG, "OUD: Messaggio: " + result.toString());
-
-
                             // IF THE NEWLY DISCOVERED USER IS IN MY LIST OF USER, RETURNS
                             final User user = new User(result.getDevice(), result.getDevice().getName());
                             boolean newUser = true;
                             for (User temp : UserList.getUserList()) {
+                                Log.d(TAG, "OUD: " + "UserlistDevice: " + temp.getUserName());
                                 if (temp.getBluetoothDevice().getName().equals(user.getUserName())) {
                                     newUser = false;
                                 }
@@ -118,10 +126,10 @@ public class AcceptBLETask {
                                     @Override
                                     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                                         if (newState == BluetoothProfile.STATE_CONNECTED) {
-                                            Log.i(TAG, "OUD:" + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                                            Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                                             gatt.discoverServices();
                                         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                                            Log.i(TAG, "OUD:" + "Disconnected from GATT client " + gatt.getDevice().getName());
+                                            Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                                         }
                                     }
 
@@ -138,14 +146,9 @@ public class AcceptBLETask {
                                             Log.d(TAG, "OUD: " + "Provo ad inviare a " + user.getUserName());
                                             Log.d(TAG, "OUD: " + "size service: " + gatt.getServices().size());
                                             for (BluetoothGattService service : gatt.getServices()) {
-                                                //Log.d(TAG, "OUD: " + "onServicesDiscovered: " + service.toString());
-                                                //Log.d(TAG, "OUD: " + "NOSTRO UUID: " + Constants.Service_UUID.toString());
-                                                //Log.d(TAG, "OUD: " + "SUO UUID: " + service.getUuid().toString());
                                                 if (new ParcelUuid(service.getUuid()).equals(Constants.Service_UUID)) {
-                                                    // Log.d(TAG, "OUD: "+ "onServicesDiscovered: yeeee");
                                                     if (service.getCharacteristics() != null) {
                                                         for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                                            //Log.d(TAG, "OUD: " + "CharCHar: " + chars.getUuid().toString());
                                                             if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
                                                                 Log.d(TAG, "OUD: " + "Char: " + chars.toString());
                                                                 gatt.setCharacteristicNotification(chars, true);
@@ -167,14 +170,20 @@ public class AcceptBLETask {
                                     @Override
                                     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                                         super.onCharacteristicWrite(gatt, characteristic, status);
+                                        Log.d(TAG, "OUD: " + "i broadcasted char " + gatt.getDevice());
                                     }
                                 });
                                 connectBLETask.startClient();
+                                try {
+                                    Thread.sleep(500);
+                                } catch (Exception e) {
+                                    Log.d(TAG, "OUD: " + "Andata male la wait");
+                                }
                             }
                         }
                     };
 
-                    Handler mHandler = new Handler(Looper.getMainLooper());
+                    //mHandler = new Handler(Looper.getMainLooper());
                     mHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -195,6 +204,14 @@ public class AcceptBLETask {
             @Override
             public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
                 Log.d(TAG, "OUD: " + "I've been asked to read descriptor from " + device.getName());
+                if (descriptor.getUuid().toString().equals((mGattDescriptorNextId.getUuid().toString()))) {
+                    mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
+                    int next_id = Integer.parseInt(new String(mGattDescriptorNextId.getValue())) + 1;
+                    String value = "" + next_id;
+                    mGattDescriptorNextId.setValue(value.getBytes());
+                    Log.d(TAG, "OUD: " + "NExtId: " + value);
+                } else mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
+                Log.d(TAG, "OUD: " + new String(mGattDescriptor.getValue()));
                 super.onDescriptorReadRequest(device, requestId, offset, descriptor);
             }
 
@@ -244,7 +261,12 @@ public class AcceptBLETask {
 
     public void startServer() {
         // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
+        String id = "1";
+        String next_id = "1";
+        mGattDescriptor.setValue(id.getBytes());
         this.mGattCharacteristic.addDescriptor(mGattDescriptor);
+        mGattDescriptorNextId.setValue(next_id.getBytes());
+        this.mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
         this.mGattService.addCharacteristic(mGattCharacteristic);
         // I START OPEN THE GATT SERVER
         this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);

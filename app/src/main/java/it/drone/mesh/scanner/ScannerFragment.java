@@ -239,7 +239,6 @@ public class ScannerFragment extends ListFragment {
             // TO DO:
             // SETUP AS IN onScanResult BUT FOR A BATCH OF results
             // NEVER REALLY RAN EVER
-
             mAdapter.notifyDataSetChanged();
         }
 

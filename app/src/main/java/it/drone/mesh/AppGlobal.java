@@ -9,7 +9,8 @@ public class AppGlobal extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        // TODO: 06/11/18 qui vanno istanziate tutte le strutture dati statiche
+        // TODO: 06/11/18 qui vanno istanziate tutte le strutture dati che necessitano di inizializzazione
+        // non dovrebbero essercene per ora
 
         Log.i(TAG, "Started");
 

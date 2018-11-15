@@ -13,8 +13,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -34,8 +32,7 @@ import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
 public class ConnectionActivity extends Activity {
 
     private final static String TAG = ConnectionActivity.class.getSimpleName();
-    private final static int DO_UPDATE_TEXT = 0;
-    private final static int DO_THAT = 1;
+
     // Create a BroadcastReceiver for ACTION_FOUND.
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -49,12 +46,13 @@ public class ConnectionActivity extends Activity {
             }
         }
     };
+
     private String mDeviceName;
     private String mDeviceAddress;
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mBluetoothSocket;
-    private Handler mHandler; // TODO: 07/11/2018 che fa l'handler 
+
     private User user;
 
     private TextView outputText;
@@ -81,20 +79,6 @@ public class ConnectionActivity extends Activity {
         mDeviceName = getIntent().getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = getIntent().getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
-        mHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                final int what = msg.what;
-                Log.d(TAG, "OUD: " + "handleMessage: SONO ENTRATO NELL'HANDLER");
-                switch (what) {
-                    case DO_UPDATE_TEXT:
-                        doUpdate();
-                        break;
-                    case DO_THAT:
-                        break;
-                }
-            }
-        };
 
         //IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         //registerReceiver(mReceiver, filter);
@@ -192,23 +176,6 @@ public class ConnectionActivity extends Activity {
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
     }
-
-    /*
-     quando s6 scrive (log di s6)
-     OUD: Service UUID                 : 00001814-0000-1000-8000-00805f9b34fb
-     OUD: Constants Service UUID       : 00001814-0000-1000-8000-00805f9b34fb
-     OUD: Constants Service UUID client: 00002a14-0000-1000-8000-00805f9b34fb
-     OUD: Chars UUID    : 00000000-0000-1000-8000-00805f9b34fb // da dove dovrebbe uscire l'indirizzo di default?
-     OUD: Constants UUID: 1111b81d-0000-1000-8000-00805f9b34fb
-
-     quando J5 scrive (log di J5)
-     OUD: Service UUID                 : 00001814-0000-1000-8000-00805f9b34fb
-     OUD: Constants Service UUID       : 00001814-0000-1000-8000-00805f9b34fb
-     OUD: Constants Service UUID client: 00002a14-0000-1000-8000-00805f9b34fb
-     OUD:Chars UUID    : 1111b81d-0000-1000-8000-00805f9b34fb
-     OUD:Constants UUID: 1111b81d-0000-1000-8000-00805f9b34fb
-
-     */
 
     /**
      * Aggiorna l'output con il messaggio nuovo

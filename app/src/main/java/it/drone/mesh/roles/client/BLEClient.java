@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 
 import it.drone.mesh.R;
+import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 
@@ -34,6 +35,8 @@ public class BLEClient {
 
     private static BLEClient singleton;
 
+    private String id;
+
     // potrebbero venir riutilizzati, quindi non convertire a local
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -61,7 +64,32 @@ public class BLEClient {
         return singleton;
     }
 
-    // TODO: 13/11/18 implementare client things vedi doc a inizio file 
+    public String getId() {
+        return this.id;
+    }
 
+    private void setId(String id) {
+        this.id = id;
+    }
+
+    private String getIdFromServer() {
+
+        // TODO: 15/11/18 richiesta id al server setId(null);
+        return getId();
+    }
+
+
+    public void executeScanning() {
+
+    }
+
+    public RoutingTable getRoutingTable() {
+
+        return null;
+    }
+
+    public boolean sendMessage(String idDest, String message) {
+        return true;
+    }
 
 }

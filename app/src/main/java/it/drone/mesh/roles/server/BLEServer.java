@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 
 import it.drone.mesh.R;
+import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 
@@ -23,6 +24,9 @@ public class BLEServer {
     // potrebbero venir riutilizzati, quindi non convertire a local
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
+
+    private String id;
+    private RoutingTable routingTable;
 
     private BLEServer(Context context) throws NotSupportedException, NotEnabledException {
         bluetoothManager =
@@ -47,13 +51,34 @@ public class BLEServer {
         return singleton;
     }
 
-    public void initializeService() {
+    public boolean initializeService() {
         // TODO: 13/11/18 inizializza il server
+
+        return Math.random() % 2 == 0;
     }
 
 
-    public void sendMessage(String message) {
-        // TODO: 13/11/18  
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public RoutingTable getRoutingTable() {
+
+        return this.routingTable;
+    }
+
+
+    public boolean sendMessage(String message) {
+        // TODO: 13/11/18
+        return true;
+    }
+
+    public void scan() {
+
     }
 
 }

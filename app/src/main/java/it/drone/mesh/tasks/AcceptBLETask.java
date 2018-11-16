@@ -47,10 +47,10 @@ public class AcceptBLETask {
         this.mBluetoothAdapter = mBluetoothAdapter;
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
-        mGattService = new BluetoothGattService(Constants.Service_UUID.getUuid(), 0);
+        mGattService = new BluetoothGattService(Constants.Service_UUID.getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
         mGattCharacteristic = new BluetoothGattCharacteristic(Constants.Characteristic_UUID.getUuid(), BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattDescriptor = new BluetoothGattDescriptor(Constants.DescriptorUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-        mGattDescriptorNextId = new BluetoothGattDescriptor(Constants.NEXT_ID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattDescriptorNextId = new BluetoothGattDescriptor(Constants.NEXT_ID_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattServerCallback = new BluetoothGattServerCallback() {
             // DO SOMETHING WHEN THE CONNECTION UPDATES
             @Override
@@ -76,8 +76,7 @@ public class AcceptBLETask {
             // WHAT HAPPENS WHEN I GET A CHARACTERISTIC READ REQ
             @Override
             public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
-                final BluetoothDevice tempdev = device;
-                Log.d(TAG, "OUD: " + "I've been asked to read from " + tempdev.getName());
+                Log.d(TAG, "OUD: " + "I've been asked to read from " + device.getName());
                 super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             }
 
@@ -93,7 +92,7 @@ public class AcceptBLETask {
                 Log.d(TAG, "OUD: " + "offset: " + offset);
                 Log.d(TAG, "OUD: " + "BytesN: " + value.length);
                 if (value.length > 0) {
-                    mGattServer.sendResponse(device, requestId, 200, 0, null);
+                    mGattServer.sendResponse(device, requestId, 0, 0, null);
                     valueReceived = new String(value);
                     Log.d(TAG, "OUD: " + valueReceived);
                     Handler mHandler = new Handler(Looper.getMainLooper());
@@ -230,8 +229,7 @@ public class AcceptBLETask {
 
             @Override
             public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-                final BluetoothDevice tempdev = device;
-                Log.d(TAG, "OUD: " + "I'm writing from " + tempdev.getName());
+                Log.d(TAG, "OUD: " + "I'm writing from " + device.getName());
                 super.onExecuteWrite(device, requestId, execute);
             }
 

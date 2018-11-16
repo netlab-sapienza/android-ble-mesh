@@ -119,9 +119,9 @@ public class ConnectBLETask {
                 if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
                     setId(new String(descriptor.getValue(), Charset.defaultCharset()));
                     Log.d(TAG, "OUD: " + "id : " + getId());
-                    boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.NEXT_ID));
+                    boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.NEXT_ID_UUID));
                     Log.d(TAG, "OUD: " + "read next id descriptor : " + res);
-                } else if (descriptor.getUuid().toString().equals(Constants.NEXT_ID.toString())) {
+                } else if (descriptor.getUuid().toString().equals(Constants.NEXT_ID_UUID.toString())) {
                     setId(getId() + new String(descriptor.getValue(), Charset.defaultCharset()));
                     Log.d(TAG, "OUD: " + "id : " + getId());
                 } else {

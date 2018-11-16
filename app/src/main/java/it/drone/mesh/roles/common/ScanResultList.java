@@ -3,18 +3,17 @@ package it.drone.mesh.roles.common;
 import android.bluetooth.le.ScanResult;
 import android.util.Log;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class ScanResultList {
     private final static String TAG = ScanResultList.class.getSimpleName();
 
     private static ScanResultList singleton;
 
-    // potrebbe essere necessario cambiare la struttura dati per introdurre gli ID
-    private ArrayList<ScanResult> list;
+    private LinkedList<ScanResult> list;
 
     private ScanResultList() {
-        list = new ArrayList<>();
+        list = new LinkedList<>();
     }
 
     /**
@@ -29,12 +28,17 @@ public class ScanResultList {
         return singleton;
     }
 
-    public void addResult(ScanResult result) {
-        list.add(result);
+    public LinkedList<ScanResult> getList() {
+        return list;
     }
 
-    public ScanResult getScanResult(int index) {
-        return list.get(index);
+    public ScanResult removeFirst() {
+        return list.removeFirst();
+    }
+
+
+    public void addResult(ScanResult result) {
+        list.add(result);
     }
 
     public void cleanList() {

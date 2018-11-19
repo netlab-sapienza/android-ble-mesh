@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="5dp">
+
+    <TextView
+        android:id="@+id/name_device_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/device_name_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/name_device"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/name_device_placeholder"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
+        android:text="@string/name" />
+
+    <TextView
+        android:id="@+id/device_address_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/name_device_placeholder"
+        android:text="@string/device_address_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/device_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/name_device_placeholder"
+        android:layout_toEndOf="@id/device_address_placeholder"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
+        android:text="@string/name" />
+
+    <TextView
+        android:id="@+id/last_time_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/device_address_placeholder"
+        android:text="@string/last_time_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/last_time_device"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/device_address_placeholder"
+        android:layout_toEndOf="@id/last_time_placeholder"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
+        android:text="@string/name" />
+
+    <TextView
+        android:id="@+id/power_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/last_time_placeholder"
+        android:text="@string/signal_power_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/power_device"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/last_time_placeholder"
+        android:layout_toEndOf="@id/power_placeholder"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
+        android:text="@string/name" />
+
+    <TextView
+        android:id="@+id/inputText_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/power_placeholder"
+        android:layout_alignStart="@+id/name_device_placeholder"
+        android:text="@string/input_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/inputText"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_below="@+id/inputText_placeholder"
+        android:layout_alignStart="@+id/name_device_placeholder"
+        android:background="#6F000000"
+        android:text="@string/name" />
+
+    <TextView
+        android:id="@+id/outputText_placeholder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/inputText"
+        android:layout_alignStart="@+id/name_device_placeholder"
+        android:text="@string/output_placeholder"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/outputText"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_below="@+id/outputText_placeholder"
+        android:layout_alignStart="@+id/name_device_placeholder"
+        android:background="#6F000000"
+        android:text="@string/name" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/outputText"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:text="@string/send_test_message"
+        android:textColor="@color/colorPrimaryDark" />
+
+
+</RelativeLayout>

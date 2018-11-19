@@ -32,5 +32,17 @@
     <string name="out_text">New Data should appear here</string>
     <string name="send">Invio</string>
     <string name="message_placeholder">Inserire messaggio</string>
+    <string name="bt_not_enabled">bluetooth not enabled</string>
+    <string name="whoami">whoami</string>
+    <string name="isscanning">isScanning?</string>
+    <string name="device_name_placeholder">Device name:</string>
+    <string name="name">name</string>
+    <string name="device_address_placeholder">Address:</string>
+    <string name="signal_power_placeholder">Signal power:</string>
+    <string name="input_placeholder">Input:</string>
+    <string name="output_placeholder">Output:</string>
+    <string name="send_test_message">Send test message</string>
+    <string name="last_time_placeholder">Last time:</string>
+    <string name="startservices">startServices</string>
 
 </resources>

@@ -26,6 +26,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +70,10 @@ public class ScannerFragment extends ListFragment {
     private ScanResultAdapter mAdapter;
     private Handler mHandler;
     private ArrayList<User> usersFound = new ArrayList<>();
+    private ConnectBLETask connectBLETask;
+    private String id;
+    private LinkedList<ScanResult> tempResult = new LinkedList<>();
+
 
     /**
      * Must be called after object creation by MainActivity.
@@ -168,7 +173,7 @@ public class ScannerFragment extends ListFragment {
         if (mScanCallback == null) {
             Log.d(TAG, "OUD: " + "Starting Scanning");
             UserList.cleanUserList();
-
+            tempResult.clear();
             // Will stop the scanning after a set time.
             mHandler.postDelayed(new Runnable() {
                 @Override
@@ -200,6 +205,7 @@ public class ScannerFragment extends ListFragment {
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
 
+        tryConnection(0);
         // Even if no new results, update 'last seen' times.
         mAdapter.notifyDataSetChanged();
     }
@@ -228,6 +234,37 @@ public class ScannerFragment extends ListFragment {
         return builder.build();
     }
 
+    public void tryConnection(final int offset) {
+        final int size = UserList.getUserList().size();
+        if (offset >= size) return; //TODO diventa server
+        final User newUser = UserList.getUser(offset);
+        Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
+        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
+        connectBLETask.startClient();
+        try {
+            Thread.sleep(200);
+        } catch (Exception e) {
+            Log.d(TAG, "OUD: " + "Andata male la wait");
+        }
+        Handler mHandler = new Handler();
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                String tempId = connectBLETask.getId();
+                Log.d(TAG, "OUD: " + "id trovato dopo 2 secondi di attesa : " + tempId);
+                if (tempId != null) {
+                    Log.d(TAG, "OUD: " + "id assegnato correttamente");
+                    id = tempId;
+                    mAdapter.add(tempResult.get(offset));
+                    mAdapter.notifyDataSetChanged();
+                } else {
+                    tryConnection(offset + 1);
+                }
+            }
+        }, 2000);
+        Log.d(TAG, "OUD: " + "It worked");
+    }
+
     /**
      * Custom ScanCallback object - adds to adapter on success, displays error on failure.
      */
@@ -245,62 +282,20 @@ public class ScannerFragment extends ListFragment {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            mAdapter.notifyDataSetChanged();
-
+            //mAdapter.notifyDataSetChanged();
             Log.d(TAG, "OUD: " + result.toString());
 
-            // IF THE NEWLY DISCOVERED USER IS IN MY LIST OF USER, RETURNS
             for (User temp : UserList.getUserList()) {
                 if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                     return;
             }
-            // ADD THE USER
+            tempResult.add(result);
             final User newUser = new User(result.getDevice(), result.getDevice().getName());
-            mAdapter.add(result);
-            Log.d(TAG, "onScanResult: Nuovo SERVER");
-
-            // STARTS THE GATT SERVER
-            //AcceptBLETask acceptBLETask = new AcceptBLETask(newUser, mBluetoothManager, getContext());
-            //acceptBLETask.startServer();
-            // WAIT 600 MILLIS
-            /*try {
-                wait(600);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }*/
-            // STARTS THE GATT
-            ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
-            connectBLETask.startClient();
             usersFound.add(newUser);
             UserList.addUser(newUser);
+            //mAdapter.add(result);
+            Log.d(TAG, "onScanResult: Nuovo SERVER");
 
-//            CODE TO SET UP A TIMED THREAD
-//
-//            TimerTask timerTask = new TimerTask(){
-//                @Override
-//                public void run() {
-//                    getActivity().runOnUiThread(new Runnable() {
-//                        public void run() {
-//                            Toast.makeText(getContext(), "SAY SOMETHING INSIDE HERE", Toast.LENGTH_SHORT).show();
-//                        }
-//                    });
-//                }
-//            };
-//          Timer timer = new Timer();
-//          DELAY: the time to the first executioN
-//          PERIODICAL_TIME: the time between each execution of your task.
-//          timer.schedule(timerTask, 2000L, 4000L);
-
-
-//          HERE IS THE BLUETOOTH CLASSIC PART:
-
-
-            //AcceptBtTask acceptBtTask = new AcceptBtTask(newUser);
-            //acceptBtTask.execute();
-            //ConnectBtTask connectBtTask = new ConnectBtTask(newUser);
-            //connectBtTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-            Log.d(TAG, "OUD: " + "It worked");
         }
 
         @Override
@@ -310,4 +305,5 @@ public class ScannerFragment extends ListFragment {
         }
 
     }
+
 }

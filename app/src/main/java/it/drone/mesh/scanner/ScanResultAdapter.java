@@ -143,6 +143,11 @@ public class ScanResultAdapter extends BaseAdapter {
         }
     }
 
+    public boolean remove(ScanResult sc) {
+        boolean res = mArrayList.remove(sc);
+        return res;
+    }
+
     /**
      * Clear out the adapter.
      */

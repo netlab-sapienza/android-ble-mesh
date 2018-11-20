@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,8 +22,8 @@ import java.util.NoSuchElementException;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
-import it.drone.mesh.tasks.ConnectBLETask;
 import it.drone.mesh.utility.Constants;
+import it.drone.mesh.utility.Utility;
 
 import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_ADDRESS;
 import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
@@ -123,8 +122,8 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+        /*
         ConnectBLETask connectBLETask = null;
-
         while (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) || !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
             connectBLETask = new ConnectBLETask(user, this);
             connectBLETask.startClient();
@@ -143,6 +142,8 @@ public class ConnectionActivity extends Activity {
                 Log.d(TAG, "OUD: " + "Wait for services");
             }
         }
+        */
+        byte[][] finalMessage = Utility.messageBuilder(Utility.firstByteMessageBuilder(4, 5), message);
 
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
@@ -152,22 +153,19 @@ public class ConnectionActivity extends Activity {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                            int i = 0;
-                            while (i < 3) {
-                                chars.setValue(message + i);
+                            for (int i = 0; i < finalMessage.length; i++) {
+                                chars.setValue(finalMessage[i]);
                                 gatt.beginReliableWrite();
                                 boolean res = gatt.writeCharacteristic(chars);
                                 gatt.executeReliableWrite();
-                                Log.d(TAG, "OUD: " + message + i);
+                                Log.d(TAG, "OUD: " + new String(finalMessage[i]));
                                 Log.d(TAG, "OUD: " + "Inviato? -> " + res);
                                 try {
-                                    Thread.sleep(500);
+                                    Thread.sleep(300);
                                 } catch (Exception e) {
                                     Log.d(TAG, "OUD: " + "Andata male la wait");
                                 }
-                                i++;
                             }
-
                         }
                     }
                 }

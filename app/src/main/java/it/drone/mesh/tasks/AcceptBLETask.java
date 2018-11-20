@@ -19,17 +19,18 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.utility.Constants;
+import it.drone.mesh.utility.Utility;
 
 public class AcceptBLETask {
     private final static String TAG = AcceptBLETask.class.getName();
@@ -41,12 +42,14 @@ public class AcceptBLETask {
     private BluetoothGattDescriptor mGattDescriptorNextId;
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
+    private HashMap<String, String> messageMap;
     private Context context;
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothAdapter = mBluetoothAdapter;
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
+        messageMap = new HashMap<>();
         mGattService = new BluetoothGattService(Constants.Service_UUID.getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
         mGattCharacteristic = new BluetoothGattCharacteristic(Constants.Characteristic_UUID.getUuid(), BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattDescriptor = new BluetoothGattDescriptor(Constants.DescriptorUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
@@ -92,14 +95,32 @@ public class AcceptBLETask {
                 Log.d(TAG, "OUD: " + "offset: " + offset);
                 Log.d(TAG, "OUD: " + "BytesN: " + value.length);
                 if (value.length > 0) {
-                    mGattServer.sendResponse(device, requestId, 0, 0, null);
-                    valueReceived = new String(value);
+                    byte[] correct_message = new byte[value.length - 1];
+                    byte firstByte = value[0];
+                    for (int i = 0; i < value.length - 1; i++) {
+                        correct_message[i] = value[i + 1];
+                    }
+                    valueReceived = new String(correct_message);
                     Log.d(TAG, "OUD: " + valueReceived);
+                    final int[] info = Utility.getFirstByteInfo(firstByte);
+                    final String senderId = Utility.getStringId(firstByte);
+                    String previousMsg = messageMap.get(senderId);
+                    if (previousMsg == null) previousMsg = "";
+                    messageMap.put(senderId, previousMsg + valueReceived);
+
+                    if (Utility.getBit(firstByte, 0) != 0) {
+                        mGattServer.sendResponse(device, requestId, 0, 0, null);
+                        return;
+                    }
+                    mGattServer.sendResponse(device, requestId, 0, 0, null);
+                    final String message = previousMsg + valueReceived;
+                    Log.d(TAG, "OUD: " + message);
+                    messageMap.remove(senderId);
                     Handler mHandler = new Handler(Looper.getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(context, "Messaggio ricevuto da " + device.getName() + ": " + valueReceived, Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + ", messaggio: " + message, Toast.LENGTH_LONG).show();
                         }
                     });
                     final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
@@ -143,26 +164,8 @@ public class AcceptBLETask {
                                                 continue;
                                             }
                                             Log.d(TAG, "OUD: " + "Provo ad inviare a " + user.getUserName());
-                                            Log.d(TAG, "OUD: " + "size service: " + gatt.getServices().size());
-                                            for (BluetoothGattService service : gatt.getServices()) {
-                                                if (new ParcelUuid(service.getUuid()).equals(Constants.Service_UUID)) {
-                                                    if (service.getCharacteristics() != null) {
-                                                        for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                                                            if (chars.getUuid().equals(Constants.Characteristic_UUID.getUuid())) {
-                                                                Log.d(TAG, "OUD: " + "Char: " + chars.toString());
-                                                                gatt.setCharacteristicNotification(chars, true);
-                                                                chars.setValue(valueReceived);
-                                                                gatt.beginReliableWrite();
-                                                                boolean res = gatt.writeCharacteristic(chars);
-                                                                gatt.executeReliableWrite();
-                                                                Log.d(TAG, "OUD: " + "messaggio reinviato a " + gatt.getDevice().getName() + " ? -->" + res);
-                                                            }
-                                                        }
-                                                    } else
-                                                        Log.d(TAG, "OUD: " + "onServicesDiscovered: no characteristics");
-                                                }
-                                            }
-                                            Log.d(TAG, "OUD: " + "onServicesDiscovered: fine for");
+                                            boolean res = Utility.sendMessage(message, gatt, info);
+                                            Log.d(TAG, "OUD: " + "Inviato ? " + res);
                                         }
                                     }
 

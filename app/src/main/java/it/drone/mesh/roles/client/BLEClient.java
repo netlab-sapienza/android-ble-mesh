@@ -53,6 +53,7 @@ public class BLEClient {
     private static final String TAG = BLEClient.class.getSimpleName();
 
     private static BLEClient singleton;
+    private BluetoothGatt mGatt;
     private boolean isScanning = false;
     private String id;
     private char serverId;
@@ -184,6 +185,7 @@ public class BLEClient {
                         case BluetoothGatt.GATT_SUCCESS:
                             setId(new String(descriptor.getValue()));
                             Log.i(TAG, "OUD: onDescriptorRead: SUCCESS: id = " + getId());
+                            mGatt = gatt;
                             break;
 
                         case BluetoothGatt.GATT_READ_NOT_PERMITTED:
@@ -232,14 +234,6 @@ public class BLEClient {
             getIdFromServer(context);
         }
 
-    }
-
-    /**
-     * @return true se è in corso una scansione
-     */
-
-    public boolean isScanning() {
-        return isScanning;
     }
 
     public RoutingTable getRoutingTable() {

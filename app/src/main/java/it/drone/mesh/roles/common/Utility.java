@@ -110,7 +110,7 @@ public class Utility {
 
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] info) {
         byte[][] finalMessage = messageBuilder(firstByteMessageBuilder(info[0], info[1]), message);
-
+        boolean result = true;
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
             if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
@@ -124,6 +124,7 @@ public class Utility {
                                 chars.setValue(finalMessage[i]);
                                 gatt.beginReliableWrite();
                                 boolean res = gatt.writeCharacteristic(chars);
+                                result = res && result;
                                 gatt.executeReliableWrite();
                                 Log.d(TAG, "OUD: " + new String(finalMessage[i]));
                                 Log.d(TAG, "OUD: " + "Inviato? -> " + res);
@@ -132,7 +133,7 @@ public class Utility {
                                 } catch (Exception e) {
                                     Log.d(TAG, "OUD: " + "Andata male la wait");
                                 }
-                                return true;
+                                if (i == finalMessage.length - 1) return result;
                             }
                         }
                     }

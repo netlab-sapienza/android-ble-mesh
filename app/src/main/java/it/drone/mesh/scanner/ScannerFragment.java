@@ -71,7 +71,7 @@ public class ScannerFragment extends ListFragment {
     private Handler mHandler;
     private ArrayList<User> usersFound = new ArrayList<>();
     private ConnectBLETask connectBLETask;
-    private String id;
+    private String clientId;
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
 
 
@@ -161,6 +161,7 @@ public class ScannerFragment extends ListFragment {
         final Intent intent = new Intent(this.getContext(), ConnectionActivity.class);
         intent.putExtra(Constants.EXTRAS_DEVICE_NAME, device.getName());
         intent.putExtra(Constants.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+        intent.putExtra(Constants.EXTRAS_DEVICE_ID, clientId);
 
         startActivity(intent);
 
@@ -254,7 +255,7 @@ public class ScannerFragment extends ListFragment {
                 Log.d(TAG, "OUD: " + "id trovato dopo 2 secondi di attesa : " + tempId);
                 if (tempId != null) {
                     Log.d(TAG, "OUD: " + "id assegnato correttamente");
-                    id = tempId;
+                    clientId = tempId;
                     mAdapter.add(tempResult.get(offset));
                     mAdapter.notifyDataSetChanged();
                 } else {

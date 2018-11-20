@@ -4,8 +4,6 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -22,10 +20,10 @@ import java.util.NoSuchElementException;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
-import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.Utility;
 
 import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_ADDRESS;
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_ID;
 import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_NAME;
 
 public class ConnectionActivity extends Activity {
@@ -51,7 +49,7 @@ public class ConnectionActivity extends Activity {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mBluetoothSocket;
-
+    private String clientId;
     private User user;
 
     private TextView outputText;
@@ -77,6 +75,7 @@ public class ConnectionActivity extends Activity {
 
         mDeviceName = getIntent().getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = getIntent().getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        clientId = getIntent().getStringExtra(EXTRAS_DEVICE_ID);
 
 
         //IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -122,6 +121,12 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+        int[] info = new int[2];
+        info[0] = Integer.parseInt("" + clientId.charAt(0));
+        info[1] = Integer.parseInt("" + clientId.charAt(1));
+
+        boolean res = Utility.sendMessage(message, gatt, info);
+        Log.d(TAG, "OUD: " + "sendMessage: Inviato ? " + res);
         /*
         ConnectBLETask connectBLETask = null;
         while (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) || !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
@@ -143,6 +148,7 @@ public class ConnectionActivity extends Activity {
             }
         }
         */
+        /*
         byte[][] finalMessage = Utility.messageBuilder(Utility.firstByteMessageBuilder(4, 5), message);
 
         for (BluetoothGattService service : gatt.getServices()) {
@@ -172,7 +178,7 @@ public class ConnectionActivity extends Activity {
             }
 
         }
-        Log.d(TAG, "OUD: " + "sendMessage: end ");
+        Log.d(TAG, "OUD: " + "sendMessage: end ");*/
     }
 
     /**

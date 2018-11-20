@@ -1,9 +1,8 @@
 package it.drone.mesh.init;
 
-import android.bluetooth.BluetoothAdapter;
+import android.app.Activity;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -14,7 +13,7 @@ import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 import it.drone.mesh.roles.server.BLEServer;
 
-public class InitActivity extends AppCompatActivity {
+public class InitActivity extends Activity {
 
     ImageView isBtEnabled;
     ImageView isScanning;
@@ -30,7 +29,7 @@ public class InitActivity extends AppCompatActivity {
         isScanning = findViewById(R.id.scanning);
         whoAreYou = findViewById(R.id.whatami);
         startServices = findViewById(R.id.startServices);
-        isBtEnabled.setImageResource(!((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled() ? R.drawable.ic_bluetooth_24dp : R.drawable.ic_bluetooth_disabled_black_24dp);
+        isBtEnabled.setImageResource(((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled() ? R.drawable.ic_bluetooth_24dp : R.drawable.ic_bluetooth_disabled_black_24dp);
 
         startServices.setOnClickListener(new View.OnClickListener() {
             @Override

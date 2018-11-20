@@ -22,11 +22,11 @@ import java.util.NoSuchElementException;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
-import it.drone.mesh.utility.Constants;
-import it.drone.mesh.utility.Utility;
+import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.roles.common.Utility;
 
-import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_ADDRESS;
-import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_ADDRESS;
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_NAME;
 
 public class ConnectionActivity extends Activity {
 

@@ -16,12 +16,12 @@ import android.util.Log;
 import java.util.List;
 
 import it.drone.mesh.R;
+import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.ScanResultList;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 import it.drone.mesh.roles.server.BLEServer;
-import it.drone.mesh.utility.Constants;
 
 import static it.drone.mesh.roles.common.Utility.SCAN_PERIOD;
 import static it.drone.mesh.roles.common.Utility.buildScanFilters;

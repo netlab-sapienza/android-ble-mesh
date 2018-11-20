@@ -62,6 +62,12 @@
 
             </RelativeLayout>
 
+            <TextView
+                android:id="@+id/debugger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/debug_explain" />
+
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/scan_results"

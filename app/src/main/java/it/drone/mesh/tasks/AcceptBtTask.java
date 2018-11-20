@@ -12,7 +12,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import it.drone.mesh.models.User;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.roles.common.Constants;
 
 public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
     private static final String TAG = AcceptBtTask.class.getSimpleName();

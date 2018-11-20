@@ -20,7 +20,7 @@ import android.widget.Toast;
 import it.drone.mesh.advertiser.AdvertiserFragment;
 import it.drone.mesh.scanner.ScannerFragment;
 
-import static it.drone.mesh.utility.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.roles.common.Constants.REQUEST_ENABLE_BT;
 
 /**
  * Setup display fragments and ensure the device supports Bluetooth.

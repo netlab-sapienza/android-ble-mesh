@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.MainActivity;
 import it.drone.mesh.R;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.roles.common.Constants;
 
 /**
  * Manages BLE Advertising independent of the main app.

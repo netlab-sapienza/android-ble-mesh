@@ -12,7 +12,7 @@ import android.util.Log;
 import java.nio.charset.Charset;
 
 import it.drone.mesh.models.User;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.roles.common.Constants;
 
 public class ConnectBLETask {
     private final static String TAG = ConnectBLETask.class.getName();

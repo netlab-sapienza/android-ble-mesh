@@ -34,8 +34,8 @@ import it.drone.mesh.ConnectionActivity;
 import it.drone.mesh.R;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
+import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.tasks.ConnectBLETask;
-import it.drone.mesh.utility.Constants;
 
 
 /**

@@ -29,8 +29,9 @@ import java.util.List;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
-import it.drone.mesh.utility.Constants;
-import it.drone.mesh.utility.Utility;
+import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.roles.common.Utility;
+
 
 public class AcceptBLETask {
     private final static String TAG = AcceptBLETask.class.getName();
@@ -196,7 +197,7 @@ public class AcceptBLETask {
 
                         }
                     }, 5000);
-                    // TODO: 07/11/2018 perchè ogni volta si pulice la lista?
+                    // TODO: 07/11/2018 perchè ogni volta si pulisce la lista?
                     UserList.cleanUserList();
                     mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
                 }

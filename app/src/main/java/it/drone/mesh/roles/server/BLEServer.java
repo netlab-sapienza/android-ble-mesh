@@ -40,6 +40,8 @@ public class BLEServer {
     private final static String TAG = BLEServer.class.getSimpleName();
 
     private static BLEServer singleton;
+    private Context context;
+
     // potrebbero venir riutilizzati, quindi non convertire a local
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -92,15 +94,17 @@ public class BLEServer {
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             throw new NotEnabledException(context.getResources().getString(R.string.bt_not_enabled_leaving));
         }
+
+        this.context = context;
     }
 
     public static synchronized BLEServer getInstance(Context context) throws NotSupportedException, NotEnabledException {
         if (singleton == null)
-            singleton = new BLEServer(context);
+            singleton = new BLEServer(context.getApplicationContext());
         return singleton;
     }
 
-    public void initializeService(Context context) {
+    public void initializeService() {
 
         BluetoothGattServerCallback callback = new BluetoothGattServerCallback() {
             @Override
@@ -191,7 +195,6 @@ public class BLEServer {
     }
 
 
-
     public boolean sendMessage(String message) {
         // TODO: 13/11/18
         return true;
@@ -201,14 +204,14 @@ public class BLEServer {
      * Avvia la scansione. È consigliato chiamare prima un {@code isScanning()} per essere sicuri dell'esito corretto della scansione
      */
 
-    public void startScan(final Context context) {
+    public void startScan() {
         ScanResultList.getInstance().cleanList();
         if (!isScanning) {
             // Stops scanning after a pre-defined scan period.
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    stopScan(context);
+                    stopScan();
                 }
             }, SCAN_PERIOD);
 
@@ -221,7 +224,7 @@ public class BLEServer {
      * Blocca la scansione corrente, deve rimanere public perchè in caso di chiusura attività o dell'app anche la scansione deve bloccarsi
      */
 
-    public void stopScan(Context context) {
+    public void stopScan() {
         if (isScanning) {
             mBluetoothAdapter.getBluetoothLeScanner().stopScan(bleScanCallback);
             isScanning = false;

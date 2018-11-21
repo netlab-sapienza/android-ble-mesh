@@ -53,6 +53,8 @@ public class BLEClient {
     private static final String TAG = BLEClient.class.getSimpleName();
 
     private static BLEClient singleton;
+    private Context context;
+
     private BluetoothGatt mGatt;
     private boolean isScanning = false;
     private String id;
@@ -100,11 +102,12 @@ public class BLEClient {
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             throw new NotEnabledException(context.getResources().getString(R.string.bt_not_enabled_leaving));
         }
+        this.context = context;
     }
 
     public static BLEClient getInstance(Context context) throws NotEnabledException, NotSupportedException {
         if (singleton == null)
-            singleton = new BLEClient(context);
+            singleton = new BLEClient(context.getApplicationContext());
         return singleton;
     }
 
@@ -117,12 +120,12 @@ public class BLEClient {
         this.serverId = id.charAt(0);
     }
 
-    private void getIdFromServer(final Context context) {
+    private void getIdFromServer() {
 
         ScanResult candidate = ScanResultList.getInstance().removeFirst();
         if (candidate == null) {
             try {
-                BLEServer.getInstance(context).initializeService(context);
+                BLEServer.getInstance(context).initializeService();
             } catch (NotSupportedException e) {
                 e.printStackTrace();
                 // TODO: 16/11/18 richiesta che qualcun altro mi accolga nella rete perchè non posso essere server 
@@ -190,12 +193,12 @@ public class BLEClient {
 
                         case BluetoothGatt.GATT_READ_NOT_PERMITTED:
                             Log.i(TAG, "OUD: onDescriptorRead: read not permitted");
-                            getIdFromServer(context);
+                            getIdFromServer();
                             break;
 
                         default:
                             Log.e(TAG, "OUD: onDescriptorRead: status =  " + status);
-                            getIdFromServer(context);
+                            getIdFromServer();
                     }
                 }
             });
@@ -208,14 +211,14 @@ public class BLEClient {
      * Avvia la scansione. È consigliato chiamare prima un {@code isScanning()} per essere sicuri dell'esito corretto della scansione
      */
 
-    public void startScan(final Context context) {
+    public void startScan() {
         ScanResultList.getInstance().cleanList();
         if (!isScanning) {
             // Stops scanning after a pre-defined scan period.
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    stopScan(context);
+                    stopScan();
                 }
             }, SCAN_PERIOD);
 
@@ -227,11 +230,11 @@ public class BLEClient {
     /**
      * Blocca la scansione corrente, deve rimanere public perchè in caso di chiusura attività o dell'app anche la scansione deve bloccarsi
      */
-    public void stopScan(Context context) {
+    public void stopScan() {
         if (isScanning) {
             mBluetoothAdapter.getBluetoothLeScanner().stopScan(bleScanCallback);
             isScanning = false;
-            getIdFromServer(context);
+            getIdFromServer();
         }
 
     }

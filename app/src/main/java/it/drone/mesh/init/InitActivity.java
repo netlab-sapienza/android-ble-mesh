@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -20,6 +21,9 @@ public class InitActivity extends Activity {
     ImageView whoAreYou;
     ImageView startServices;
     BLEServer server;
+
+    RecyclerView recyclerDeviceList;
+    DeviceAdapter deviceAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +42,11 @@ public class InitActivity extends Activity {
                 initializeService();
             }
         });
+
+        recyclerDeviceList = findViewById(R.id.recy_scan_results);
+        deviceAdapter = new DeviceAdapter(server.getRoutingTable().getDevices());
+        recyclerDeviceList.setAdapter(deviceAdapter);
+        deviceAdapter.notifyDataSetChanged();
     }
 
     private void initializeService() {

@@ -14,7 +14,7 @@
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/device_address"
+        android:id="@+id/device_id"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/device_id_placeholder"
@@ -95,6 +95,7 @@
         android:text="@string/name" />
 
     <Button
+        android:id="@+id/button_test_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/outputText"

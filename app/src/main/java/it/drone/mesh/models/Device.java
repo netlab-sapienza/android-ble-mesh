@@ -1,62 +1,55 @@
 package it.drone.mesh.models;
 
 
-import android.content.Context;
 import android.os.SystemClock;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import it.drone.mesh.R;
-
 public class Device {
-    private String id;
 
+    private String id;
     private long lastTime;
-    // per il momento sono stringhe diventeranno qualcosa di decente a breve
-    private String input = "";
-    private String output = "";
+    private StringBuffer input;
+    private StringBuffer output;
     private String signalPower;
 
     public Device(String id, long lastTime, String signalPower) {
         this.id = id;
         this.lastTime = lastTime;
         this.signalPower = signalPower;
+        this.input = new StringBuffer();
+        this.output = new StringBuffer();
     }
 
     /**
      * Takes in a number of nanoseconds and returns a human-readable string giving a vague
      * description of how long ago that was.
      */
-    private String getTimeSinceString(Context context) {
-        String lastSeenText = context.getResources().getString(R.string.last_seen) + " ";
+    public String getTimeSinceString() {
+        String lastSeenText = "";
 
         long timeSince = SystemClock.elapsedRealtimeNanos() - lastTime;
         long secondsSince = TimeUnit.SECONDS.convert(timeSince, TimeUnit.NANOSECONDS);
 
         if (secondsSince < 5) {
-            lastSeenText += context.getResources().getString(R.string.just_now);
+            lastSeenText += "just now";
         } else if (secondsSince < 60) {
-            lastSeenText += secondsSince + " " + context.getResources()
-                    .getString(R.string.seconds_ago);
+            lastSeenText += secondsSince + " " + "seconds ago";
         } else {
             long minutesSince = TimeUnit.MINUTES.convert(secondsSince, TimeUnit.SECONDS);
             if (minutesSince < 60) {
                 if (minutesSince == 1) {
-                    lastSeenText += minutesSince + " " + context.getResources()
-                            .getString(R.string.minute_ago);
+                    lastSeenText += minutesSince + "minutes ago";
                 } else {
-                    lastSeenText += minutesSince + " " + context.getResources()
-                            .getString(R.string.minutes_ago);
+                    lastSeenText += minutesSince + " " + "minutes ago";
                 }
             } else {
                 long hoursSince = TimeUnit.HOURS.convert(minutesSince, TimeUnit.MINUTES);
                 if (hoursSince == 1) {
-                    lastSeenText += hoursSince + " " + context.getResources()
-                            .getString(R.string.hour_ago);
+                    lastSeenText += hoursSince + " " + "hours ago";
                 } else {
-                    lastSeenText += hoursSince + " " + context.getResources()
-                            .getString(R.string.hours_ago);
+                    lastSeenText += hoursSince + " " + "hours";
                 }
             }
         }
@@ -80,20 +73,20 @@ public class Device {
         this.lastTime = lastTime;
     }
 
-    public String getInput() {
+    public StringBuffer getInput() {
         return input;
     }
 
     public void writeInput(String input) {
-        this.input += input + "\n";
+        this.input.append(input);
     }
 
-    public String getOutput() {
+    public StringBuffer getOutput() {
         return output;
     }
 
     public void writeOutput(String output) {
-        this.output += output + "\n";
+        this.output.append(output);
     }
 
     public String getSignalPower() {

@@ -25,6 +25,7 @@ public class Utility {
     public static String TAG = Utility.class.getSimpleName();
     public static int PACK_LEN = 18;
     public static int SINGLE_PACK_MESSAGE_LEN = 17;
+    public static int DEST_PACK_MESSAGE_LEN = 17;
 
     public static int getBit(byte val, int offset) {
         return (val >> offset) & 1;
@@ -48,11 +49,11 @@ public class Utility {
         Log.d(TAG, "OUD: " + s);
     }
 
-    public static byte firstByteMessageBuilder(int serverId, int clientId) {
+    public static byte byteMessageBuilder(int serverId, int clientId) {
         byte b = 0b00000000;
 
-        Integer server = new Integer(serverId);
-        Integer client = new Integer(clientId);
+        Integer server = serverId;
+        Integer client = clientId;
 
         byte serv = server.byteValue();
         byte clie = client.byteValue();
@@ -93,7 +94,37 @@ public class Utility {
         return finalMessage;
     }
 
-    public static int[] getFirstByteInfo(byte firstByte) {
+    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message) {
+        byte[] sInByte = message.getBytes();
+
+        int numPacks = (int) Math.floor(sInByte.length / DEST_PACK_MESSAGE_LEN);
+        byte[][] finalMessage = new byte[numPacks + 1][PACK_LEN];
+        int lastLen = sInByte.length % DEST_PACK_MESSAGE_LEN;
+
+        for (int i = 0; i < numPacks + 1; i++) {
+            if (i == numPacks) {
+                byte[] pack = new byte[lastLen + 1];
+                firstByte = clearBit(firstByte, 0);
+                pack[0] = firstByte;
+                pack[1] = destByte;
+                for (int j = 1; j < lastLen; j++) {
+                    pack[j + 1] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
+                }
+                finalMessage[i] = pack;
+                break;
+            }
+            byte[] pack = new byte[PACK_LEN];
+            pack[0] = firstByte;
+            pack[1] = destByte;
+            for (int j = 1; j < DEST_PACK_MESSAGE_LEN; j++) {
+                pack[j + 1] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
+            }
+            finalMessage[i] = pack;
+        }
+        return finalMessage;
+    }
+
+    public static int[] getByteInfo(byte firstByte) {
         int[] ret = new int[3];
         ret[2] = getBit(firstByte, 0);
         ret[1] = getBit(firstByte, 1) + getBit(firstByte, 2) * 2 + getBit(firstByte, 3) * 4;
@@ -109,7 +140,7 @@ public class Utility {
     }
 
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] info) {
-        byte[][] finalMessage = messageBuilder(firstByteMessageBuilder(info[0], info[1]), message);
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(info[0], info[1]), message);
         boolean result = true;
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
@@ -119,7 +150,42 @@ public class Utility {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                            // TODO: 20/11/18 fa solo un iterazione, è corretto?
+                            for (int i = 0; i < finalMessage.length; i++) {
+                                chars.setValue(finalMessage[i]);
+                                gatt.beginReliableWrite();
+                                boolean res = gatt.writeCharacteristic(chars);
+                                result = res && result;
+                                gatt.executeReliableWrite();
+                                Log.d(TAG, "OUD: " + new String(finalMessage[i]));
+                                Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                                try {
+                                    Thread.sleep(300);
+                                } catch (Exception e) {
+                                    Log.d(TAG, "OUD: " + "Andata male la wait");
+                                }
+                                if (i == finalMessage.length - 1) return result;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        Log.d(TAG, "OUD: " + "sendMessage: end ");
+        return false;
+    }
+
+    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
+        boolean result = true;
+        for (BluetoothGattService service : gatt.getServices()) {
+            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
+            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
+                if (service.getCharacteristics() != null) {
+                    for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
+                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
                             for (int i = 0; i < finalMessage.length; i++) {
                                 chars.setValue(finalMessage[i]);
                                 gatt.beginReliableWrite();

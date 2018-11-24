@@ -44,7 +44,7 @@ public class InitActivity extends Activity {
         });
 
         recyclerDeviceList = findViewById(R.id.recy_scan_results);
-        deviceAdapter = new DeviceAdapter(server.getRoutingTable().getDevices());
+        //deviceAdapter = new DeviceAdapter(server.getRoutingTable().getDevices());
         recyclerDeviceList.setAdapter(deviceAdapter);
         deviceAdapter.notifyDataSetChanged();
     }

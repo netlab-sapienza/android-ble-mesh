@@ -121,11 +121,15 @@ public class ConnectionActivity extends Activity {
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
-        int[] info = new int[2];
-        info[0] = Integer.parseInt("" + clientId.charAt(0));
-        info[1] = Integer.parseInt("" + clientId.charAt(1));
+        int[] infoSorg = new int[2];
+        infoSorg[0] = Integer.parseInt("" + clientId.charAt(0));
+        infoSorg[1] = Integer.parseInt("" + clientId.charAt(1));
 
-        boolean res = Utility.sendMessage(message, gatt, info);
+        int[] infoDest = new int[2];
+        infoDest[0] = Integer.parseInt("1");    //id del destinatario Server
+        infoDest[1] = Integer.parseInt("1");    //id del destinatario Client
+
+        boolean res = Utility.sendMessage(message, gatt, infoSorg, infoDest);
         Log.d(TAG, "OUD: " + "sendMessage: Inviato ? " + res);
         /*
         ConnectBLETask connectBLETask = null;
@@ -149,7 +153,7 @@ public class ConnectionActivity extends Activity {
         }
         */
         /*
-        byte[][] finalMessage = Utility.messageBuilder(Utility.firstByteMessageBuilder(4, 5), message);
+        byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(4, 5), message);
 
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");

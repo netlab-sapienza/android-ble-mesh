@@ -242,11 +242,6 @@ public class ScannerFragment extends ListFragment {
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
         connectBLETask.startClient();
-        try {
-            Thread.sleep(200);
-        } catch (Exception e) {
-            Log.d(TAG, "OUD: " + "Andata male la wait");
-        }
         Handler mHandler = new Handler();
         mHandler.postDelayed(new Runnable() {
             @Override
@@ -262,7 +257,7 @@ public class ScannerFragment extends ListFragment {
                     tryConnection(offset + 1);
                 }
             }
-        }, 2000);
+        }, 5000);
         Log.d(TAG, "OUD: " + "It worked");
     }
 

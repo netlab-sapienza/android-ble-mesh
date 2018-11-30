@@ -1,10 +1,12 @@
 package it.drone.mesh.roles.server;
 
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
 import java.util.LinkedList;
 
 public class serverNode {
+    private String TAG = this.getClass().getSimpleName();
     private String id;
     private int numRequest;
     //private BluetoothDevice device;
@@ -20,7 +22,10 @@ public class serverNode {
     public serverNode(String id) {
         this.id = id;
         nearServers = new LinkedList<>();
-        clientList = new BluetoothDevice[7];
+        clientList = new BluetoothDevice[CLIENT_LIST_SIZE];
+        for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
+            clientList[i] = null;
+        }
     }
 
     public serverNode getServer(String serverId) {
@@ -89,11 +94,22 @@ public class serverNode {
 
     public int nextId(BluetoothDevice dev) {
         for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-            if (dev.equals(clientList[i])) return -1;
+            if (dev.equals(clientList[i])) {
+                Log.d(TAG, "OUD: " + "Utente già presente");
+                return -1;
+            }
         }
         for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) return i + 1;
         }
+        Log.d(TAG, "OUD: " + "Lista piena");
         return -1;
+    }
+    
+    public boolean isFull() {
+        for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
+            if(clientList[i] == null) return false;
+        }
+        return true;
     }
 }

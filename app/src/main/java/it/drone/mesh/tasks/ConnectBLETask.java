@@ -7,9 +7,13 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.nio.charset.Charset;
+import java.util.HashMap;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.common.Constants;
@@ -24,6 +28,7 @@ public class ConnectBLETask {
     private Context context;
     private boolean serviceDiscovered;
     private String id;
+    private HashMap<String, String> messageMap;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
@@ -34,12 +39,13 @@ public class ConnectBLETask {
         this.id = null;
     }
 
-    public ConnectBLETask(User user, Context context) {
+    public ConnectBLETask(User user,final Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.serviceDiscovered = false;
         this.id = null;
+        this.messageMap = new HashMap<>();
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
@@ -109,21 +115,48 @@ public class ConnectBLETask {
                 // TODO: 23/11/18 PARSING corretto del messaggio
                 Log.d(TAG, "OUD: " + "Characteristic changed");
                 byte[] value = characteristic.getValue();
-                String valueReceived;
+                final String valueReceived;
                 byte[] correct_message = new byte[value.length - 2];
                 byte sorgByte = value[0];
                 final int[] infoSorg = Utility.getByteInfo(sorgByte);
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
-                if (id.equals("" + infoDest[0] + infoDest[1]))
-                    Log.d(TAG, "OUD: " + "sono il destinatario corretto");
+
+                if (id.equals("" + infoDest[0] + infoDest[1])) Log.d(TAG, "OUD: " + "sono il destinatario corretto");
                 else Log.d(TAG, "OUD: " + "sono il destinatario sbagliato");
+
                 for (int i = 0; i < value.length - 2; i++) {
                     correct_message[i] = value[i + 2];
                 }
+
+                final String senderId = Utility.getStringId(sorgByte);
+
+
                 valueReceived = new String(correct_message);
                 Log.d(TAG, "OUD: " + valueReceived);
-                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + infoSorg[0] + infoSorg[1] + " mi ha inviato: " + valueReceived);
+
+                String previousMsg = messageMap.get(senderId);
+
+                if (previousMsg == null) previousMsg = "";
+                messageMap.put(senderId, previousMsg + valueReceived);
+
+                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " + valueReceived);
+                if (Utility.getBit(sorgByte, 0) != 0) {
+                    Log.d(TAG, "OUD: " + "NOT last message");
+                }
+                else {
+                    Log.d(TAG, "OUD: " + "YES last message");
+                    Handler mHandler = new Handler(Looper.getMainLooper());
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId  + ", messaggio: " + messageMap.get(senderId), Toast.LENGTH_SHORT).show();
+                            messageMap.remove(senderId);
+                        }
+                    });
+
+                }
+
                 super.onCharacteristicChanged(gatt, characteristic);
             }
 
@@ -149,7 +182,8 @@ public class ConnectBLETask {
                     } else {
                         Log.d(TAG, "OUD: " + "Nessun operazione con tale descrittore : " + descriptor.getUuid().toString());
                     }
-                } else if (status == 6) Log.d(TAG, "OUD: " + "id gia inizializzato");
+                }
+                else if (status == 6) Log.d(TAG, "OUD: " + "id gia inizializzato");
                 else Log.d(TAG, "OUD: " + "status non conosciuto");
                 super.onDescriptorRead(gatt, descriptor, status);
             }
@@ -200,6 +234,10 @@ public class ConnectBLETask {
     public void stopClient() {
         this.mGatt.disconnect();
         this.mGatt = null;
+    }
+
+    public boolean hasCorrectId() {
+        return this.id != null && this.id.length() >= 2;
     }
 
     public String getId() {

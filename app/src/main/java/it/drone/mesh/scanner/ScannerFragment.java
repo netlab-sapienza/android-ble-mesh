@@ -70,7 +70,7 @@ public class ScannerFragment extends ListFragment {
     private ScanResultAdapter mAdapter;
     private Handler mHandler;
     private ArrayList<User> usersFound = new ArrayList<>();
-    private ConnectBLETask connectBLETask;
+    private ConnectBLETask connectBLE;
     private String clientId;
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
 
@@ -103,6 +103,7 @@ public class ScannerFragment extends ListFragment {
         mAdapter = new ScanResultAdapter(getActivity().getApplicationContext(),
                 LayoutInflater.from(getActivity()));
         mHandler = new Handler();
+        connectBLE = null;
 
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         getActivity().getApplicationContext().registerReceiver(mReceiver, filter);
@@ -126,7 +127,7 @@ public class ScannerFragment extends ListFragment {
         setEmptyText(getString(R.string.empty_list));
 
         // Trigger refresh on app's 1st load
-        startScanning();
+        //startScanning();
 
     }
 
@@ -236,6 +237,10 @@ public class ScannerFragment extends ListFragment {
     }
 
     public void tryConnection(final int offset) {
+        if(connectBLE != null) {
+            Log.d(TAG, "OUD: " + "Sei già un client con id " + connectBLE.getId());
+            return;
+        }
         final int size = UserList.getUserList().size();
         if (offset >= size) return; //TODO diventa server
         final User newUser = UserList.getUser(offset);
@@ -246,19 +251,27 @@ public class ScannerFragment extends ListFragment {
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                String tempId = connectBLETask.getId();
-                Log.d(TAG, "OUD: " + "id trovato dopo 2 secondi di attesa : " + tempId);
-                if (tempId != null) {
-                    Log.d(TAG, "OUD: " + "id assegnato correttamente");
-                    clientId = tempId;
-                    mAdapter.add(tempResult.get(offset));
-                    mAdapter.notifyDataSetChanged();
-                } else {
+                if(connectBLETask.hasCorrectId()) {
+                    String tempId = connectBLETask.getId();
+                    Log.d(TAG, "OUD: " + "id trovato dopo 5 secondi di attesa : " + tempId);
+                    int parsed;
+                    try {
+                        parsed = Integer.parseInt(tempId);
+                        Log.d(TAG, "OUD: " + "id assegnato correttamente");
+                        clientId = parsed + "";
+                        connectBLE = connectBLETask;
+                        mAdapter.add(tempResult.get(offset));
+                        mAdapter.notifyDataSetChanged();
+                    } catch(Exception e) {
+                        Log.d(TAG, "OUD: " + "id non assegnato");
+                        tryConnection(offset + 1);
+                    }
+                }
+                else {
                     tryConnection(offset + 1);
                 }
             }
         }, 5000);
-        Log.d(TAG, "OUD: " + "It worked");
     }
 
     /**

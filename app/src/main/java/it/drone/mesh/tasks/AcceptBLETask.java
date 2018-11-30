@@ -238,19 +238,21 @@ public class AcceptBLETask {
                     int current_id = mNode.nextId(device);
                     if (current_id == -1) {
                         mGattServer.sendResponse(device, requestId, 6, 0, descriptor.getValue());
-                    } else {
+                    }
+                    else {
                         // TODO: 24/11/18 notify all client that another one is online
                         mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                         mNode.setClientOnline("" + current_id, device);
-                        String value = "" + (mNode.nextId(device));
+                        String value = "" + (current_id + 1);
                         mGattDescriptorNextId.setValue(value.getBytes());
-                        Log.d(TAG, "OUD: " + "NExtId: " + value);
+                        Log.d(TAG, "OUD: " + "NextId: " + value);
                     }
-                } else {
-                    int current_id = mNode.nextId(device);
-                    if (current_id == -1) {
+                }
+                else {
+                    if (mNode.isFull()) {
                         mGattServer.sendResponse(device, requestId, 6, 0, descriptor.getValue());
-                    } else {
+                    }
+                    else {
                         mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                     }
                 }

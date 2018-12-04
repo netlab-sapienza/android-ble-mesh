@@ -15,7 +15,8 @@ public class ServerNode {
     private LinkedList<ServerNode> nearServers;
     private LinkedList<ServerNode> routingTable;
     private BluetoothDevice[] clientList;
-    private int CLIENT_LIST_SIZE = 7;
+    private static final int CLIENT_LIST_SIZE = 7;
+    private static final int SERVER_PACKET_SIZE = 10;
     /*
     public ServerNode(String id, BluetoothDevice device) {
         this.id = id;
@@ -171,7 +172,7 @@ public class ServerNode {
         for(ServerNode s: nearServers){
             int index = Integer.parseInt(s.getId());
             if (Utility.getBit(destArrayByte[index][0],0) == 1 || (Utility.getBit(destArrayByte[index][0],1)) == 1 || (Utility.getBit(destArrayByte[index][0],2)) == 1 || (Utility.getBit(destArrayByte[index][0],3)) == 1) continue;
-            byte[] tempArrayByte = new byte[10];
+            byte[] tempArrayByte = new byte[SERVER_PACKET_SIZE];
             int clientId = Integer.parseInt(s.getId());
             int serverId = 0;
             byte firstByte = Utility.byteNearServerBuilder(serverId, clientId);
@@ -196,35 +197,38 @@ public class ServerNode {
                 tempIndex++;
                 i++;
             }
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < SERVER_PACKET_SIZE; i++) {
                 destArrayByte[index][i] = tempArrayByte[i];
             }
             s.parseMapToByte(destArrayByte);
         }
 
     }
+
     public static ServerNode buildRoutingTable(byte[][] mapByte, String id) {
-        ServerNode[] arrayNode = new ServerNode[16];
-        for (int i = 1;i < 16;i++){
+        ServerNode[] arrayNode = new ServerNode[Utility.DEST_PACK_MESSAGE_LEN];
+        for (int i = 1;i < Utility.DEST_PACK_MESSAGE_LEN;i++){
             if (Utility.getBit(mapByte[i][0],0) == 1 || (Utility.getBit(mapByte[i][0],1)) == 1 || (Utility.getBit(mapByte[i][0],2)) == 1 || (Utility.getBit(mapByte[i][0],3)) == 1) {
                 arrayNode[i] = new ServerNode(""+i);
             }
         }
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < Utility.DEST_PACK_MESSAGE_LEN; i++) {
             if (arrayNode[i] != null) {
                 byte clientByte = mapByte[i][1] ;
                 for(int k = 0;k < 8;k++) {
                     if (Utility.getBit(clientByte, k) == 1 ) arrayNode[i].setClientOnline("" + k, null); // TODO: 04/12/18 VEDERE COME PASSARSI IL DEVICE
                 }
-                for (int k = 2;k < 10;k++) {
+                for (int k = 2;k < SERVER_PACKET_SIZE;k++) {
                     byte nearServerByte = mapByte[i][k];
                     int[] infoNearServer = Utility.getIdServerByteInfo(nearServerByte);
                     if (infoNearServer[0] != 0) {
                         arrayNode[i].addNearServer(arrayNode[infoNearServer[0]]);
                     }
+                    else break;
                     if (infoNearServer[1] != 0) {
                         arrayNode[i].addNearServer(arrayNode[infoNearServer[1]]);
                     }
+                    else break;
                 }
             }
         }

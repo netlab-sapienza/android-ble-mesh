@@ -35,7 +35,7 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         //mBluetoothAdapter.cancelDiscovery();
         // Creates the Server Socket
         try {
-            user.setBluetoothServerSocket(mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("HIRO-NET", Constants.Service_UUID.getUuid()));
+            user.setBluetoothServerSocket(mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("HIRO-NET", Constants.ServiceUUID));
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + "Couldn't create a Socket");
         }

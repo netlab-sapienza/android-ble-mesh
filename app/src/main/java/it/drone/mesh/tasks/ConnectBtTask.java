@@ -30,7 +30,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         //mBluetoothAdapter.cancelDiscovery();
         BluetoothSocket tmp = null;
         try {
-            tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.Service_UUID.getUuid());
+            tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.ServiceUUID);
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + e.toString());
         }

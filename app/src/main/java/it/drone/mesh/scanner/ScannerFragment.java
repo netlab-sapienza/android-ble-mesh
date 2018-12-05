@@ -193,7 +193,7 @@ public class ScannerFragment extends ListFragment {
                     + getString(R.string.seconds);
             Toast.makeText(getActivity(), toastText, Toast.LENGTH_LONG).show();
         } else {
-            Toast.makeText(getActivity(), R.string.already_scanning, Toast.LENGTH_SHORT);
+            Toast.makeText(getActivity(), R.string.already_scanning, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -242,7 +242,9 @@ public class ScannerFragment extends ListFragment {
             return;
         }
         final int size = UserList.getUserList().size();
-        if (offset >= size) return; //TODO diventa server
+        if (offset >= size) {
+
+        }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());

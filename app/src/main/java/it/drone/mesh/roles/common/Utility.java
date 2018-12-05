@@ -1,6 +1,8 @@
 package it.drone.mesh.roles.common;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.le.ScanFilter;
@@ -11,6 +13,10 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import it.drone.mesh.models.User;
+import it.drone.mesh.roles.server.ServerNode;
+import it.drone.mesh.tasks.ConnectBLETask;
 
 /**
  * Tutte i metodi e le variabile condivise da server e client (quelle per la scansione per esempio) vengono messi qua.
@@ -165,12 +171,12 @@ public class Utility {
         boolean result = true;
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
-            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+            if (service.getUuid().equals(Constants.ServiceUUID)) {
                 Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                        if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
                             for (int i = 0; i < finalMessage.length; i++) {
                                 chars.setValue(finalMessage[i]);
                                 gatt.beginReliableWrite();
@@ -201,12 +207,12 @@ public class Utility {
         boolean result = true;
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
-            if (service.getUuid().toString().equals(Constants.Service_UUID.toString())) {
+            if (service.getUuid().equals(Constants.ServiceUUID)) {
                 Log.d(TAG, "OUD: " + "sendMessage: service.equals");
                 if (service.getCharacteristics() != null) {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                        if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
+                        if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
                             for (int i = 0; i < finalMessage.length; i++) {
                                 chars.setValue(finalMessage[i]);
                                 gatt.beginReliableWrite();
@@ -264,5 +270,55 @@ public class Utility {
         builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
         //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
         return builder.build();
+    }
+    public static ConnectBLETask sendBroadcastNextServerid(BluetoothDevice device, final String nextId, Context context,final byte[] value){
+        User u = new User(device,device.getName());
+        ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                BluetoothGattService service =  gatt.getService(Constants.ServiceUUID);
+                if (service == null) return;
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicNextServerIdUUID);
+                if (characteristic == null) return;
+                boolean res = gatt.readCharacteristic(characteristic);
+                Log.d(TAG, "OUD: " + "Read Characteristic nextServerID: " + res);
+                super.onServicesDiscovered(gatt, status);
+            }
+
+            @Override
+            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    String temp = new String(characteristic.getValue());
+                    if (Integer.parseInt(nextId) > Integer.parseInt(temp)) {
+                        characteristic.setValue(""+(Integer.parseInt(nextId)));
+                        gatt.beginReliableWrite();
+                        boolean res = gatt.writeCharacteristic(characteristic);
+                        Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
+                        gatt.executeReliableWrite();
+                    }
+
+                }
+                super.onCharacteristicRead(gatt, characteristic, status);
+            }
+
+            @Override
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                Log.d(TAG, "OUD: " + "i wrote a characteristic !");
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    String temp = new String(value);
+                    BluetoothGattService service =  gatt.getService(Constants.RoutingTableServiceUUID);
+                    if (service == null) return;
+                    BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
+                    if (characteristic1 == null) return;
+                    characteristic1.setValue(temp);
+                    gatt.beginReliableWrite();
+                    boolean res = gatt.writeCharacteristic(characteristic1);
+                    Log.d(TAG, "OUD: " + "write charac? " + res);
+                    gatt.executeReliableWrite();
+                }
+                super.onCharacteristicWrite(gatt, characteristic, status);
+            }
+        });
+        return client;
     }
 }

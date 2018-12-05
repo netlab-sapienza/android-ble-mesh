@@ -243,10 +243,11 @@ public class ServerNode {
         for (int i = 0;i < CLIENT_LIST_SIZE;i++) {
             if (clientList[i] != null) res[1] = Utility.setBit(res[1],i+1);
         }
+        // TODO: 05/12/18 aggiungi vicini ---> tocca passare in qualche modo l'id per ogni server nella lista askserver 
         return res;
     }
 
     public void updateRoutingTable(byte[] value) {
-
+        // TODO: 05/12/18 aggiorna routing 
     }
 }

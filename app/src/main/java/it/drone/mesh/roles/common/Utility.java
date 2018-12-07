@@ -309,7 +309,7 @@ public class Utility {
         return builder.build();
     }
 
-    public static ConnectBLETask sendBroadcastRoutingTable(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
+    public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         User u = new User(device,device.getName());
         ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
@@ -380,9 +380,9 @@ public class Utility {
         return res;
     }
 
-    public static ConnectBLETask sendBroadcastNextServerid(BluetoothDevice device, final String nextId, Context context, final byte[] value) {
+    public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, final String nextId, Context context, final byte[] value) {
         User u = new User(device, device.getName());
-        ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        return new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
@@ -399,7 +399,7 @@ public class Utility {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     String temp = new String(characteristic.getValue());
                     if (Integer.parseInt(nextId) > Integer.parseInt(temp)) {
-                        characteristic.setValue("" + (Integer.parseInt(nextId)));
+                        characteristic.setValue(nextId);
                         gatt.beginReliableWrite();
                         boolean res = gatt.writeCharacteristic(characteristic);
                         Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
@@ -428,6 +428,5 @@ public class Utility {
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
         });
-        return client;
     }
 }

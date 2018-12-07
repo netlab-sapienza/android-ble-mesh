@@ -127,7 +127,7 @@ public class AdvertiserService extends Service {
      * Starts BLE Advertising.
      */
     private void startAdvertising() {
-        goForeground();
+        //goForeground();
 
         Log.d(TAG, "OUD: " + "Service: Starting Advertising");
 

@@ -15,8 +15,8 @@ public class ServerNode {
     private LinkedList<ServerNode> nearServers;
     private LinkedList<ServerNode> routingTable;
     private BluetoothDevice[] clientList;
-    private static final int CLIENT_LIST_SIZE = 7;
-    private static final int SERVER_PACKET_SIZE = 11;
+    public static final int CLIENT_LIST_SIZE = 7;
+    public static final int SERVER_PACKET_SIZE = 11;
     /*
     public ServerNode(String id, BluetoothDevice device) {
         this.id = id;
@@ -238,16 +238,49 @@ public class ServerNode {
         return arrayNode[Integer.parseInt(id)];
     }
     public byte[] parseNewServer() {
+        Log.d(TAG, "OUD: " + "Near Server :" + nearServers.size());
         byte[] res = new byte[16];
         res[0] = Utility.byteNearServerBuilder(0,Integer.parseInt(this.id));
+        res[1] = Utility.setBit(res[1],0);
         for (int i = 0;i < CLIENT_LIST_SIZE;i++) {
-            if (clientList[i] != null) res[1] = Utility.setBit(res[1],i+1);
+            if (clientList[i] != null) res[1] = Utility.setBit(res[2],i+1);
+        }
+        for (int i = 3; i <16 ; i++) {
+            if (nearServers.size() <= i-3) break;
+            else if (nearServers.size() == i-2) {
+                byte temp = Utility.byteNearServerBuilder(Integer.parseInt(nearServers.get(i-3).getId()),0);
+                res[i] = temp;
+            }
+            else {
+                byte temp = Utility.byteNearServerBuilder(Integer.parseInt(nearServers.get(i-3).getId()),Integer.parseInt(nearServers.get(i-2).getId()));
+                res[i] = temp;
+            }
         }
         // TODO: 05/12/18 aggiungi vicini ---> tocca passare in qualche modo l'id per ogni server nella lista askserver 
         return res;
     }
 
     public void updateRoutingTable(byte[] value) {
-        // TODO: 05/12/18 aggiorna routing 
+        // TODO: 05/12/18 aggiorna routing
+        byte idByte = value[0];
+        int index = Utility.getBit(idByte,0) + Utility.getBit(idByte,1) * 2 + Utility.getBit(idByte,2) * 4 + Utility.getBit(idByte,3) * 8;
+        ServerNode nuovoServer = new ServerNode(""+index);
+        for (int i = 0; i <8 ; i++) {
+            if (Utility.getBit(value[2],i) == 1) nuovoServer.setClientOnline(""+i,null);
+        }
+        for (int i = 3; i<16;i++ ) {
+            int tempId = Utility.getBit(value[i],4) + Utility.getBit(idByte,5) * 2 + Utility.getBit(idByte,6) * 4 + Utility.getBit(idByte,7) * 8;
+            if (tempId==0) break;
+            if((""+tempId).equals(this.id)) addNearServer(nuovoServer);
+            else {
+                ServerNode tempServer = getServer(""+tempId);
+                if (tempServer != null) tempServer.addNearServer(nuovoServer);
+            }
+        }
+
+        for (int i = 0; i < 16; i++) {
+            ServerNode n = getServer(""+i);
+            if(n != null) n.printStatus();
+        }
     }
 }

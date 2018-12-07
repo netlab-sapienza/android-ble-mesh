@@ -2,7 +2,13 @@ package it.drone.mesh.scanner;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -14,6 +20,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,9 +39,11 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.ConnectionActivity;
 import it.drone.mesh.R;
+import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 
@@ -73,6 +82,7 @@ public class ScannerFragment extends ListFragment {
     private ConnectBLETask connectBLE;
     private String clientId;
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
+    private LinkedList<String> idList = new LinkedList<>();
 
 
     /**
@@ -206,10 +216,76 @@ public class ScannerFragment extends ListFragment {
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
-
-        tryConnection(0);
+        
+        askIdNearServer(0);
+        
+        tryConnection(10);
         // Even if no new results, update 'last seen' times.
         mAdapter.notifyDataSetChanged();
+    }
+
+    private void askIdNearServer(final int offset) {
+        if(connectBLE != null) {
+            Log.d(TAG, "OUD: " + "Sei già un client con id " + connectBLE.getId());
+            return;
+        }
+        final int size = UserList.getUserList().size();
+        if (offset >= size) return;
+
+        final User newUser = UserList.getUser(offset);
+        Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
+        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext(), new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                    gatt.discoverServices();
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
+                }
+            }
+
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                BluetoothGattService service =  gatt.getService(Constants.ServiceUUID);
+                if (service == null) return;
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                if (characteristic == null) return;
+                BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
+                if (desc==null) return;
+                boolean res = gatt.readDescriptor(desc);
+                Log.d(TAG, "OUD: " + "Read Server id: " + res);
+                super.onServicesDiscovered(gatt, status);
+            }
+
+            @Override
+            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+
+                super.onCharacteristicRead(gatt, characteristic, status);
+            }
+
+            @Override
+            public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                if(status == BluetoothGatt.GATT_SUCCESS) {
+                    String val = new String(descriptor.getValue());
+                    if(val.length() > 0) {
+                        idList.add(val);
+                        Log.d(TAG, "OUD: " + "id aggiunto :" + val);
+                    }
+                }
+                super.onDescriptorRead(gatt, descriptor, status);
+            }
+        });
+        connectBLETask.startClient();
+        Handler mHandler = new Handler();
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                    Log.d(TAG, "OUD: " + "passo al prossimo server");
+                    askIdNearServer(offset + 1);
+            }
+        },1000);
+
     }
 
     /**
@@ -222,6 +298,10 @@ public class ScannerFragment extends ListFragment {
         // Comment out the below line to see all BLE devices around you
         builder.setServiceUuid(Constants.Service_UUID);
         scanFilters.add(builder.build());
+        //ScanFilter.Builder builder2 = new ScanFilter.Builder();
+        // Comment out the below line to see all BLE devices around you
+        //builder2.setServiceUuid(new ParcelUuid(Constants.RoutingTableServiceUUID));
+        //scanFilters.add(builder2.build());
 
         return scanFilters;
     }
@@ -243,7 +323,16 @@ public class ScannerFragment extends ListFragment {
         }
         final int size = UserList.getUserList().size();
         if (offset >= size) {
-
+            Context c = getActivity();
+            if(c != null)  {
+                c.startService(new Intent(c, AdvertiserService.class));
+                Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
+                AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
+                acceptBLETask.setStartServerList(tempResult);
+                acceptBLETask.insertIdInMap(idList);
+                acceptBLETask.startServer();
+            }
+            return;
         }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
@@ -265,15 +354,16 @@ public class ScannerFragment extends ListFragment {
                         mAdapter.add(tempResult.get(offset));
                         mAdapter.notifyDataSetChanged();
                     } catch(Exception e) {
-                        Log.d(TAG, "OUD: " + "id non assegnato");
+                        Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
                         tryConnection(offset + 1);
                     }
                 }
                 else {
+                    Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
                     tryConnection(offset + 1);
                 }
             }
-        }, 5000);
+        }, 10000);
     }
 
     /**

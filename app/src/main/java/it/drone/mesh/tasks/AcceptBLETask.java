@@ -19,6 +19,7 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -53,7 +54,10 @@ public class AcceptBLETask {
     private Context context;
     private ServerNode mNode;
     private LinkedList<ScanResult> serversToAsk;
+    private LinkedList<String> nearId;
     private String id;
+
+
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothAdapter = mBluetoothAdapter;
@@ -61,13 +65,14 @@ public class AcceptBLETask {
         this.context = context;
         messageMap = new HashMap<>();
         serversToAsk = null;
+        nearId = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         mGattCharacteristic = new BluetoothGattCharacteristic(Constants.CharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattDescriptor = new BluetoothGattDescriptor(Constants.DescriptorUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattDescriptorNextId = new BluetoothGattDescriptor(Constants.NEXT_ID_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientConfigurationDescriptor = new BluetoothGattDescriptor(Constants.Client_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
-        mGattServiceRoutingTable = new BluetoothGattService(Constants.RoutingTableServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        mGattServiceRoutingTable = new BluetoothGattService(Constants.RoutingTableServiceUUID, BluetoothGattService.SERVICE_TYPE_SECONDARY);
         mGattCharacteristicRoutingTable = new BluetoothGattCharacteristic(Constants.RoutingTableCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattDescriptorRoutingTable = new BluetoothGattDescriptor(Constants.RoutingTableDescriptorUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattServerCallback = new BluetoothGattServerCallback() {
@@ -96,7 +101,7 @@ public class AcceptBLETask {
             @Override
             public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
                 Log.d(TAG, "OUD: " + "I've been asked to read from " + device.getName());
-                mGattServer.sendResponse(device, requestId, 0, 0, null);
+                mGattServer.sendResponse(device, requestId, 0, 0, characteristic.getValue());
                 super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
             }
 
@@ -104,28 +109,55 @@ public class AcceptBLETask {
             @Override
             public void onCharacteristicWriteRequest(final BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
                 if (characteristic.getUuid().equals(Constants.CharacteristicNextServerIdUUID)) {
+                    Log.d(TAG, "OUD: " + "nextId: "+ new String(value));
                     mGattServer.sendResponse(device,requestId,0,0,value);
                 }
                 else if(characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)){
+                    Log.d(TAG, "OUD: " + "Routing UUID");
                     if (value.length >= 4) {
                         byte flagByte = value[1];
-                        if (Utility.getBit(flagByte,0) == 1) {  //NuovoServer
-                            mNode.updateRoutingTable(value);
-                            mGattServer.sendResponse(device, requestId, 0, 0, null);
-                            for (ScanResult temp : serversToAsk) {
-                                ConnectBLETask client = Utility.sendBroadcastNextServerid(device,new String(value),context,value);
-                                client.startClient();
-                                try {
-                                    Thread.sleep(1000);
-                                    client.stopClient();
-                                } catch (Exception e) {
-                                    client.stopClient();
-                                    Log.d(TAG, "OUD: " + "Andata male la wait");
-                                }
+                        if (Utility.getBit(flagByte,0) == 1) {  //il primo bit del secondo byte indica che è la richiesta di unione alla rete da parte di un nuovo server
 
+                            Log.d(TAG, "OUD: " + "Nnuuovo server nella rete " );
+                            Utility.printByte(value[0]);
+                            Utility.printByte(value[1]);
+                            Utility.printByte(value[2]);
+                            Utility.printByte(value[3]);
+                            Utility.printByte(value[4]);
+                            mNode.updateRoutingTable(value);
+                            mGattServer.sendResponse(device, requestId, 0, 0, value);
+                            byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
+                            mNode.parseMapToByte(tempMap);
+                            int dim = tempMap.length * tempMap[0].length;
+                            byte[] message = new byte[dim];
+                            for (int i = 0; i <tempMap.length ; i++) {
+                                for (int j = 0; j <tempMap[0].length ; j++) {
+                                    message[(i*tempMap[0].length) +j] = tempMap[i][j];
+                                }
+                            }
+                            ConnectBLETask clie = Utility.createBroadcastRoutingTableClient(device, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
+                            LinkedList<ConnectBLETask> clients = new LinkedList<>();
+                            clients.add(clie);
+                            clie.startClient();
+                            for (ScanResult temp : serversToAsk) {
+                                ConnectBLETask client = Utility.createBroadCastNextServerIdClient(temp.getDevice(),new String(mGattCharacteristicNextServerId.getValue()),context,value);
+                                client.startClient();
+                                clients.add(client);
+                            }
+                            try {
+                                Thread.sleep(8000);
+                                for (ConnectBLETask cl: clients) {
+                                    cl.stopClient();
+                                }
+                            } catch (Exception e) {
+                                for (ConnectBLETask cl: clients) {
+                                    cl.stopClient();
+                                }
+                                Log.d(TAG, "OUD: " + "Andata male la wait");
                             }
                         }
                         else{
+                            Log.d(TAG, "OUD: " + "Nnuuova table nella rete " );
                             final String senderId = Utility.getStringId(value[0]);
                             byte[] correctMap = new byte[value.length - 2];
                             for (int i = 0; i < value.length - 2; i++) {
@@ -133,24 +165,30 @@ public class AcceptBLETask {
                             }
                             String previousMsg = messageMap.get(senderId);
                             if (previousMsg == null) previousMsg = "";
-                            messageMap.put(senderId, previousMsg + new String(value));
+
+                            messageMap.put(senderId, previousMsg + new String(correctMap));
                             if (Utility.getBit(value[0],0) != 0) {
                                 mGattServer.sendResponse(device, requestId, 0, 0, null);
                                 return;
                             }
                             mNode = ServerNode.buildRoutingTable(Utility.buildMapFromString(messageMap.get(senderId)), getId());
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
+                            LinkedList<ConnectBLETask> clients = new LinkedList<>();
                             for (ScanResult temp : serversToAsk) {
-                                ConnectBLETask client = Utility.sendBroadcastRoutingTable(temp.getDevice(), new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
+                                ConnectBLETask client = Utility.createBroadcastRoutingTableClient(temp.getDevice(), new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
                                 client.startClient();
-                                try {
-                                    Thread.sleep(1000);
-                                    client.stopClient();
-                                } catch (Exception e) {
-                                    client.stopClient();
-                                    Log.d(TAG, "OUD: " + "Andata male la wait");
+                                clients.add(client);
+                            }
+                            try {
+                                Thread.sleep(8000);
+                                for (ConnectBLETask cl: clients) {
+                                    cl.stopClient();
                                 }
-
+                            } catch (Exception e) {
+                                for (ConnectBLETask cl: clients) {
+                                    cl.stopClient();
+                                }
+                                Log.d(TAG, "OUD: " + "Andata male la wait");
                             }
                             messageMap.put(senderId, "");
                         }
@@ -375,6 +413,7 @@ public class AcceptBLETask {
     }
 
     public void setId(String id) {
+        Log.d(TAG, "OUD: setId: ok");
         this.id = id;
     }
     public String getId() {
@@ -383,16 +422,31 @@ public class AcceptBLETask {
 
     public void startServer() {
         // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
-        String next_id = "1";
         // TODO: 23/11/18 CREAZIONE ID SERVER
+        Log.d(TAG, "OUD: " + "dev found:" + serversToAsk.size());
 
-        if(serversToAsk != null) {
+
+        if(serversToAsk != null && serversToAsk.size() != 0) {
+            Log.d(TAG, "OUD: " + "startServer: Finding next id");
             for (ScanResult temp : serversToAsk) {
-                if (temp.getDevice() == null) continue;
+                if (temp.getDevice() == null) {
+                    Log.d(TAG, "OUD: " + "null");
+                    continue;
+                }
                 final User u = new User(temp.getDevice(),temp.getDevice().getName());
                 ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
                     @Override
+                    public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                        if (newState == BluetoothProfile.STATE_CONNECTED) {
+                            Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                            gatt.discoverServices();
+                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                            Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                        }
+                    }
+                    @Override
                     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                        Log.d(TAG, "OUD: " + "i discovered a serviceseses");
                         BluetoothGattService service =  gatt.getService(Constants.ServiceUUID);
                         if (service == null) return;
                         BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicNextServerIdUUID);
@@ -405,9 +459,31 @@ public class AcceptBLETask {
                     @Override
                     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                         if (status == BluetoothGatt.GATT_SUCCESS) {
-                            setId(new String(characteristic.getValue()));
+                            if(characteristic.getValue().length == 0) setId("2");
+                            else {
+                                Log.d(TAG, "OUD: " + "Read: " + new String(characteristic.getValue()));
+                                setId(new String(characteristic.getValue()));
+                            }
+
                             mNode = new ServerNode(id);
-                            characteristic.setValue(""+(Integer.parseInt(getId())+1));
+                            for (String temp: nearId) {
+                                mNode.addNearServer(new ServerNode(temp));
+                            }
+                            mGattDescriptor.setValue(id.getBytes());
+                            mGattDescriptorRoutingTable.setValue("0".getBytes());
+                            mGattCharacteristic.addDescriptor(mGattDescriptor);
+                            mGattDescriptorNextId.setValue("1".getBytes());
+                            mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
+                            mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
+                            mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
+                            mGattService.addCharacteristic(mGattCharacteristic);
+                            mGattService.addCharacteristic(mGattCharacteristicNextServerId);
+                            mGattService.addCharacteristic(mGattCharacteristicRoutingTable);
+                            // I START OPEN THE GATT SERVER
+                            mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
+                            //mGattServer.addService(mGattServiceRoutingTable);
+                            mGattServer.addService(mGattService);
+                            characteristic.setValue("" + (Integer.parseInt(getId()) + 1));
                             gatt.beginReliableWrite();
                             boolean res = gatt.writeCharacteristic(characteristic);
                             Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
@@ -419,52 +495,50 @@ public class AcceptBLETask {
                     @Override
                     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                         if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.CharacteristicNextServerIdUUID)) {
-                            Log.d(TAG, "OUD: " + "I wrote a characteristic !");
-                            BluetoothGattService serv =  gatt.getService(Constants.RoutingTableServiceUUID);
+                            Log.d(TAG, "OUD: " + "I wrote a characteristic nextServerId!");
+                            BluetoothGattService serv =  gatt.getService(Constants.ServiceUUID);
                             if (serv == null) return;
                             BluetoothGattCharacteristic characteristic1 = serv.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
                             if (characteristic1 == null) return;
-                            characteristic1.setValue(mNode.parseNewServer());
+                            byte[] message = mNode.parseNewServer();
+                            Log.d(TAG, "Message len: " + message.length);
+                            characteristic1.setValue(message);
                             gatt.beginReliableWrite();
                             boolean res = gatt.writeCharacteristic(characteristic1);
                             Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
                             gatt.executeReliableWrite();
                         } else if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
-                            Log.d(TAG, "OUD: " + "i wrote a characterisic!");
+                            Log.d(TAG, "OUD: " + "i wrote a characterisic routing table!");
                         }
                         super.onCharacteristicWrite(gatt, characteristic, status);
                     }
                 });
                 client.startClient();
+
+
             }
         }
         else {
             setId("1");
             mNode = new ServerNode(id);
             mGattCharacteristicNextServerId.setValue("2");
+            Log.d(TAG, "OUD: startServer: en");
+            mGattDescriptorRoutingTable.setValue("0".getBytes());
+            mGattDescriptor.setValue(id.getBytes());
+            this.mGattCharacteristic.addDescriptor(mGattDescriptor);
+            mGattDescriptorNextId.setValue("1".getBytes());
+            this.mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
+            this.mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
+            this.mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
+            this.mGattService.addCharacteristic(mGattCharacteristic);
+            this.mGattService.addCharacteristic(mGattCharacteristicNextServerId);
+            this.mGattService.addCharacteristic(mGattCharacteristicRoutingTable);
+            // I START OPEN THE GATT SERVER
+            this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
+            this.mGattServer.addService(this.mGattService);
+            //this.mGattServer.addService(this.mGattServiceRoutingTable);
+            Log.d(TAG, "OUD: startServer: Inizializzato servizi e tutto");
         }
-        String s = "0";
-        mGattDescriptorRoutingTable.setValue(s.getBytes());
-        mGattDescriptor.setValue(id.getBytes());
-        this.mGattCharacteristic.addDescriptor(mGattDescriptor);
-        mGattDescriptorNextId.setValue(next_id.getBytes());
-        this.mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
-        this.mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
-        this.mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
-        this.mGattService.addCharacteristic(mGattCharacteristic);
-        this.mGattService.addCharacteristic(mGattCharacteristicNextServerId);
-        this.mGattServiceRoutingTable.addCharacteristic(mGattCharacteristicRoutingTable);
-        // I START OPEN THE GATT SERVER
-        this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
-        this.mGattServer.addService(this.mGattService);
-        this.mGattServer.addService(this.mGattServiceRoutingTable);
-
-
-        /*try {
-            wait(600);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
     }
 
     public void stopServer() {
@@ -486,6 +560,8 @@ public class AcceptBLETask {
         ScanFilter.Builder builder = new ScanFilter.Builder();
         // Comment out the below line to see all BLE devices around you
         builder.setServiceUuid(Constants.Service_UUID);
+
+
         scanFilters.add(builder.build());
 
         return scanFilters;
@@ -499,5 +575,9 @@ public class AcceptBLETask {
         builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
         //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
         return builder.build();
+    }
+
+    public void insertIdInMap(LinkedList<String> idList) {
+        nearId = idList;
     }
 }

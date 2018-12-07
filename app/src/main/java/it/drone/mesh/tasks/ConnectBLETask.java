@@ -222,8 +222,10 @@ public class ConnectBLETask {
         user.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
         user.getBluetoothGatt().connect();
         setId("");
-        Log.d(TAG, "OUD:" + "startClient: " + mGatt.getDevice().getName());
-        this.mGatt.discoverServices();
+        Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
+
+        boolean ret = this.mGatt.discoverServices();
+        Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
 
     }
 

@@ -430,4 +430,14 @@ public class Utility {
         });
         return client;
     }
+
+    public interface OnRoutingTableUpdateListener{
+        public void OnRoutingTableUpdate();
+    }
+
+    public interface OnMessageReceivedListener{
+        public void OnMessageReceived(String message);
+    }
+
+
 }

@@ -1,5 +1,6 @@
 package it.drone.mesh.init;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -12,13 +13,19 @@ import java.util.ArrayList;
 
 import it.drone.mesh.R;
 import it.drone.mesh.models.Device;
+import it.drone.mesh.roles.client.BLEClient;
+import it.drone.mesh.roles.common.Utility;
+import it.drone.mesh.roles.common.exceptions.NotEnabledException;
+import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
 
     private ArrayList<Device> devices;
+    private Context _applicationContext;
 
-    public DeviceAdapter(ArrayList<Device> devices) {
+    public DeviceAdapter(ArrayList<Device> devices, Context _applicationContext) {
         this.devices = devices;
+        this._applicationContext = _applicationContext;
     }
 
 
@@ -50,6 +57,8 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     public int getItemCount() {
         return devices.size();
     }
+
+
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {
 

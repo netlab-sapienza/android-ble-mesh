@@ -126,11 +126,11 @@ public class ConnectionActivity extends Activity {
         infoSorg[1] = Integer.parseInt("" + clientId.charAt(1));
 
         int[] infoDest = new int[2];
-        infoDest[0] = Integer.parseInt(message.substring(0,1));    //id del destinatario Server
-        infoDest[1] = Integer.parseInt(message.substring(1,2));    //id del destinatario Client
+        infoDest[0] = Integer.parseInt(message.substring(0, 1));    //id del destinatario Server
+        infoDest[1] = Integer.parseInt(message.substring(1, 2));    //id del destinatario Client
 
-        message = message.substring(1,message.length());
-        boolean res = Utility.sendMessage(message, gatt, infoSorg, infoDest);
+        message = message.substring(1, message.length());
+        boolean res = Utility.sendMessage(message, gatt, infoSorg, infoDest, null);
         Log.d(TAG, "OUD: " + "sendMessage: Inviato ? " + res);
         /*
         ConnectBLETask connectBLETask = null;

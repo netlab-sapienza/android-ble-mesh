@@ -13,8 +13,10 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import it.drone.mesh.models.Device;
 import it.drone.mesh.models.User;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -70,6 +72,7 @@ public class Utility {
         b = setBit(b, 0);
         return b;
     }
+
     public static byte byteNearServerBuilder(int server1Id, int server2Id) {
         byte b = 0b00000000;
 
@@ -152,6 +155,7 @@ public class Utility {
         ret[0] = getBit(firstByte, 4) + getBit(firstByte, 5) * 2 + getBit(firstByte, 6) * 4 + getBit(firstByte, 7) * 8;
         return ret;
     }
+
     public static int[] getIdServerByteInfo(byte firstByte) {
         int[] ret = new int[2];
         ret[1] = getBit(firstByte, 0) + getBit(firstByte, 1) * 2 + getBit(firstByte, 2) * 4 + getBit(firstByte, 3) * 8;
@@ -202,7 +206,7 @@ public class Utility {
         return false;
     }
 
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
+    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
         boolean result = true;
         for (BluetoothGattService service : gatt.getServices()) {
@@ -226,7 +230,15 @@ public class Utility {
                                 } catch (Exception e) {
                                     Log.d(TAG, "OUD: " + "Andata male la wait");
                                 }
-                                if (i == finalMessage.length - 1) return result;
+                                if (i == finalMessage.length - 1) {
+                                    if (listener != null) {
+                                        if (result)
+                                            listener.OnMessageSent(Arrays.deepToString(finalMessage));
+                                        else
+                                            listener.OnCommunicationError("Error on communication");
+                                    }
+                                    return result;
+                                }
                             }
                         }
                     }
@@ -281,7 +293,7 @@ public class Utility {
      *
      * @param context
      * @return
-    */
+     */
     public static boolean isBLESupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
     }
@@ -289,7 +301,7 @@ public class Utility {
 
     /**
      * Return a List of {@link ScanFilter} objects to filter by Service UUID.
-    */
+     */
     public static List<ScanFilter> buildScanFilters() {
         List<ScanFilter> scanFilters = new ArrayList<>();
         ScanFilter.Builder builder = new ScanFilter.Builder();
@@ -301,7 +313,7 @@ public class Utility {
 
     /**
      * Return a {@link ScanSettings} object set to use low power (to preserve battery life).
-    */
+     */
     public static ScanSettings buildScanSettings() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
         builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
@@ -310,8 +322,8 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
-        User u = new User(device,device.getName());
-        ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        User u = new User(device, device.getName());
+        return new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.RoutingTableServiceUUID);
@@ -362,7 +374,6 @@ public class Utility {
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
         });
-        return client;
     }
 
     public static byte[][] buildMapFromString(String mapString) {
@@ -429,4 +440,24 @@ public class Utility {
             }
         });
     }
+
+    public interface OnRoutingTableUpdateListener {
+        public void OnRoutingTableUpdate();
+    }
+
+    public interface OnMessageReceivedListener {
+        public void OnMessageReceived(String message);
+    }
+
+    public interface OnMessageSentListener {
+        public void OnMessageSent(String message);
+
+        public void OnCommunicationError(String error);
+    }
+
+    public interface OnScanCompletedListener {
+        public void OnScanCompleted(ArrayList<Device> devicesFound);
+    }
+
+
 }

@@ -48,5 +48,6 @@
     <string name="device_id_placeholder">Device Id:</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
+    <string name="destination_id">Destination Id</string>
 
 </resources>

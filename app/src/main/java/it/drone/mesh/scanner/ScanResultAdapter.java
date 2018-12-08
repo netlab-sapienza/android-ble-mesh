@@ -92,7 +92,7 @@ public class ScanResultAdapter extends BaseAdapter {
 
         // Reuse an old view if we can, otherwise create a new one.
         if (view == null) {
-            view = mInflater.inflate(R.layout.item_scan_result, null);
+            view = mInflater.inflate(R.layout.item_old_scan_result, null);
         }
 
         TextView deviceNameView = view.findViewById(R.id.device_name);

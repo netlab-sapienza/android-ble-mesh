@@ -1,16 +1,10 @@
 package it.drone.mesh.init;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,10 +44,12 @@ public class InitActivity extends Activity {
                     // TODO: 07/12/2018 stop service
                     startServices.setText(R.string.start_service);
                     isServiceStarted = false;
+                    writeDebug("Service stopped");
                 } else {
                     initializeService();
                     startServices.setText(R.string.stop_service);
                     isServiceStarted = true;
+                    writeDebug("Service started");
                 }
 
             }
@@ -67,7 +63,7 @@ public class InitActivity extends Activity {
 
 
     private void initializeService() {
-        writeDebug("Inizializzo il servizio");
+        writeDebug("Start initializing server");
         try {
             server = BLEServer.getInstance(this);
         } catch (NotSupportedException e) {
@@ -76,9 +72,9 @@ public class InitActivity extends Activity {
         } catch (NotEnabledException e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-        writeDebug("Aggiungo mockup device");
+        writeDebug("Adding mockup device...");
 
-        addDevice(new Device("0", System.currentTimeMillis(), "TTD"));
+        addDevice(new Device("00", System.currentTimeMillis(), "0 db"));
     }
 
     private void writeDebug(String message) {

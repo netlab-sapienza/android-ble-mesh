@@ -4,60 +4,92 @@ import android.app.Activity;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 import it.drone.mesh.R;
+import it.drone.mesh.models.Device;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 import it.drone.mesh.roles.server.BLEServer;
 
 public class InitActivity extends Activity {
 
-    ImageView isBtEnabled;
-    ImageView isScanning;
-    ImageView whoAreYou;
-    ImageView startServices;
+
+    Button startServices;
     BLEServer server;
+    TextView debugger;
 
     RecyclerView recyclerDeviceList;
     DeviceAdapter deviceAdapter;
+    ArrayList<Device> devices = new ArrayList<>();
+
+    private final static String TAG = InitActivity.class.getSimpleName();
+    private boolean isServiceStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
-        isBtEnabled = findViewById(R.id.bt_enabled);
-        isScanning = findViewById(R.id.scanning);
-        whoAreYou = findViewById(R.id.whatami);
         startServices = findViewById(R.id.startServices);
-        isBtEnabled.setImageResource(((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled() ? R.drawable.ic_bluetooth_24dp : R.drawable.ic_bluetooth_disabled_black_24dp);
+        debugger = findViewById(R.id.debugger);
 
         startServices.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ((ImageView) view).setImageResource(R.drawable.ic_pause);
-                initializeService();
+                if (isServiceStarted) {
+                    // TODO: 07/12/2018 stop service
+                    startServices.setText(R.string.start_service);
+                    isServiceStarted = false;
+                } else {
+                    initializeService();
+                    startServices.setText(R.string.stop_service);
+                    isServiceStarted = true;
+                }
+
             }
         });
 
         recyclerDeviceList = findViewById(R.id.recy_scan_results);
-        //deviceAdapter = new DeviceAdapter(server.getRoutingTable().getDevices());
+        deviceAdapter = new DeviceAdapter(devices, getApplicationContext());
         recyclerDeviceList.setAdapter(deviceAdapter);
-        deviceAdapter.notifyDataSetChanged();
+        recyclerDeviceList.setVisibility(View.VISIBLE);
     }
 
+
     private void initializeService() {
+        writeDebug("Inizializzo il servizio");
         try {
             server = BLEServer.getInstance(this);
         } catch (NotSupportedException e) {
             e.printStackTrace();
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         } catch (NotEnabledException e) {
-            isBtEnabled.setImageResource(R.drawable.ic_bluetooth_disabled_black_24dp);
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+        writeDebug("Aggiungo mockup device");
+
+        addDevice(new Device("0", System.currentTimeMillis(), "TTD"));
+    }
+
+    private void writeDebug(String message) {
+        if (debugger.getLineCount() == debugger.getMaxLines())
+            debugger.setText(String.format("%s\n", message));
+        else
+            debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
+    }
+
+    private void addDevice(Device device) {
+        this.devices.add(device);
+        deviceAdapter.notifyDataSetChanged();
     }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,45 +21,12 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <ImageView
-                    android:id="@+id/bt_enabled"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/bt_not_enabled"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_bluetooth_24dp" />
-
-
-                <ImageView
-                    android:id="@+id/scanning"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
-                    android:layout_toEndOf="@+id/bt_enabled"
-                    android:contentDescription="@string/isscanning"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_not_scanning_24dp" />
-
-                <ImageView
-                    android:id="@+id/whatami"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
-                    android:layout_marginTop="0dp"
-                    android:layout_toEndOf="@+id/scanning"
-                    android:contentDescription="@string/whoami"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_storage_24dp" />
-
-                <ImageView
+                <Button
                     android:id="@+id/startServices"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
-                    android:layout_toEndOf="@+id/whatami"
-                    android:contentDescription="@string/startservices"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_play" />
+                    android:textColor="@color/colorPrimary"
+                    android:text="@string/start_service"/>
 
             </RelativeLayout>
 
@@ -66,13 +34,16 @@
                 android:id="@+id/debugger"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:maxLines="5"
+                android:minLines="1"
                 android:text="@string/debug_explain" />
 
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/recy_scan_results"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
 
 
         </LinearLayout>

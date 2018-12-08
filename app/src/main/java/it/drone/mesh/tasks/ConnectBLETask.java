@@ -90,7 +90,7 @@ public class ConnectBLETask {
                                         gatt.executeReliableWrite();
                                         Log.d(TAG, "OUD: " + "caratteristica ok");
                                         }*/
-                                    }
+                                }
                             }
                         }
                     }

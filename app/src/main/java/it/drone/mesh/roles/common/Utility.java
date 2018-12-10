@@ -15,6 +15,7 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
@@ -23,11 +24,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.os.Handler;
-
 import it.drone.mesh.models.Device;
 import it.drone.mesh.models.User;
-import it.drone.mesh.models.UserList;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 /**
@@ -101,31 +99,40 @@ public class Utility {
 
     public static byte[][] messageBuilder(byte firstByte, byte destByte, String message) {
         byte[] sInByte = message.getBytes();
-
+        //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
+        byte[][] finalMessage;
         int numPacks = (int) Math.floor(sInByte.length / DEST_PACK_MESSAGE_LEN);
-        byte[][] finalMessage = new byte[numPacks + 1][PACK_LEN];
-        int lastLen = sInByte.length % DEST_PACK_MESSAGE_LEN;
 
-        for (int i = 0; i < numPacks + 1; i++) {
-            if (i == numPacks) {
-                byte[] pack = new byte[lastLen + 1];
+        int lastLen = sInByte.length % DEST_PACK_MESSAGE_LEN;
+        int numPackToSend = (lastLen == 0) ? numPacks : numPacks + 1;
+
+        finalMessage = new byte[numPackToSend][PACK_LEN];
+
+        // Log.d(TAG, "OUD: messageBuilder:Entrata for");
+        Utility.printByte(firstByte);
+        Utility.printByte(destByte);
+        for (int i = 0; i < numPackToSend; i++) {
+            if (i == numPackToSend - 1) {
+                byte[] pack = new byte[lastLen + 2];
                 firstByte = clearBit(firstByte, 0);
                 pack[0] = firstByte;
                 pack[1] = destByte;
-                for (int j = 1; j < lastLen; j++) {
-                    pack[j + 1] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
+                for (int j = 0; j < lastLen; j++) {
+                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
                 }
                 finalMessage[i] = pack;
-                break;
+            } else {
+                byte[] pack = new byte[PACK_LEN];
+                pack[0] = firstByte;
+                pack[1] = destByte;
+                for (int j = 0; j < DEST_PACK_MESSAGE_LEN; j++) {
+                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
+                }
+                finalMessage[i] = pack;
             }
-            byte[] pack = new byte[PACK_LEN];
-            pack[0] = firstByte;
-            pack[1] = destByte;
-            for (int j = 0; j < DEST_PACK_MESSAGE_LEN; j++) {
-                pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
-            }
-            finalMessage[i] = pack;
         }
+        //Log.d(TAG, "OUD: messageBuilder:Fine for");
+
         return finalMessage;
     }
 
@@ -181,8 +188,9 @@ public class Utility {
                                     listener.OnMessageSent(Arrays.deepToString(finalMessage));
                                 else
                                     listener.OnCommunicationError("Error on communication");
+                                return result;
                             }
-                            return result;
+
                         }
                     }
                 }
@@ -194,26 +202,30 @@ public class Utility {
     }
 
     public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
+        // Log.d(TAG, "OUD: PRE messagBuilder ok");
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message);
+        // Log.d(TAG, "OUD: messagBuilder ok");
         boolean result = true;
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-        if(service == null) {
+        if (service == null) {
             Log.d(TAG, "OUD: " + "il service era NULL");
             return false;
         }
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-        if(characteristic == null) {
+        if (characteristic == null) {
             Log.d(TAG, "OUD: " + "la caratteristica era NULL");
             return false;
         }
+
         for (int i = 0; i < finalMessage.length; i++) {
             characteristic.setValue(finalMessage[i]);
             gatt.beginReliableWrite();
             boolean res = gatt.writeCharacteristic(characteristic);
             result = res && result;
             gatt.executeReliableWrite();
-            Log.d(TAG, "OUD: " + new String(finalMessage[i]));
             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+            Utility.printByte(finalMessage[i][0]);
+            Utility.printByte(finalMessage[i][1]);
             try {
                 Thread.sleep(300);
             } catch (Exception e) {
@@ -306,24 +318,28 @@ public class Utility {
             }
 
             @Override
-            public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            public void onDescriptorWrite(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                super.onDescriptorWrite(gatt, descriptor, status);
                 Log.d(TAG, "OUD: onDescriptorWrite: status :" + status);
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String temp = new String(value);
+                    final String temp = new String(value);
                     BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
                     if (characteristic1 == null) return;
-                    Log.d(TAG, "OUD: " + "Pronto ad inviare la routing table");
-                    int[] infoSorg = new int[2];
-                    int[] infoDest = new int[2];
+                    final int[] infoSorg = new int[2];
+                    final int[] infoDest = new int[2];
                     infoSorg[0] = Integer.parseInt(id);
                     infoSorg[1] = 0;
                     infoDest[0] = 0;
                     infoDest[1] = 0;
-                    Log.d(TAG, "OUD: " + "Pronto ad inviare la routing table2");
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
+                                Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
+                        }
+                    }, 500);
 
-                    if(Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
                 }
-                super.onDescriptorWrite(gatt, descriptor, status);
             }
         });
     }
@@ -411,6 +427,38 @@ public class Utility {
         });
     }
 
+    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final OnNewServerDiscoveredListener listener) {
+        final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
+        final ScanCallback mScanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, final ScanResult result) {
+                super.onScanResult(callbackType, result);
+                for (ScanResult temp : serverToAsk) {
+                    if (temp.getDevice().equals(result.getDevice())) {
+                        // Log.d(TAG, "OUD: " + "result già presente");
+                        return;
+                    }
+                }
+                serverToAsk.add(result);
+                listener.OnNewServerDiscovered(result);
+                Log.d(TAG, "OUD: " + "ho aggiunto " + result.getDevice().getName());
+            }
+        };
+
+        Handler mHandler = new Handler(Looper.getMainLooper());
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "OUD: " + "Stopping Scanning");
+
+                // Stop the scan, wipe the callback.
+                mBluetoothScan.stopScan(mScanCallback);
+            }
+        }, 1000);
+        //UserList.cleanUserList();
+        mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
+    }
+
     public interface OnRoutingTableUpdateListener {
         public void OnRoutingTableUpdate();
     }
@@ -429,36 +477,7 @@ public class Utility {
         public void OnScanCompleted(ArrayList<Device> devicesFound);
     }
 
-    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter,final LinkedList<ScanResult> serverToAsk,final LinkedList<ScanResult> nuovoServer) {
-        final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
-        final ScanCallback mScanCallback = new ScanCallback() {
-            @Override
-            public void onScanResult(int callbackType, final ScanResult result) {
-                super.onScanResult(callbackType, result);
-                for (ScanResult temp : serverToAsk) {
-                    if (temp.getDevice().equals(result.getDevice())) {
-                        Log.d(TAG, "OUD: " + "result già presente");
-                        return;
-                    }
-                }
-                serverToAsk.add(result);
-                nuovoServer.add(result);
-                Log.d(TAG, "OUD: " + "ho aggiunto " + result.getDevice().getName());
-                return;
-            }
-        };
-
-        Handler mHandler = new Handler(Looper.getMainLooper());
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "OUD: " + "Stopping Scanning");
-
-                // Stop the scan, wipe the callback.
-                mBluetoothScan.stopScan(mScanCallback);
-            }
-        }, 3000);
-        //UserList.cleanUserList();
-        mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
+    public interface OnNewServerDiscoveredListener {
+        public void OnNewServerDiscovered(ScanResult server);
     }
 }

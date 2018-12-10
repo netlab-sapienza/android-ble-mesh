@@ -117,20 +117,23 @@ public class ConnectBLETask {
                 byte[] value = characteristic.getValue();
                 final String valueReceived;
                 byte[] correct_message = new byte[value.length - 2];
+
                 byte sorgByte = value[0];
                 final int[] infoSorg = Utility.getByteInfo(sorgByte);
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
 
                 if (id.equals("" + infoDest[0] + infoDest[1])) Log.d(TAG, "OUD: " + "sono il destinatario corretto");
-                else Log.d(TAG, "OUD: " + "sono il destinatario sbagliato");
+                else {
+                    Log.d(TAG, "OUD: " + "sono il destinatario sbagliato");
+                    return;
+                }
 
                 for (int i = 0; i < value.length - 2; i++) {
                     correct_message[i] = value[i + 2];
                 }
 
                 final String senderId = Utility.getStringId(sorgByte);
-
 
                 valueReceived = new String(correct_message);
                 Log.d(TAG, "OUD: " + valueReceived);
@@ -226,6 +229,7 @@ public class ConnectBLETask {
 
         boolean ret = this.mGatt.discoverServices();
         Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
+
 
     }
 

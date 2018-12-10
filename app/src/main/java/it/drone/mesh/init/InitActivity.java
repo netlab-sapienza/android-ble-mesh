@@ -17,8 +17,6 @@ import it.drone.mesh.roles.common.exceptions.NotSupportedException;
 import it.drone.mesh.roles.server.BLEServer;
 
 public class InitActivity extends Activity {
-
-
     Button startServices;
     BLEServer server;
     TextView debugger;

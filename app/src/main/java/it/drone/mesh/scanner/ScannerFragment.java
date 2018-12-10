@@ -233,7 +233,7 @@ public class ScannerFragment extends ListFragment {
         if (offset >= size) return;
 
         final User newUser = UserList.getUser(offset);
-        Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
+        Log.d(TAG, "OUD: " + "askNearServer with: " + newUser.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext(), new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {

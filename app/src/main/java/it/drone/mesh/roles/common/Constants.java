@@ -17,27 +17,15 @@ public class Constants {
      * {https://www.bluetooth.org/en-us/specification/assigned-numbers/service-discovery}
      */
 
-    // TODO: 20/11/18 marked for remove, please remove
-    /*public static final ParcelUuid Service_UUID = ParcelUuid
-            .fromString("0000b81d-0000-1000-8000-00805f9b34fb");
-    public static final ParcelUuid Service_UUID_client = ParcelUuid
-            .fromString("9999b81d-0000-1000-8000-00805f9b34fb");
-    public static final ParcelUuid Characteristic_UUID = ParcelUuid
-            .fromString("1111b81d-0000-1000-8000-00805f9b34fb");
-    public static final ParcelUuid Descriptor_UUID = ParcelUuid
-            .fromString("2222b81d-0000-1000-8000-00805f9b34fb");*/
-
     public static final UUID NEXT_ID_UUID = UUID.fromString("2122b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID Client_Configuration_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    public static final ParcelUuid Service_UUID = ParcelUuid
-            .fromString("00001814-0000-1000-8000-00805f9b34fb");
-
+    public static final ParcelUuid Service_UUID = ParcelUuid.fromString("00001814-0000-1000-8000-00805f9b34fb");
     public static final UUID ServiceUUID = UUID.fromString("00001814-0000-1000-8000-00805f9b34fb");
 
     public static final UUID CharacteristicUUID = UUID.fromString("1111b81d-0000-1000-8000-00805f9b34fb");
 
-    public static final UUID CharacteristicNextServerIdUUID = UUID.fromString("1111b81d-0000-1000-8000-00805f9b34fb");
+    public static final UUID CharacteristicNextServerIdUUID = UUID.fromString("1112b81d-0000-1000-8000-00805f9b34fb");
 
 
     public static final UUID DescriptorUUID = UUID.fromString("2222b81d-0000-1000-8000-00805f9b34fb");

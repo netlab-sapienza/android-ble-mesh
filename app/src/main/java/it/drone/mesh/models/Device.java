@@ -1,6 +1,7 @@
 package it.drone.mesh.models;
 
 
+import android.bluetooth.BluetoothDevice;
 import android.os.SystemClock;
 
 import java.util.Objects;
@@ -13,6 +14,7 @@ public class Device {
     private StringBuffer input;
     private StringBuffer output;
     private String signalPower;
+    private BluetoothDevice device; //o forse sarebbe meglio il gatt?
 
     public Device(String id, long lastTime, String signalPower) {
         this.id = id;

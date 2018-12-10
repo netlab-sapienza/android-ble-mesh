@@ -18,7 +18,6 @@ import it.drone.mesh.R;
  * Holds and displays {@link ScanResult}s, used by {@link ScannerFragment}.
  */
 public class ScanResultAdapter extends BaseAdapter {
-
     private ArrayList<ScanResult> mArrayList;
 
     private Context mContext;

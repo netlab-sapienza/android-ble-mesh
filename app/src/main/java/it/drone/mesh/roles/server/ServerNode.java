@@ -8,7 +8,8 @@ import java.util.LinkedList;
 import it.drone.mesh.roles.common.Utility;
 
 public class ServerNode {
-    private String TAG = this.getClass().getSimpleName();
+    public static final int MAX_NUM_SERVER = 16;
+    private static String TAG = ServerNode.class.getSimpleName();
     private String id;
     private int lastRequest;
     //private Device device;
@@ -149,21 +150,21 @@ public class ServerNode {
 
     public void printStatus() {
         Log.d(TAG, "OUD: " + "I'm node " + id);
-        Log.d(TAG, "OUD: " + "This is my current situation: ");
-        Log.d(TAG, "OUD: " + "[");
+        Log.d(TAG, "OUD: " + "My clients are: ");
+        String s = "";
         for (int i = 0; i < clientList.length; i++) {
-            if (clientList[i] != null)
-                Log.d(TAG, "OUD: " + i + (i == clientList.length - 1 ? "" : ","));
-            else Log.d(TAG, "OUD: " + "null,");
-
+            if (clientList[i] != null) s += i + (i == clientList.length - 1 ? "" : ",");
+            else s+= "null,";
         }
+        Log.d(TAG, "OUD: " + "[" + s + "]");
 
-        Log.d(TAG, "OUD: " + "[I have " + nearServers.size() + " near servers]");
+        Log.d(TAG, "OUD: " + "I have " + nearServers.size() + " near servers");
         int size = nearServers.size();
+        s = "";
         for (int i = 0; i < size; i++) {
-            Log.d(TAG, "OUD: " + nearServers.get(i).getId() + (i == size - 1 ? "" : ","));
+            s += nearServers.get(i).getId() + (i == size - 1 ? "" : ",");
         }
-        Log.d(TAG, "OUD: " + "]\n");
+        Log.d(TAG, "OUD: " + "[" + s + "]");
     }
 
     public void parseMapToByte(byte[][] destArrayByte) {
@@ -207,7 +208,15 @@ public class ServerNode {
     }
 
     public static ServerNode buildRoutingTable(byte[][] mapByte, String id) {
-        ServerNode[] arrayNode = new ServerNode[16]; //perchè al max 16 server
+        Log.d(TAG, "OUD: " + "MapByte è una " + mapByte.length + " x " + mapByte[0].length);
+        for (int i = 0; i < 16; i++) {
+            Log.d(TAG, "buildRoutingTable: I: " + i);
+            for (int j = 0; j < SERVER_PACKET_SIZE; j++) {
+                Log.d(TAG, "buildRoutingTable: J: " + j);
+                Utility.printByte(mapByte[i][j]);
+            }
+        }
+        ServerNode[] arrayNode = new ServerNode[MAX_NUM_SERVER]; //perchè al max 16 server
         for (int i = 1; i < 16; i++) {
             if (Utility.getBit(mapByte[i][0], 0) == 1 || (Utility.getBit(mapByte[i][0], 1)) == 1 || (Utility.getBit(mapByte[i][0], 2)) == 1 || (Utility.getBit(mapByte[i][0], 3)) == 1) {
                 arrayNode[i] = new ServerNode("" + i);
@@ -215,12 +224,13 @@ public class ServerNode {
         }
         for (int i = 0; i < 16; i++) {
             if (arrayNode[i] != null) {
+                Log.d(TAG, "OUD: "+ i);
                 byte clientByte = mapByte[i][1];
                 for (int k = 0; k < 8; k++) {
                     if (Utility.getBit(clientByte, k) == 1)
                         arrayNode[i].setClientOnline("" + k, null); // TODO: 04/12/18 VEDERE COME PASSARSI IL DEVICE non serve perchè ti servono solo i tuoi client
                 }
-                for (int k = 3; k < SERVER_PACKET_SIZE; k++) {
+                for (int k = 2; k < SERVER_PACKET_SIZE; k++) {
                     byte nearServerByte = mapByte[i][k];
                     int[] infoNearServer = Utility.getIdServerByteInfo(nearServerByte);
                     if (infoNearServer[0] != 0) {
@@ -232,6 +242,7 @@ public class ServerNode {
                 }
             }
         }
+        arrayNode[Integer.parseInt(id)].printStatus();
         return arrayNode[Integer.parseInt(id)];
     }
 

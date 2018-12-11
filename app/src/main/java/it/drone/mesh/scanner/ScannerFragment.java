@@ -218,19 +218,17 @@ public class ScannerFragment extends ListFragment {
         mScanCallback = null;
         
         askIdNearServer(0);
-        
-        tryConnection(10);
         // Even if no new results, update 'last seen' times.
         mAdapter.notifyDataSetChanged();
     }
 
     private void askIdNearServer(final int offset) {
-        if(connectBLE != null) {
-            Log.d(TAG, "OUD: " + "Sei già un client con id " + connectBLE.getId());
+        final int size = UserList.getUserList().size();
+
+        if (offset >= size) {
+            tryConnection(10); //finito di leggere gli id passa a connettersi
             return;
         }
-        final int size = UserList.getUserList().size();
-        if (offset >= size) return;
 
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "askNearServer with: " + newUser.getUserName());
@@ -274,18 +272,10 @@ public class ScannerFragment extends ListFragment {
                     }
                 }
                 super.onDescriptorRead(gatt, descriptor, status);
+                askIdNearServer(offset + 1);
             }
         });
         connectBLETask.startClient();
-        Handler mHandler = new Handler();
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                    Log.d(TAG, "OUD: " + "passo al prossimo server");
-                    askIdNearServer(offset + 1);
-            }
-        },1000);
-
     }
 
     /**

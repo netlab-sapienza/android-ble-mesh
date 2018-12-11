@@ -29,6 +29,7 @@ public class ConnectBLETask {
     private boolean serviceDiscovered;
     private String id;
     private HashMap<String, String> messageMap;
+    final private Utility.OnMessageReceivedListener receivedListener;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
@@ -37,15 +38,17 @@ public class ConnectBLETask {
         this.mGattCallback = callback;
         this.serviceDiscovered = false;
         this.id = null;
+        receivedListener = null;
     }
 
-    public ConnectBLETask(User user,final Context context) {
+    public ConnectBLETask(User user,final Context context,Utility.OnMessageReceivedListener list) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.serviceDiscovered = false;
         this.id = null;
         this.messageMap = new HashMap<>();
+        receivedListener = list;
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
@@ -81,15 +84,7 @@ public class ConnectBLETask {
                                     BluetoothGattDescriptor desc = chars.getDescriptor(Constants.DescriptorUUID);
                                     boolean res = gatt.readDescriptor(desc);
                                     Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
-                                        /*
-                                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                                        gatt.setCharacteristicNotification(chars, true);
-                                        chars.setValue("COMPILATO DA GIGI");
-                                        gatt.beginReliableWrite();
-                                        gatt.writeCharacteristic(chars);
-                                        gatt.executeReliableWrite();
-                                        Log.d(TAG, "OUD: " + "caratteristica ok");
-                                        }*/
+
                                 }
                             }
                         }
@@ -119,7 +114,6 @@ public class ConnectBLETask {
                 byte[] correct_message = new byte[value.length - 2];
 
                 byte sorgByte = value[0];
-                final int[] infoSorg = Utility.getByteInfo(sorgByte);
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
 
@@ -149,6 +143,7 @@ public class ConnectBLETask {
                 }
                 else {
                     Log.d(TAG, "OUD: " + "YES last message");
+                    if(receivedListener!=null) receivedListener.OnMessageReceived(messageMap.get(senderId));
                     Handler mHandler = new Handler(Looper.getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override
@@ -252,6 +247,10 @@ public class ConnectBLETask {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public void sendMessage(String message, String dest, Utility.OnMessageSentListener listener) { //idserver:idclient
+        Utility.sendMessage(message,this.mGatt,Utility.getIdArrayByString(getId()),Utility.getIdArrayByString(dest),listener);
     }
 }
 

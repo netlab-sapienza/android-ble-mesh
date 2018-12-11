@@ -26,6 +26,7 @@ import java.util.List;
 
 import it.drone.mesh.models.Device;
 import it.drone.mesh.models.User;
+import it.drone.mesh.roles.server.ServerNode;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 /**
@@ -157,6 +158,12 @@ public class Utility {
         ret[0] = getBit(firstByte, 4) + getBit(firstByte, 5) * 2 + getBit(firstByte, 6) * 4 + getBit(firstByte, 7) * 8;
         return ret[0] + "" + ret[1];
     }
+    public static int[] getIdArrayByString(String id) {
+        int[] res = new int[2];
+        res[0] = (id.length() == 2 )? (Integer.parseInt(id.substring(0,1))):(Integer.parseInt(id.substring(0,2)));
+        res[1] = (id.length() == 2 )? (Integer.parseInt(id.substring(1,2))):(Integer.parseInt(id.substring(2,3)));
+        return res;
+    }
 
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
@@ -224,8 +231,6 @@ public class Utility {
             result = res && result;
             gatt.executeReliableWrite();
             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
-            Utility.printByte(finalMessage[i][0]);
-            Utility.printByte(finalMessage[i][1]);
             try {
                 Thread.sleep(300);
             } catch (Exception e) {
@@ -345,12 +350,12 @@ public class Utility {
     }
 
     public static byte[][] buildMapFromString(String mapString) {
-        byte[][] res = new byte[16][10];
+        byte[][] res = new byte[ServerNode.MAX_NUM_SERVER][ServerNode.SERVER_PACKET_SIZE];
         byte[] mapByte = mapString.getBytes();
-        int j = 0;
+        int j = -1;
         int counter = 0;
         for (int i = 0; i < mapByte.length; i++) {
-            if (i % 10 == 0) {
+            if (i % ServerNode.SERVER_PACKET_SIZE == 0) {
                 j++;
                 counter = 0;
             }
@@ -410,17 +415,30 @@ public class Utility {
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 Log.d(TAG, "OUD: " + "i wrote a characteristic !");
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String temp = new String(value);
-                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                    if (service == null) return;
-                    BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-                    if (characteristic1 == null) return;
-                    characteristic1.setValue(temp);
-                    gatt.beginReliableWrite();
-                    boolean res = gatt.writeCharacteristic(characteristic1);
-                    Log.d(TAG, "OUD: " + "write charac? " + res);
-                    gatt.executeReliableWrite();
+                if(characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        Log.d(TAG, "OUD: " + "I wrote a new server on a server");
+                    }
+                    else {
+                        Log.d(TAG, "OUD: " + "Error1: " + status);
+                    }
+                }
+                else {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        String temp = new String(value);
+                        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                        if (service == null) return;
+                        BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
+                        if (characteristic1 == null) return;
+                        characteristic1.setValue(temp);
+                        gatt.beginReliableWrite();
+                        boolean res = gatt.writeCharacteristic(characteristic1);
+                        Log.d(TAG, "OUD: " + "write charac? " + res);
+                        gatt.executeReliableWrite();
+                    }
+                    else {
+                        Log.d(TAG, "OUD: " + "Error2: " + status);
+                    }
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
@@ -435,7 +453,7 @@ public class Utility {
                 super.onScanResult(callbackType, result);
                 for (ScanResult temp : serverToAsk) {
                     if (temp.getDevice().equals(result.getDevice())) {
-                        // Log.d(TAG, "OUD: " + "result già presente");
+                        Log.d(TAG, "OUD: " + "result già presente");
                         return;
                     }
                 }
@@ -454,7 +472,7 @@ public class Utility {
                 // Stop the scan, wipe the callback.
                 mBluetoothScan.stopScan(mScanCallback);
             }
-        }, 1000);
+        }, 4500);
         //UserList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }

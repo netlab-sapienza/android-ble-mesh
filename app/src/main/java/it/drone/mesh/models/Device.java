@@ -16,6 +16,16 @@ public class Device {
     private String signalPower;
     private BluetoothDevice device; //o forse sarebbe meglio il gatt?
 
+
+    public Device(String id) {
+        this.id = id;
+        this.lastTime = System.currentTimeMillis();
+        this.signalPower = "Not available yet";
+        this.input = new StringBuffer();
+        this.output = new StringBuffer();
+    }
+
+
     public Device(String id, long lastTime, String signalPower) {
         this.id = id;
         this.lastTime = lastTime;

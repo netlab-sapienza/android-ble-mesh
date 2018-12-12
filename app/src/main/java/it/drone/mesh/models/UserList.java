@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+/**
+ * Dovrebbe rappresentare tutti i server in rete trovati durante la scansione e durante l'uso
+ */
 public class UserList {
 
     private static final String TAG = UserList.class.getSimpleName();

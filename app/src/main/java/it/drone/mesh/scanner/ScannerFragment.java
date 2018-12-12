@@ -11,9 +11,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -21,7 +19,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.ParcelUuid;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -198,7 +195,7 @@ public class ScannerFragment extends ListFragment {
 
             // Kick off a new scan.
             mScanCallback = new SampleScanCallback();
-            mBluetoothLeScanner.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
+            mBluetoothLeScanner.startScan(Utility.buildScanFilters(), Utility.buildScanSettings(), mScanCallback);
 
             String toastText = getString(R.string.scan_start_toast) + " "
                     + TimeUnit.SECONDS.convert(SCAN_PERIOD, TimeUnit.MILLISECONDS) + " "
@@ -218,7 +215,7 @@ public class ScannerFragment extends ListFragment {
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
-        
+
         askIdNearServer(0);
         // Even if no new results, update 'last seen' times.
         mAdapter.notifyDataSetChanged();
@@ -247,19 +244,19 @@ public class ScannerFragment extends ListFragment {
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                BluetoothGattService service =  gatt.getService(Constants.ServiceUUID);
+                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    askIdNearServer(offset+1);
+                    askIdNearServer(offset + 1);
                     return;
                 }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
                 if (characteristic == null) {
-                    askIdNearServer(offset+1);
+                    askIdNearServer(offset + 1);
                     return;
                 }
                 BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
-                if (desc==null) {
-                    askIdNearServer(offset+1);
+                if (desc == null) {
+                    askIdNearServer(offset + 1);
                     return;
                 }
                 boolean res = gatt.readDescriptor(desc);
@@ -275,9 +272,9 @@ public class ScannerFragment extends ListFragment {
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                if(status == BluetoothGatt.GATT_SUCCESS) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
                     String val = new String(descriptor.getValue());
-                    if(val.length() > 0) {
+                    if (val.length() > 0) {
                         idList.add(val);
                         Log.d(TAG, "OUD: " + "id aggiunto :" + val);
                     }
@@ -289,43 +286,15 @@ public class ScannerFragment extends ListFragment {
         connectBLETask.startClient();
     }
 
-    /**
-     * Return a List of {@link ScanFilter} objects to filter by Service UUID.
-     */
-    private List<ScanFilter> buildScanFilters() {
-        List<ScanFilter> scanFilters = new ArrayList<>();
-
-        ScanFilter.Builder builder = new ScanFilter.Builder();
-        // Comment out the below line to see all BLE devices around you
-        builder.setServiceUuid(Constants.Service_UUID);
-        scanFilters.add(builder.build());
-        //ScanFilter.Builder builder2 = new ScanFilter.Builder();
-        // Comment out the below line to see all BLE devices around you
-        //builder2.setServiceUuid(new ParcelUuid(Constants.RoutingTableServiceUUID));
-        //scanFilters.add(builder2.build());
-
-        return scanFilters;
-    }
-
-    /**
-     * Return a {@link ScanSettings} object set to use low power (to preserve battery life).
-     */
-    private ScanSettings buildScanSettings() {
-        ScanSettings.Builder builder = new ScanSettings.Builder();
-        builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
-        return builder.build();
-    }
-
     public void tryConnection(final int offset) {
-        if(connectBLE != null) {
+        if (connectBLE != null) {
             Log.d(TAG, "OUD: " + "Sei già un client con id " + connectBLE.getId());
             return;
         }
         final int size = UserList.getUserList().size();
         if (offset >= size) {
             Context c = getActivity();
-            if(c != null)  {
+            if (c != null) {
                 c.startService(new Intent(c, AdvertiserService.class));
                 Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
                 AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
@@ -344,7 +313,7 @@ public class ScannerFragment extends ListFragment {
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getContext(), "Messaggio ricevuto dall'utente "   + message, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Messaggio ricevuto dall'utente " + message, Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -357,7 +326,7 @@ public class ScannerFragment extends ListFragment {
             @Override
             public void run() {
                 Log.d(TAG, "OUD: Run ");
-                if(connectBLETask.hasCorrectId()) {
+                if (connectBLETask.hasCorrectId()) {
                     String tempId = connectBLETask.getId();
                     Log.d(TAG, "OUD: " + "id trovato dopo 5 secondi di attesa : " + tempId);
                     int parsed;
@@ -368,12 +337,11 @@ public class ScannerFragment extends ListFragment {
                         connectBLE = connectBLETask;
                         mAdapter.add(tempResult.get(offset));
                         mAdapter.notifyDataSetChanged();
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
                         tryConnection(offset + 1);
                     }
-                }
-                else {
+                } else {
                     Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
                     tryConnection(offset + 1);
                 }

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -18,7 +17,6 @@
         android:id="@+id/device_id"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toStartOf="@id/destination_id"
         android:layout_toEndOf="@id/device_id_placeholder"
         android:paddingStart="5dp"
         android:paddingEnd="5dp"
@@ -37,7 +35,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/device_id_placeholder"
-        android:layout_toStartOf="@id/destination_id"
         android:layout_toEndOf="@id/last_time_placeholder"
         android:paddingStart="5dp"
         android:paddingEnd="5dp"
@@ -56,7 +53,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/last_time_placeholder"
-        android:layout_toStartOf="@id/destination_id"
         android:layout_toEndOf="@id/power_placeholder"
         android:paddingStart="5dp"
         android:paddingEnd="5dp"
@@ -107,17 +103,6 @@
         android:gravity="center"
         android:text="@string/send_test_message"
         android:textColor="@color/colorPrimaryDark" />
-
-    <EditText
-        android:id="@+id/destination_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:ems="10"
-        android:hint="@string/destination_id"
-        android:inputType="text"
-        tools:ignore="Autofill" />
 
 
 </RelativeLayout>

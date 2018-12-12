@@ -44,7 +44,7 @@
     <string name="send_test_message">Send test message</string>
     <string name="last_time_placeholder">Last time:</string>
     <string name="startservices">startServices</string>
-    <string name="debug_explain">This is a short debugger used to show the user what is going on at low level</string>
+    <string name="debug_explain">This is a short debugger used to show the user what is going on at low level\n</string>
     <string name="device_id_placeholder">Device Id:</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>

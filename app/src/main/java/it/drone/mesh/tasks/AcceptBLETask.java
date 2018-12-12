@@ -13,16 +13,13 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,6 +29,9 @@ import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.roles.server.ServerNode;
+
+import static it.drone.mesh.roles.common.Utility.buildScanFilters;
+import static it.drone.mesh.roles.common.Utility.buildScanSettings;
 
 
 public class AcceptBLETask {
@@ -148,7 +148,7 @@ public class AcceptBLETask {
                                 Utility.updateServerToAsk(mBluetoothAdapter, serversToAsk, new Utility.OnNewServerDiscoveredListener() {
                                     @Override
                                     public void OnNewServerDiscovered(ScanResult server) {
-                                        Log.d(TAG, "OUD: " + "Nuovo server scoperto!!!");
+                                        Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                         ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server.getDevice(), new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                         clients.add(clientNuovoServ);
                                         clientNuovoServ.startClient();
@@ -611,36 +611,10 @@ public class AcceptBLETask {
         this.mGattServer.close();
     }
 
-    /**
-     * Return a List of {@link ScanFilter} objects to filter by Service UUID.
-     */
-
     public void setStartServerList(LinkedList<ScanResult> l) {
         this.serversToAsk = l;
     }
 
-    private List<ScanFilter> buildScanFilters() {
-        List<ScanFilter> scanFilters = new ArrayList<>();
-
-        ScanFilter.Builder builder = new ScanFilter.Builder();
-        // Comment out the below line to see all BLE devices around you
-        builder.setServiceUuid(Constants.Service_UUID);
-
-
-        scanFilters.add(builder.build());
-
-        return scanFilters;
-    }
-
-    /**
-     * Return a {@link ScanSettings} object set to use low power (to preserve battery life).
-     */
-    private ScanSettings buildScanSettings() {
-        ScanSettings.Builder builder = new ScanSettings.Builder();
-        builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
-        return builder.build();
-    }
 
     public void insertIdInMap(LinkedList<String> idList) {
         nearId = idList;

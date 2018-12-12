@@ -1,6 +1,5 @@
 package it.drone.mesh.init;
 
-import android.bluetooth.BluetoothGatt;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -8,14 +7,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 
 import it.drone.mesh.R;
 import it.drone.mesh.models.Device;
+import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.Utility;
+import it.drone.mesh.tasks.ConnectBLETask;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
 
@@ -24,8 +24,20 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     private Context _applicationContext;
     private final static String TAG = DeviceAdapter.class.getSimpleName();
 
-    public DeviceAdapter(ArrayList<Device> devices, Context _applicationContext) {
-        this.devices = devices;
+    DeviceAdapter(Context _applicationContext) {
+        RoutingTable routingTable = RoutingTable.getInstance();
+        this.devices = routingTable.getDeviceList();
+        routingTable.subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
+            @Override
+            public void OnDeviceAdded(Device device) {
+                notifyDataSetChanged();
+            }
+
+            @Override
+            public void OnDeviceRemoved(Device device) {
+                notifyDataSetChanged();
+            }
+        });
         this._applicationContext = _applicationContext;
     }
 
@@ -49,7 +61,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendMessage(device, deviceViewHolder.destinationId.getText().toString(), TEST_MESSAGE, new Utility.OnMessageSentListener() {
+                sendMessage(device.getId(), TEST_MESSAGE, new Utility.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(String message) {
                         device.writeInput(message);
@@ -65,6 +77,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         });
     }
 
+
     @Override
     public int getItemCount() {
         return devices.size();
@@ -73,29 +86,19 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     /**
      * Invia il messaggio messagge al device identificato come destinationID
      *
-     * @param sourceDevice  device
      * @param destinationId Id della device da raggiungere
      * @param message       messaggio da inviare
      * @param listener      Listener di risposta
      */
-    private void sendMessage(Device sourceDevice, String destinationId, String message, Utility.OnMessageSentListener listener) {
-        final BluetoothGatt gatt = null; // TODO: 08/12/2018 serve un metodo che dato destinationId torni gatt, routingTable?
-        int[] infoSorg = new int[2];
-        infoSorg[0] = Integer.parseInt("" + sourceDevice.getId().charAt(0));
-        infoSorg[1] = Integer.parseInt("" + sourceDevice.getId().charAt(1));
-
-        int[] infoDest = new int[2];
-        infoDest[0] = Integer.parseInt(destinationId.substring(0, 1));    //id del destinatario Server
-        infoDest[1] = Integer.parseInt(destinationId.substring(1, 2));    //id del destinatario Client
-
-        message = message.substring(1, message.length());
-        Utility.sendMessage(message, gatt, infoSorg, infoDest, listener);
+    private void sendMessage(String destinationId, String message, Utility.OnMessageSentListener listener) {
+        ConnectBLETask connectBLETask = new ConnectBLETask();
+        connectBLETask.startClient();
+        connectBLETask.sendMessage(message, destinationId, listener);
     }
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {
 
         TextView id, lastTime, power, input, output;
-        EditText destinationId;
         Button testButton;
 
         DeviceViewHolder(View itemView) {
@@ -106,7 +109,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             input = itemView.findViewById(R.id.inputText);
             output = itemView.findViewById(R.id.outputText);
             testButton = itemView.findViewById(R.id.button_test_message);
-            destinationId = itemView.findViewById(R.id.destination_id);
         }
     }
 

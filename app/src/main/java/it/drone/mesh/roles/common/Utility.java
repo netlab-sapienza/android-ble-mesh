@@ -20,7 +20,6 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -470,12 +469,9 @@ public class Utility {
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }
 
-    public interface OnRoutingTableUpdateListener {
-        public void OnRoutingTableUpdate();
-    }
 
     public interface OnMessageReceivedListener {
-        public void OnMessageReceived(String message);
+        public void OnMessageReceived(String idMitt, String message);
     }
 
     public interface OnMessageSentListener {

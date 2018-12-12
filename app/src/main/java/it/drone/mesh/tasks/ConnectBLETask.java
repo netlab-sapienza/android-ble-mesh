@@ -7,16 +7,14 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.Utility;
 
 public class ConnectBLETask {
@@ -41,7 +39,7 @@ public class ConnectBLETask {
         receivedListener = null;
     }
 
-    public ConnectBLETask(User user,final Context context,Utility.OnMessageReceivedListener list) {
+    public ConnectBLETask(User user, final Context context, Utility.OnMessageReceivedListener list) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
@@ -50,16 +48,6 @@ public class ConnectBLETask {
         this.messageMap = new HashMap<>();
         receivedListener = list;
         mGattCallback = new BluetoothGattCallback() {
-            @Override
-            public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-                super.onPhyUpdate(gatt, txPhy, rxPhy, status);
-            }
-
-            @Override
-            public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-                super.onPhyRead(gatt, txPhy, rxPhy, status);
-            }
-
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -109,23 +97,24 @@ public class ConnectBLETask {
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
                     byte[] value = characteristic.getValue();
-                    for (int i = 0; i <value.length ; i++) {
+                    for (int i = 0; i < value.length; i++) {
                         boolean flag = false;
-                        for (int j = 0; j <8 ; j++) {
-                            if (Utility.getBit(value[i],j) == 1) flag  = true;
+                        for (int j = 0; j < 8; j++) {
+                            if (Utility.getBit(value[i], j) == 1) flag = true;
                         }
                         if (flag) {
-                            // TODO: 12/12/18 @ANDREA DEVI FAR APPARIRE LA LISTA SULLO SCHERMO 
                             Log.d(TAG, "OUD: SERVER ONLINE ID: " + i);
-                            for (int j = 0; j <8 ; j++) {
-                                if (Utility.getBit(value[i],j) == 1)
+                            for (int j = 0; j < 8; j++) {
+                                if (Utility.getBit(value[i], j) == 1) {
                                     Log.d(TAG, "OUD: client : " + j);
+                                    RoutingTable.getInstance().addDevice(i, j);
+                                }
                             }
                         }
                     }
                     return;
                 }
-                
+
                 // TODO: 23/11/18 PARSING corretto del messaggio
                 Log.d(TAG, "OUD: " + "Characteristic changed");
                 byte[] value = characteristic.getValue();
@@ -136,7 +125,8 @@ public class ConnectBLETask {
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
 
-                if (id.equals("" + infoDest[0] + infoDest[1])) Log.d(TAG, "OUD: " + "sono il destinatario corretto");
+                if (id.equals("" + infoDest[0] + infoDest[1]))
+                    Log.d(TAG, "OUD: " + "sono il destinatario corretto");
                 else {
                     Log.d(TAG, "OUD: " + "sono il destinatario sbagliato");
                     return;
@@ -159,10 +149,10 @@ public class ConnectBLETask {
                 Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " + valueReceived);
                 if (Utility.getBit(sorgByte, 0) != 0) {
                     Log.d(TAG, "OUD: " + "NOT last message");
-                }
-                else {
+                } else {
                     Log.d(TAG, "OUD: " + "YES last message");
-                    if(receivedListener!=null) receivedListener.OnMessageReceived(messageMap.get(senderId));
+                    if (receivedListener != null)
+                        receivedListener.OnMessageReceived(messageMap.get(senderId));
                     messageMap.remove(senderId);
 
                     /*Handler mHandler = new Handler(Looper.getMainLooper());
@@ -201,8 +191,7 @@ public class ConnectBLETask {
                     } else {
                         Log.d(TAG, "OUD: " + "Nessun operazione con tale descrittore : " + descriptor.getUuid().toString());
                     }
-                }
-                else if (status == 6) Log.d(TAG, "OUD: " + "id gia inizializzato");
+                } else if (status == 6) Log.d(TAG, "OUD: " + "id gia inizializzato");
                 else Log.d(TAG, "OUD: " + "status non conosciuto");
                 super.onDescriptorRead(gatt, descriptor, status);
             }
@@ -210,9 +199,9 @@ public class ConnectBLETask {
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
                 Log.d(TAG, "OUD: " + "I wrote a descriptor");
-                if(descriptor.getUuid().equals(Constants.Client_Configuration_UUID)) {
+                if (descriptor.getUuid().equals(Constants.Client_Configuration_UUID)) {
                     Log.d(TAG, "OUD: onDescriptorWrite: cc");
-                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID) ;
+                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                     if (service == null) {
                         Log.d(TAG, "OUD: nulll");
                         return;
@@ -259,11 +248,8 @@ public class ConnectBLETask {
         user.getBluetoothGatt().connect();
         setId("");
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
-
         boolean ret = this.mGatt.discoverServices();
         Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
-
-
     }
 
     public boolean getServiceDiscovered() {
@@ -288,7 +274,7 @@ public class ConnectBLETask {
     }
 
     public void sendMessage(String message, String dest, Utility.OnMessageSentListener listener) { //idserver:idclient
-        Utility.sendMessage(message,this.mGatt,Utility.getIdArrayByString(getId()),Utility.getIdArrayByString(dest),listener);
+        Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 }
 

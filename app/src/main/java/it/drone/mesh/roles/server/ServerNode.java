@@ -74,15 +74,16 @@ public class ServerNode {
     }
 
     public void setClientOnline(String id, BluetoothDevice device) {    //PASSARE SOLO LA PARTE DI ID RELATIVA AL CLIENT
-        clientList[Integer.parseInt(id) - 1] = device;
+        clientList[Integer.parseInt(id)] = device;
+        Log.d(TAG, "OUD: ho aggiunto il client " + id);
     }
 
     public void setClientOffline(String id) {
-        clientList[Integer.parseInt(id) - 1] = null;
+        clientList[Integer.parseInt(id)] = null;
     }
 
     public BluetoothDevice getClient(String id) {
-        return clientList[Integer.parseInt(id) - 1];
+        return clientList[Integer.parseInt(id)];
     }
 
     public LinkedList<ServerNode> getRoutingTable() {
@@ -128,14 +129,20 @@ public class ServerNode {
     }
 
     public int nextId(BluetoothDevice dev) {
-        for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
+        if (dev == null) {
+            for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
+                if (clientList[i] == null) return i ;
+            }
+            return -1;
+        }
+        for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (dev.equals(clientList[i])) {
                 Log.d(TAG, "OUD: " + "Utente già presente");
                 return -1;
             }
         }
-        for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-            if (clientList[i] == null) return i + 1;
+        for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
+            if (clientList[i] == null) return i ;
         }
         //Log.d(TAG, "OUD: " + "Lista piena");
         return -1;
@@ -305,5 +312,9 @@ public class ServerNode {
             if (n != null) n.printStatus();
         }
         return res;
+    }
+
+    public BluetoothDevice[] getClientList() {
+        return clientList;
     }
 }

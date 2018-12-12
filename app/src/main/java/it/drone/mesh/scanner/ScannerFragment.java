@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelUuid;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
@@ -43,6 +44,7 @@ import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -226,7 +228,7 @@ public class ScannerFragment extends ListFragment {
         final int size = UserList.getUserList().size();
 
         if (offset >= size) {
-            tryConnection(10); //finito di leggere gli id passa a connettersi
+            tryConnection(0); //finito di leggere gli id passa a connettersi
             return;
         }
 
@@ -236,21 +238,30 @@ public class ScannerFragment extends ListFragment {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                    Log.d(TAG, "OUD: Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
+                    Log.d(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
                 }
             }
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service =  gatt.getService(Constants.ServiceUUID);
-                if (service == null) return;
+                if (service == null) {
+                    askIdNearServer(offset+1);
+                    return;
+                }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                if (characteristic == null) return;
+                if (characteristic == null) {
+                    askIdNearServer(offset+1);
+                    return;
+                }
                 BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
-                if (desc==null) return;
+                if (desc==null) {
+                    askIdNearServer(offset+1);
+                    return;
+                }
                 boolean res = gatt.readDescriptor(desc);
                 Log.d(TAG, "OUD: " + "Read Server id: " + res);
                 super.onServicesDiscovered(gatt, status);
@@ -326,12 +337,26 @@ public class ScannerFragment extends ListFragment {
         }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
+        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext(), new Utility.OnMessageReceivedListener() {
+            @Override
+            public void OnMessageReceived(final String message) {
+                Handler mHandler = new Handler(Looper.getMainLooper());
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getContext(), "Messaggio ricevuto dall'utente "   + message, Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+
+            }
+        });
         connectBLETask.startClient();
-        Handler mHandler = new Handler();
+        Handler mHandler = new Handler(Looper.getMainLooper());
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "OUD: Run ");
                 if(connectBLETask.hasCorrectId()) {
                     String tempId = connectBLETask.getId();
                     Log.d(TAG, "OUD: " + "id trovato dopo 5 secondi di attesa : " + tempId);
@@ -353,7 +378,8 @@ public class ScannerFragment extends ListFragment {
                     tryConnection(offset + 1);
                 }
             }
-        }, 10000);
+        }, 5000);
+        Log.d(TAG, "OUD: tra 5 secondo parte handler");
     }
 
     /**

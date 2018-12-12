@@ -107,6 +107,25 @@ public class ConnectBLETask {
 
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+                if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
+                    byte[] value = characteristic.getValue();
+                    for (int i = 0; i <value.length ; i++) {
+                        boolean flag = false;
+                        for (int j = 0; j <8 ; j++) {
+                            if (Utility.getBit(value[i],j) == 1) flag  = true;
+                        }
+                        if (flag) {
+                            // TODO: 12/12/18 @ANDREA DEVI FAR APPARIRE LA LISTA SULLO SCHERMO 
+                            Log.d(TAG, "OUD: SERVER ONLINE ID: " + i);
+                            for (int j = 0; j <8 ; j++) {
+                                if (Utility.getBit(value[i],j) == 1)
+                                    Log.d(TAG, "OUD: client : " + j);
+                            }
+                        }
+                    }
+                    return;
+                }
+                
                 // TODO: 23/11/18 PARSING corretto del messaggio
                 Log.d(TAG, "OUD: " + "Characteristic changed");
                 byte[] value = characteristic.getValue();
@@ -144,14 +163,16 @@ public class ConnectBLETask {
                 else {
                     Log.d(TAG, "OUD: " + "YES last message");
                     if(receivedListener!=null) receivedListener.OnMessageReceived(messageMap.get(senderId));
-                    Handler mHandler = new Handler(Looper.getMainLooper());
+                    messageMap.remove(senderId);
+
+                    /*Handler mHandler = new Handler(Looper.getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId  + ", messaggio: " + messageMap.get(senderId), Toast.LENGTH_SHORT).show();
                             messageMap.remove(senderId);
                         }
-                    });
+                    });*/
 
                 }
 
@@ -189,7 +210,24 @@ public class ConnectBLETask {
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
                 Log.d(TAG, "OUD: " + "I wrote a descriptor");
-
+                if(descriptor.getUuid().equals(Constants.Client_Configuration_UUID)) {
+                    Log.d(TAG, "OUD: onDescriptorWrite: cc");
+                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID) ;
+                    if (service == null) {
+                        Log.d(TAG, "OUD: nulll");
+                        return;
+                    }
+                    BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
+                    if (characteristic == null) {
+                        Log.d(TAG, "OUD: nulll");
+                        return;
+                    }
+                    BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.ClientOnline_Configuration_UUID);
+                    desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                    boolean res = gatt.writeDescriptor(desc);
+                    Log.d(TAG, "OUD: " + "Writing descriptor?" + desc.getUuid() + " --->" + res);
+                    gatt.setCharacteristicNotification(characteristic, true);
+                }
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
 

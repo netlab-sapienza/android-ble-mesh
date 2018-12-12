@@ -190,13 +190,6 @@ public class Utility {
                                     Log.d(TAG, "OUD: " + "Andata male la wait");
                                 }
                             }
-                            if (listener != null) {
-                                if (result)
-                                    listener.OnMessageSent(Arrays.deepToString(finalMessage));
-                                else
-                                    listener.OnCommunicationError("Error on communication");
-                                return result;
-                            }
 
                         }
                     }

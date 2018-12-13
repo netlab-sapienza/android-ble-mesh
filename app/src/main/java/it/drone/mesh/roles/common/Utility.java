@@ -20,6 +20,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -107,8 +108,8 @@ public class Utility {
         int numPackToSend = (lastLen == 0) ? numPacks : numPacks + 1;
 
         finalMessage = new byte[numPackToSend][PACK_LEN];
-
-        // Log.d(TAG, "OUD: messageBuilder:Entrata for");
+        Log.d(TAG, "OUD: numPack: " + numPackToSend);
+        // Log.d(TAG, "OUD: messageBuilder:Entrata foqr");
         Utility.printByte(firstByte);
         Utility.printByte(destByte);
         for (int i = 0; i < numPackToSend; i++) {
@@ -280,6 +281,7 @@ public class Utility {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
+                super.onConnectionStateChange(gatt, status, newState);
             }
 
             @Override
@@ -367,6 +369,7 @@ public class Utility {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
+                super.onConnectionStateChange(gatt, status, newState);
             }
 
             @Override
@@ -437,7 +440,7 @@ public class Utility {
         });
     }
 
-    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final OnNewServerDiscoveredListener listener) {
+    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final HashMap<String, BluetoothDevice> nearMapDecice, final String nuovoId, final OnNewServerDiscoveredListener listener) {
         final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
         final ScanCallback mScanCallback = new ScanCallback() {
             @Override
@@ -451,6 +454,7 @@ public class Utility {
                 }
                 serverToAsk.add(result);
                 listener.OnNewServerDiscovered(result);
+                nearMapDecice.put(nuovoId, result.getDevice());
                 Log.d(TAG, "OUD: " + "ho aggiunto " + result.getDevice().getName());
             }
         };

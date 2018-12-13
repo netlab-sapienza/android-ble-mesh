@@ -205,6 +205,7 @@ public class InitActivity extends Activity {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     writeDebug("Disconnected from GATT client " + gatt.getDevice().getName());
                 }
+                super.onConnectionStateChange(gatt, status, newState);
             }
 
             @Override

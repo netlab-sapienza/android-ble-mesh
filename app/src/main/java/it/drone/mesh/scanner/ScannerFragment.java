@@ -31,6 +31,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +83,7 @@ public class ScannerFragment extends ListFragment {
     private String clientId;
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
     private LinkedList<String> idList = new LinkedList<>();
+    private HashMap<String, BluetoothDevice> nearDeviceMap;
 
 
     /**
@@ -103,6 +105,8 @@ public class ScannerFragment extends ListFragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         setRetainInstance(true);
+        nearDeviceMap = new HashMap<>();
+
 
         // Use getActivity().getApplicationContext() instead of just getActivity() because this
         // object lives in a fragment and needs to be kept separate from the Activity lifecycle.
@@ -240,6 +244,7 @@ public class ScannerFragment extends ListFragment {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
                 }
+                super.onConnectionStateChange(gatt, status, newState);
             }
 
             @Override
@@ -276,6 +281,7 @@ public class ScannerFragment extends ListFragment {
                     String val = new String(descriptor.getValue());
                     if (val.length() > 0) {
                         idList.add(val);
+                        nearDeviceMap.put(val, gatt.getDevice());
                         Log.d(TAG, "OUD: " + "id aggiunto :" + val);
                     }
                 }
@@ -300,6 +306,7 @@ public class ScannerFragment extends ListFragment {
                 AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
                 acceptBLETask.setStartServerList(tempResult);
                 acceptBLETask.insertIdInMap(idList);
+                acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.startServer();
             }
             return;
@@ -375,6 +382,7 @@ public class ScannerFragment extends ListFragment {
                     return;
             }
             tempResult.add(result);
+
             final User newUser = new User(result.getDevice(), result.getDevice().getName());
             usersFound.add(newUser);
             UserList.addUser(newUser);

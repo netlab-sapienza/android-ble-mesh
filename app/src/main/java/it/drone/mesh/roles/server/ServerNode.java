@@ -142,18 +142,16 @@ public class ServerNode {
             }
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
-            if (clientList[i] == null) return i ;
+            if (clientList[i] == null) {
+                if (i != 1) return -1;
+                return i;
+            }
         }
         //Log.d(TAG, "OUD: " + "Lista piena");
         return -1;
     }
 
-    public boolean isFull() {
-        for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-            if (clientList[i] == null) return false;
-        }
-        return true;
-    }
+
 
     public void printStatus() {
         Log.d(TAG, "OUD: " + "I'm node " + id);
@@ -187,7 +185,7 @@ public class ServerNode {
             byte secondByte = 0b00000000;
             LinkedList<ServerNode> nearTemp = s.getNearServerList();
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-                if (clientList[i] != null) secondByte = Utility.setBit(secondByte, i + 1);
+                if (s.clientList[i] != null) secondByte = Utility.setBit(secondByte, i);
             }
             tempArrayByte[1] = secondByte;
             int tempIndex = 2;
@@ -311,5 +309,9 @@ public class ServerNode {
 
     public BluetoothDevice[] getClientList() {
         return clientList;
+    }
+
+    public int getLastRequest() {
+        return lastRequest;
     }
 }

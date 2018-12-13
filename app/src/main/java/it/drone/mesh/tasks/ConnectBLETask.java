@@ -54,6 +54,7 @@ public class ConnectBLETask {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
+                super.onConnectionStateChange(gatt, status, newState);
             }
 
             @Override

@@ -129,7 +129,7 @@ public class ConnectionActivity extends Activity {
         infoDest[0] = Integer.parseInt(message.substring(0, 1));    //id del destinatario Server
         infoDest[1] = Integer.parseInt(message.substring(1, 2));    //id del destinatario Client
 
-        message = message.substring(1, message.length());
+        message = message.substring(2, message.length());
         boolean res = Utility.sendMessage(message, gatt, infoSorg, infoDest, null);
         Log.d(TAG, "OUD: " + "sendMessage: Inviato ? " + res);
         /*

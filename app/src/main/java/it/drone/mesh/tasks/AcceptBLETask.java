@@ -11,8 +11,6 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.os.Handler;
@@ -22,16 +20,11 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 
 import it.drone.mesh.models.User;
-import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.roles.server.ServerNode;
-
-import static it.drone.mesh.roles.common.Utility.buildScanFilters;
-import static it.drone.mesh.roles.common.Utility.buildScanSettings;
 
 
 public class AcceptBLETask {
@@ -57,6 +50,7 @@ public class AcceptBLETask {
     private LinkedList<ScanResult> serversToAsk;
     private LinkedList<String> nearId;
     private String id;
+    private HashMap<String, BluetoothDevice> nearDeviceMap;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
@@ -65,6 +59,7 @@ public class AcceptBLETask {
         this.context = context;
         messageMap = new HashMap<>();
         serversToAsk = null;
+        nearDeviceMap = null;
         nearId = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         mGattCharacteristic = new BluetoothGattCharacteristic(Constants.CharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -145,7 +140,8 @@ public class AcceptBLETask {
                                 clients.add(client);
                             }
                             if (isNearToMe) {
-                                Utility.updateServerToAsk(mBluetoothAdapter, serversToAsk, new Utility.OnNewServerDiscoveredListener() {
+                                String idNewServer = new String("" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8));
+                                Utility.updateServerToAsk(mBluetoothAdapter, serversToAsk, nearDeviceMap, idNewServer, new Utility.OnNewServerDiscoveredListener() {
                                     @Override
                                     public void OnNewServerDiscovered(ScanResult server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
@@ -200,9 +196,8 @@ public class AcceptBLETask {
                     } else {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
-                } else { //è la caratteristica dei messaggi
+                } else {
                     final String valueReceived;
-                    //mGattServer.notifyCharacteristicChanged(mNode.getClient("1"),characteristic,false);
                     Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "  address:  " + device.getAddress());
                     Log.d(TAG, "OUD: " + "Device address: " + device.getAddress());
                     Log.d(TAG, "OUD: " + "ReqId: " + requestId);
@@ -220,7 +215,7 @@ public class AcceptBLETask {
                         Log.d(TAG, "OUD: " + valueReceived);
                         final int[] infoSorg = Utility.getByteInfo(sorgByte);
                         final int[] infoDest = Utility.getByteInfo(destByte);
-                        Log.d(TAG, "OUD: " + "id sorg: " + infoSorg[0] + "" + infoSorg[1]);
+                        //Log.d(TAG, "OUD: " + "id sorg: " + infoSorg[0] + "" + infoSorg[1]);
                         Log.d(TAG, "OUD: " + "id dest: " + infoDest[0] + "" + infoDest[1]);
                         final String senderId = Utility.getStringId(sorgByte);
                         String previousMsg = messageMap.get(senderId);
@@ -251,16 +246,79 @@ public class AcceptBLETask {
                                 Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + ", messaggio: " + message, Toast.LENGTH_LONG).show();
                             }
                         });
-                        BluetoothDevice dest = mNode.getClient("" + infoDest[1]);   // TODO: 05/12/18 Controllare a quale server mandarlo
-                        if (dest == null) Log.d(TAG, "OUD: " + "null");
-                        try {
-                            characteristic.setValue(value);
-                            boolean res = mGattServer.notifyCharacteristicChanged(dest, characteristic, false);
-                            Log.d(TAG, "OUD: " + "Notification sent? --> " + res);
-                        } catch (IllegalArgumentException e) {
-                            Log.d(TAG, "OUD: " + e.getMessage());
+                        if ((infoDest[0] + "").equals(getId())) {
+                            //sono io il destinatario
+                            if (infoDest[1] == 0) {
+                                Log.d(TAG, "OUD: messaggio broadcoast");
+                                return;
+                            }
+                            BluetoothDevice dest = mNode.getClient("" + infoDest[1]);   // TODO: 05/12/18 Controllare a quale server mandarlo
+                            if (dest == null) {
+                                Log.d(TAG, "OUD: " + "null");
+                                return;
+                            }
+                            try {
+                                characteristic.setValue(value);
+                                boolean res = mGattServer.notifyCharacteristicChanged(dest, characteristic, false);
+                                Log.d(TAG, "OUD: " + "Notification sent? --> " + res);
+                            } catch (IllegalArgumentException e) {
+                                Log.d(TAG, "OUD: " + e.getMessage());
+                            }
+                            return;
+                        } else {
+                            Log.d(TAG, "OUD: Non sono il destinatario");
+                            final ServerNode dest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
+                            Log.d(TAG, "OUD: next-hop : " + dest.getId());
+                            final BluetoothDevice near = nearDeviceMap.get(dest.getId());
+                            Log.d(TAG, "OUD: next-hop : " + near.getName());
+                            final User user = new User(near, near.getName());
+                            ConnectBLETask connectBLETask = new ConnectBLETask(user, context, new BluetoothGattCallback() {
+                                @Override
+                                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                                        Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                                        gatt.discoverServices();
+                                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                                        Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                                    }
+                                    super.onConnectionStateChange(gatt, status, newState);
+                                }
+
+                                @Override
+                                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                                    Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
+                                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                                    if (service == null) return;
+                                    BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                                    if (characteristic == null) return;
+                                    BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorUUID);
+                                    boolean res = gatt.readDescriptor(descriptor);
+                                    Log.d(TAG, "OUD: " + "Read Server id: " + res);
+                                    super.onServicesDiscovered(gatt, status);
+                                }
+
+                                @Override
+                                public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                                    String nearId = new String(descriptor.getValue());
+                                    Utility.sendMessage(message, gatt, infoSorg, infoDest, new Utility.OnMessageSentListener() {
+                                        @Override
+                                        public void OnMessageSent(String message) {
+                                            Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
+                                        }
+
+                                        @Override
+                                        public void OnCommunicationError(String error) {
+
+                                        }
+                                    });
+                                    super.onDescriptorRead(gatt, descriptor, status);
+                                }
+
+                            });
+                            connectBLETask.startClient();
                         }
-                        final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
+
+                        /*final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
                         final ScanCallback mScanCallback = new ScanCallback() {
                             @Override
                             public void onScanResult(int callbackType, final ScanResult result) {
@@ -336,7 +394,7 @@ public class AcceptBLETask {
                         }, 5000);
                         // TODO: 07/11/2018 perchè ogni volta si pulisce la lista? Non servirà più
                         UserList.cleanUserList();
-                        mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
+                        mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);*/
                     }
                 }
                 super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
@@ -362,11 +420,7 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "Descr : " + new String(descriptor.getValue()));
                     mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                 } else { //richiesta preliminare dell'id del server per connettermici come client
-                    if (mNode.isFull()) {
-                        mGattServer.sendResponse(device, requestId, 6, 0, descriptor.getValue());
-                    } else {
-                        mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
-                    }
+                    mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                 }
                 //Log.d(TAG, "OUD: " + new String(mGattDescriptor.getValue()));
 
@@ -599,5 +653,12 @@ public class AcceptBLETask {
 
     public void insertIdInMap(LinkedList<String> idList) {
         nearId = idList;
+    }
+
+    public void insertMapDevice(HashMap<String, BluetoothDevice> nearDeviceMap) {
+        for (String id : nearDeviceMap.keySet()) {
+            Log.d(TAG, "OUD: id: " + id + "Device: " + nearDeviceMap.get(id).getName());
+        }
+        this.nearDeviceMap = nearDeviceMap;
     }
 }

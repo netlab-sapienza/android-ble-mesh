@@ -13,6 +13,7 @@ public class User {
     private BluetoothSocket bluetoothSocket;
     private BluetoothGattServer bluetoothGattServer;
     private BluetoothGatt bluetoothGatt;
+    private String id;
 
     public User(BluetoothDevice mBluetoothDevice, BluetoothServerSocket mBluetoothServerSocket, BluetoothSocket mBluetoothSocket) {
         this.bluetoothDevice = mBluetoothDevice;
@@ -83,5 +84,13 @@ public class User {
 
     public void setBluetoothGattServer(BluetoothGattServer bluetoothGattServer) {
         this.bluetoothGattServer = bluetoothGattServer;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

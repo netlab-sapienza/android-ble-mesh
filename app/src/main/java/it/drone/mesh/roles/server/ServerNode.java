@@ -116,7 +116,7 @@ public class ServerNode {
     }
 
     public boolean isClientOnline(String id) {
-        return clientList[Integer.parseInt(id) - 1] != null;
+        return clientList[Integer.parseInt(id)] != null;
     }
 
     @Override
@@ -150,8 +150,6 @@ public class ServerNode {
         //Log.d(TAG, "OUD: " + "Lista piena");
         return -1;
     }
-
-
 
     public void printStatus() {
         Log.d(TAG, "OUD: " + "I'm node " + id);

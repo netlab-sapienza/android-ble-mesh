@@ -234,8 +234,18 @@ public class ConnectBLETask {
                 super.onMtuChanged(gatt, mtu, status);
             }
         };
+    }
 
 
+    /**
+     * Send message a un client nella rete
+     *
+     * @param message  Messaggio da inviare
+     * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
+     * @param listener listener con callback specifica quando il messaggio è stato inviato
+     */
+    public boolean sendMessage(String message, String dest, Utility.OnMessageSentListener listener) {
+        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 
     public void startClient() {
@@ -264,17 +274,6 @@ public class ConnectBLETask {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    /**
-     * Send message a un client nella rete
-     *
-     * @param message  Messaggio da inviare
-     * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
-     * @param listener listener con callback specifica quando il messaggio è stato inviato
-     */
-    public void sendMessage(String message, String dest, Utility.OnMessageSentListener listener) {
-        Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 }
 

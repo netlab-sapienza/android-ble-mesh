@@ -158,44 +158,37 @@ public class Utility {
         ret[0] = getBit(firstByte, 4) + getBit(firstByte, 5) * 2 + getBit(firstByte, 6) * 4 + getBit(firstByte, 7) * 8;
         return ret[0] + "" + ret[1];
     }
+
     public static int[] getIdArrayByString(String id) {
         int[] res = new int[2];
-        res[0] = (id.length() == 2 )? (Integer.parseInt(id.substring(0,1))):(Integer.parseInt(id.substring(0,2)));
-        res[1] = (id.length() == 2 )? (Integer.parseInt(id.substring(1,2))):(Integer.parseInt(id.substring(2,3)));
+        res[0] = (id.length() == 2) ? (Integer.parseInt(id.substring(0, 1))) : (Integer.parseInt(id.substring(0, 2)));
+        res[1] = (id.length() == 2) ? (Integer.parseInt(id.substring(1, 2))) : (Integer.parseInt(id.substring(2, 3)));
         return res;
     }
 
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
         boolean result = true;
-        for (BluetoothGattService service : gatt.getServices()) {
-            Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
-            if (service.getUuid().equals(Constants.ServiceUUID)) {
-                Log.d(TAG, "OUD: " + "sendMessage: service.equals");
-                if (service.getCharacteristics() != null) {
-                    for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
-                        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-                        if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
-                            for (int i = 0; i < finalMessage.length; i++) {
-                                chars.setValue(finalMessage[i]);
-                                gatt.beginReliableWrite();
-                                boolean res = gatt.writeCharacteristic(chars);
-                                result = res && result;
-                                gatt.executeReliableWrite();
-                                Log.d(TAG, "OUD: " + new String(finalMessage[i]));
-                                Log.d(TAG, "OUD: " + "Inviato? -> " + res);
-                                try {
-                                    Thread.sleep(300);
-                                } catch (Exception e) {
-                                    Log.d(TAG, "OUD: " + "Andata male la wait");
-                                }
-                            }
 
-                        }
-                    }
-                }
+        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+        if (service == null) return false;
+        BluetoothGattCharacteristic chars = service.getCharacteristic(Constants.CharacteristicUUID);
+        if (chars == null) return false;
+
+        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
+        for (int i = 0; i < finalMessage.length; i++) {
+            chars.setValue(finalMessage[i]);
+            gatt.beginReliableWrite();
+            boolean res = gatt.writeCharacteristic(chars);
+            result = res && result;
+            gatt.executeReliableWrite();
+            Log.d(TAG, "OUD: " + new String(finalMessage[i]));
+            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+            try {
+                Thread.sleep(300);
+            } catch (Exception e) {
+                Log.d(TAG, "OUD: " + "Andata male la wait");
             }
-
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
         return false;
@@ -410,15 +403,13 @@ public class Utility {
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 Log.d(TAG, "OUD: " + "i wrote a characteristic !");
-                if(characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
+                if (characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         Log.d(TAG, "OUD: " + "I wrote a new server on a server");
-                    }
-                    else {
+                    } else {
                         Log.d(TAG, "OUD: " + "Error1: " + status);
                     }
-                }
-                else {
+                } else {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         String temp = new String(value);
                         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
@@ -430,8 +421,7 @@ public class Utility {
                         boolean res = gatt.writeCharacteristic(characteristic1);
                         Log.d(TAG, "OUD: " + "write charac? " + res);
                         gatt.executeReliableWrite();
-                    }
-                    else {
+                    } else {
                         Log.d(TAG, "OUD: " + "Error2: " + status);
                     }
                 }

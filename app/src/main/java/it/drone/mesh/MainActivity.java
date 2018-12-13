@@ -138,7 +138,6 @@ public class MainActivity extends FragmentActivity {
                         setupFragments();
                     } else {
                         // Bluetooth Advertisements are not supported, you can be only client
-                        // TODO: 07/11/18 capire se sta cosa funfa o distrugge tutto @Nero
                         Toast.makeText(this, "Your device does not support multiple advertisement, you can be only client do not broadcast", Toast.LENGTH_LONG).show();
                         setupFragments();
                         //showErrorText(R.string.bt_ads_not_supported);

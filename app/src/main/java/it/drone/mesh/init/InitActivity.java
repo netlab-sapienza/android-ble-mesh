@@ -69,7 +69,7 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
 
     private ConnectBLETask connectBLETask;
-    private String clientId; // TODO: 12/12/2018 serve davvero?
+    private String clientId; // TODO: 12/12/2018 serve davvero?  NO! lo usavamo per passarlo alla connection Activity che non credo sia nei tuoi piani,in caso contrario se preferisci puoi fare connect.getId() ma tocca assicurarsi di essere un client
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
     private LinkedList<String> idList = new LinkedList<>();
 
@@ -182,8 +182,8 @@ public class InitActivity extends Activity {
 
     /**
      * Since now the UserList is populated, the device starts asking for an Id
-     *
-     * @param offset //TODO DESCRIVERE OFFSET
+     * Funzione ricorsiva per chiedere a tutti i Server il proprio Id.
+     * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività
      */
 
     private void askIdNearServer(final int offset) {
@@ -251,9 +251,9 @@ public class InitActivity extends Activity {
     }
 
     /**
-     * //TODO descrizione
-     *
-     * @param offset
+     * Funzione ricorsiva per provare a connettersi come client ai server trovati; Se non ce ne sono o nessuno è disponibile
+     * diventi tu stesso Server
+     * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività e si diventa server
      */
     public void tryConnection(final int offset) {
         if (connectBLETask != null) {
@@ -273,35 +273,35 @@ public class InitActivity extends Activity {
         }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, this, new Utility.OnMessageReceivedListener() {
+        final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this, new Utility.OnMessageReceivedListener() {
             @Override
-            public void OnMessageReceived(final String message) {
+            public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        writeDebug("Messaggio ricevuto dall'utente " + message);
+                        writeDebug("Messaggio ricevuto dall'utente " + idMitt + " : " + message);
                     }
                 });
 
 
             }
         });
-        connectBLETask.startClient();
+        connectBLE.startClient();
         Handler mHandler = new Handler(Looper.getMainLooper());
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 Log.d(TAG, "OUD: Run ");
-                if (connectBLETask.hasCorrectId()) {
-                    String tempId = connectBLETask.getId();
+                if (connectBLE.hasCorrectId()) {
+                    String tempId = connectBLE.getId();
                     writeDebug("id trovato dopo 5 secondi di attesa : " + tempId);
                     int parsed;
                     try {
                         parsed = Integer.parseInt(tempId);
                         writeDebug("id assegnato correttamente");
                         clientId = parsed + "";
-                        InitActivity.this.connectBLETask = connectBLETask;
+                        connectBLETask = connectBLE;
                         //     mAdapter.add(tempResult.get(offset));
                         //     mAdapter.notifyDataSetChanged();
                     } catch (Exception e) {

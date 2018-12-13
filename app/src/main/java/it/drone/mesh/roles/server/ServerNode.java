@@ -185,9 +185,6 @@ public class ServerNode {
             byte firstByte = Utility.byteNearServerBuilder(serverId, clientId);
             tempArrayByte[0] = firstByte;
             byte secondByte = 0b00000000;
-
-            // TODO: 05/12/18 settare il terzo byte
-
             LinkedList<ServerNode> nearTemp = s.getNearServerList();
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
                 if (clientList[i] != null) secondByte = Utility.setBit(secondByte, i + 1);
@@ -235,7 +232,7 @@ public class ServerNode {
                 byte clientByte = mapByte[i][1];
                 for (int k = 0; k < 8; k++) {
                     if (Utility.getBit(clientByte, k) == 1)
-                        arrayNode[i].setClientOnline("" + k, null); // TODO: 04/12/18 VEDERE COME PASSARSI IL DEVICE non serve perchè ti servono solo i tuoi client
+                        arrayNode[i].setClientOnline("" + k, null);
                 }
                 for (int k = 2; k < SERVER_PACKET_SIZE; k++) {
                     byte nearServerByte = mapByte[i][k];
@@ -271,12 +268,10 @@ public class ServerNode {
                 res[i] = temp;
             }
         }
-        // TODO: 05/12/18 aggiungi vicini ---> tocca passare in qualche modo l'id per ogni server nella lista askserver 
         return res;
     }
 
     public boolean updateRoutingTable(byte[] value) {
-        // TODO: 05/12/18 aggiorna routing
         boolean res = false;
         byte idByte = value[0];
         int index = Utility.getBit(idByte, 0) + Utility.getBit(idByte, 1) * 2 + Utility.getBit(idByte, 2) * 4 + Utility.getBit(idByte, 3) * 8;

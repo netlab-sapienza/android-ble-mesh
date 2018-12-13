@@ -61,4 +61,8 @@ public class RoutingTable {
         public void OnDeviceRemoved(Device device);
     }
 
+    public void cleanRoutingTable() {
+        routingTable.clear();
+    }
+
 }

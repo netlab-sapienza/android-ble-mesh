@@ -24,17 +24,16 @@ public class ConnectBLETask {
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
-    private boolean serviceDiscovered;
     private String id;
     private HashMap<String, String> messageMap;
     final private Utility.OnMessageReceivedListener receivedListener;
+    private RoutingTable routingTable;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.mGattCallback = callback;
-        this.serviceDiscovered = false;
         this.id = null;
         receivedListener = null;
     }
@@ -43,7 +42,6 @@ public class ConnectBLETask {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
-        this.serviceDiscovered = false;
         this.id = null;
         this.messageMap = new HashMap<>();
         receivedListener = list;
@@ -62,7 +60,6 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices());
-                serviceDiscovered = true;
                 for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().toString().equals(Constants.ServiceUUID.toString())) {
                         if (service.getCharacteristics() != null) {
@@ -96,6 +93,7 @@ public class ConnectBLETask {
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
+                    routingTable.cleanRoutingTable();
                     byte[] value = characteristic.getValue();
                     for (int i = 0; i < value.length; i++) {
                         boolean flag = false;
@@ -107,15 +105,13 @@ public class ConnectBLETask {
                             for (int j = 0; j < 8; j++) {
                                 if (Utility.getBit(value[i], j) == 1) {
                                     Log.d(TAG, "OUD: client : " + j);
-                                    RoutingTable.getInstance().addDevice(i, j);
+                                    routingTable.addDevice(i, j);
                                 }
                             }
                         }
                     }
                     return;
                 }
-
-                // TODO: 23/11/18 PARSING corretto del messaggio
                 Log.d(TAG, "OUD: " + "Characteristic changed");
                 byte[] value = characteristic.getValue();
                 final String valueReceived;
@@ -152,7 +148,7 @@ public class ConnectBLETask {
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
                     if (receivedListener != null)
-                        receivedListener.OnMessageReceived(messageMap.get(senderId));
+                        receivedListener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     messageMap.remove(senderId);
 
                     /*Handler mHandler = new Handler(Looper.getMainLooper());
@@ -252,10 +248,6 @@ public class ConnectBLETask {
         Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
     }
 
-    public boolean getServiceDiscovered() {
-        return serviceDiscovered;
-    }
-
     public void stopClient() {
         this.mGatt.disconnect();
         this.mGatt = null;
@@ -273,7 +265,14 @@ public class ConnectBLETask {
         this.id = id;
     }
 
-    public void sendMessage(String message, String dest, Utility.OnMessageSentListener listener) { //idserver:idclient
+    /**
+     * Send message a un client nella rete
+     *
+     * @param message  Messaggio da inviare
+     * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
+     * @param listener listener con callback specifica quando il messaggio è stato inviato
+     */
+    public void sendMessage(String message, String dest, Utility.OnMessageSentListener listener) {
         Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 }

@@ -128,11 +128,9 @@ public class BLEClient {
                 BLEServer.getInstance(context).initializeService();
             } catch (NotSupportedException e) {
                 e.printStackTrace();
-                // TODO: 16/11/18 richiesta che qualcun altro mi accolga nella rete perchè non posso essere server 
             } catch (NotEnabledException e) {
                 e.printStackTrace();
                 Log.e(TAG, "getIdFromServer: ");
-                // TODO: 16/11/18 richiesta di attivazione bluetooth
             }
         } else {
 
@@ -158,8 +156,6 @@ public class BLEClient {
 
                     }
                 }
-
-                // TODO: 16/11/18 @Nero fai i compiti del client
 
                 @Override
                 public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {

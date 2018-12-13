@@ -308,12 +308,12 @@ public class ScannerFragment extends ListFragment {
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext(), new Utility.OnMessageReceivedListener() {
             @Override
-            public void OnMessageReceived(final String message) {
+            public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getContext(), "Messaggio ricevuto dall'utente " + message, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Messaggio ricevuto dall'utente " + idMitt + " : " + message, Toast.LENGTH_SHORT).show();
                     }
                 });
 

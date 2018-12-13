@@ -15,7 +15,6 @@ import it.drone.mesh.R;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.Utility;
-import it.drone.mesh.tasks.ConnectBLETask;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
 
@@ -91,9 +90,9 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
      * @param listener      Listener di risposta
      */
     private void sendMessage(String destinationId, String message, Utility.OnMessageSentListener listener) {
-        ConnectBLETask connectBLETask = new ConnectBLETask();
-        connectBLETask.startClient();
-        connectBLETask.sendMessage(message, destinationId, listener);
+        //ConnectBLETask connectBLETask = new ConnectBLETask();
+        //connectBLETask.startClient();
+        //connectBLETask.sendMessage(message, destinationId, listener);
     }
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {

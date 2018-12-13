@@ -125,13 +125,11 @@ public class BLEServer {
 
             @Override
             public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-                // TODO: 16/11/18 questa fa il broadcast da fare
                 super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
             }
 
             @Override
             public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
-                // TODO: 16/11/18
                 /*
                 Log.d(TAG, "OUD: " + "I've been asked to read descriptor from " + device.getName());
                 if (descriptor.getUuid().toString().equals((mGattDescriptorNextId.getUuid().toString()))) {
@@ -162,7 +160,6 @@ public class BLEServer {
             }
         };
 
-        // TODO: 16/11/18 usare campi della classe BLE
         String id = "1";
         String next_id = "1";
 
@@ -176,7 +173,6 @@ public class BLEServer {
         this.mGattServer.addService(this.mGattService);
 
 
-        // TODO: 16/11/18 scannare gli altri server per prendere l'id corretto
         // startScan(context);
     }
 
@@ -196,7 +192,6 @@ public class BLEServer {
 
 
     public boolean sendMessage(String message) {
-        // TODO: 13/11/18
         return true;
     }
 

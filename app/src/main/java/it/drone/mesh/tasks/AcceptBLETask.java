@@ -161,8 +161,6 @@ public class AcceptBLETask {
                             byte[] correctMap = new byte[value.length - 2];
                             for (int i = 0; i < value.length - 2; i++) {
                                 correctMap[i] = value[i + 2];
-                                /*Log.d(TAG, "----: " + i);
-                                Utility.printByte(value[i+2]);*/
                             }
                             String previousMsg = messageMap.get(senderId);
                             if (previousMsg == null) previousMsg = "";
@@ -176,18 +174,7 @@ public class AcceptBLETask {
                             }
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             byte[][] map = Utility.buildMapFromString(messageMap.get(senderId));
-
-                            /*for (int i = 0; i < 16; i++) {
-                                Log.d(TAG, "----: " + i);
-                                for (int j = 0; j < ServerNode.SERVER_PACKET_SIZE; j++) {
-                                    Log.d(TAG, "----: " + j);
-                                    Utility.printByte(map[i][j]);
-                                }
-                            }*/
-
-                            Log.d(TAG, "OUD: " + "After buildmapfromstring");
                             mNode = ServerNode.buildRoutingTable(map, getId());
-                            Log.d(TAG, "OUD: " + "After build routing table");
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
                             LinkedList<ConnectBLETask> clients = new LinkedList<>();
                             for (ScanResult temp : serversToAsk) {
@@ -347,7 +334,7 @@ public class AcceptBLETask {
 
                             }
                         }, 5000);
-                        // TODO: 07/11/2018 perchè ogni volta si pulisce la lista?
+                        // TODO: 07/11/2018 perchè ogni volta si pulisce la lista? Non servirà più
                         UserList.cleanUserList();
                         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
                     }
@@ -363,7 +350,6 @@ public class AcceptBLETask {
                     if (current_id == -1) {
                         mGattServer.sendResponse(device, requestId, 6, 0, descriptor.getValue());
                     } else {
-                        // TODO: 24/11/18 notify all client that another one is online
                         mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                         mNode.setClientOnline("" + current_id, device);
                         String value = "" + (mNode.nextId(null));
@@ -397,7 +383,7 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + res);
                 } else Log.d(TAG, "OUD: " + "response not needed");
                 if (descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) {
-
+                    // TODO: 13/12/18 NOTIFY ALL SERVER THAT ANOTHER CLIENT IS ONLINE.
                     int currentid = -1;
                     BluetoothDevice[] clientList = mNode.getClientList();
                     for (int i = 0; i < clientList.length; i++) {
@@ -465,7 +451,7 @@ public class AcceptBLETask {
 
     public void initializeId(final int offset) {
         if (offset >= serversToAsk.size()) {
-            //TODO: piangi e ricomincia da capo
+            //TODO: senti @Andrea per fare restart Init Activity
             return;
         }
         ScanResult temp = serversToAsk.get(offset);
@@ -569,7 +555,6 @@ public class AcceptBLETask {
 
     public void startServer() {
         // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
-        // TODO: 23/11/18 CREAZIONE ID SERVER
         Log.d(TAG, "OUD: " + "dev found:" + serversToAsk.size());
 
 
@@ -577,7 +562,6 @@ public class AcceptBLETask {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
             initializeId(0);
         } else {
-            //sono l'unico server che riesco a trovare, mi setto l'ID a 1 e in caso poi verrà riaggiornato
             setId("1");
             mNode = new ServerNode(id);
             mGattCharacteristicNextServerId.setValue("2".getBytes());
@@ -598,9 +582,6 @@ public class AcceptBLETask {
             // I START OPEN THE GATT SERVER
             this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
             this.mGattServer.addService(this.mGattService);
-
-
-            //this.mGattServer.addService(this.mGattServiceRoutingTable); con due service un sacco di cellulari non funzionano più
 
             Log.d(TAG, "OUD: " + "startServer: Inizializzato servizi e tutto");
         }

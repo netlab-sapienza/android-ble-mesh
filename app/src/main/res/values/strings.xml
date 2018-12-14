@@ -33,7 +33,7 @@
     <string name="send">Invio</string>
     <string name="message_placeholder">Inserire messaggio</string>
     <string name="bt_not_enabled">bluetooth not enabled</string>
-    <string name="whoami">whoami</string>
+    <string name="whoami">Entity</string>
     <string name="isscanning">isScanning?</string>
     <string name="device_name_placeholder">Device name:</string>
     <string name="name">name</string>
@@ -49,5 +49,8 @@
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
     <string name="destination_id">Destination Id</string>
+    <string name="myid">ID</string>
+    <string name="client">Client</string>
+    <string name="server">Server</string>
 
 </resources>

@@ -12,7 +12,6 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,7 +20,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.annotation.UiThread;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.widget.RecyclerView;
@@ -32,16 +30,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.Listeners.Listeners;
+import it.drone.mesh.Listeners.ServerScanCallback;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.Listeners.ServerScanCallback;
 import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
@@ -61,7 +58,7 @@ public class InitActivity extends Activity {
 
     Button startServices;
     BLEServer server;
-    TextView debugger;
+    TextView debugger, whoami, myid;
     RecyclerView recyclerDeviceList;
     DeviceAdapter deviceAdapter;
 
@@ -73,9 +70,7 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
 
     private ConnectBLETask connectBLETask;
-    // private String clientId; // TODO: 12/12/2018 serve davvero?  NO! lo usavamo per passarlo alla connection Activity che non credo sia nei tuoi piani,in caso contrario se preferisci puoi fare connect.getId() ma tocca assicurarsi di essere un client
-    private LinkedList<ScanResult> tempResult = new LinkedList<>();
-    private LinkedList<String> idList = new LinkedList<>();
+
     private HashMap<String, BluetoothDevice> nearDeviceMap = new HashMap<>();
 
     private AcceptBLETask acceptBLETask;
@@ -86,6 +81,8 @@ public class InitActivity extends Activity {
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
         debugger = findViewById(R.id.debugger);
+        whoami = findViewById(R.id.whoami);
+        myid = findViewById(R.id.myid);
 
         askPermissions(savedInstanceState);
 
@@ -137,11 +134,6 @@ public class InitActivity extends Activity {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         startScanning();
-
-        /*
-        writeDebug("Adding mockup device...");
-        addDevice(new Device("00", System.currentTimeMillis(), "0 db"));
-        */
     }
 
     /**
@@ -274,15 +266,14 @@ public class InitActivity extends Activity {
             startService(new Intent(this, AdvertiserService.class));
             writeDebug("Start Server");
             acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
-            acceptBLETask.setStartServerList(tempResult);
-            acceptBLETask.insertIdInMap(idList);
             acceptBLETask.insertMapDevice(nearDeviceMap);
-
             acceptBLETask.startServer();
             deviceAdapter.setAcceptBLETask(acceptBLETask);
+            whoami.setText(R.string.server);
+            myid.setText(acceptBLETask.getId());
             return;
         }
-        final User newUser = UserList.getUser(offset);
+        User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this);
         connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
@@ -292,9 +283,10 @@ public class InitActivity extends Activity {
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        writeDebug("Messaggio ricevuto dall'utente " + idMitt + " : " + message);
                     }
                 });
+
+                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
             }
         });
         connectBLE.startClient();
@@ -304,19 +296,14 @@ public class InitActivity extends Activity {
             public void run() {
                 Log.d(TAG, "OUD: Run ");
                 if (connectBLE.hasCorrectId()) {
-                    String tempId = connectBLE.getId();
-                    writeDebug("id trovato dopo 5 secondi di attesa : " + tempId);
-                    //int parsed;
+                    writeDebug("Id trovato: " + connectBLE.getId());
                     try {
-                        //parsed = Integer.parseInt(tempId);
-                        writeDebug("id assegnato correttamente");
-                        //clientId = parsed + "";
+                        writeDebug("Id assegnato correttamente");
                         connectBLETask = connectBLE;
-                        writeDebug("OUD: " + "You're a client and your id is" + connectBLETask.getId());
-                        // TODO: 14/12/18 controllare se va fatto qua il setConnectBLE
+                        writeDebug("OUD: " + "You're a client and your id is " + connectBLETask.getId());
                         deviceAdapter.setConnectBLETask(connectBLETask);
-                        //     mAdapter.add(tempResult.get(offset));
-                        //     mAdapter.notifyDataSetChanged();
+                        myid.setText(connectBLETask.getId());
+                        whoami.setText(R.string.client);
                     } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
                         tryConnection(offset + 1);
@@ -327,7 +314,7 @@ public class InitActivity extends Activity {
                 }
             }
         }, HANDLER_PERIOD);
-        writeDebug("Tra 5 secondo parte handler");
+        writeDebug("Assegnazione id 5 secondi");
     }
 
 

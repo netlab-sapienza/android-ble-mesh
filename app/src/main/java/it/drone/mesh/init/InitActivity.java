@@ -3,6 +3,7 @@ package it.drone.mesh.init;
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -30,6 +31,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
@@ -74,6 +76,7 @@ public class InitActivity extends Activity {
     // private String clientId; // TODO: 12/12/2018 serve davvero?  NO! lo usavamo per passarlo alla connection Activity che non credo sia nei tuoi piani,in caso contrario se preferisci puoi fare connect.getId() ma tocca assicurarsi di essere un client
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
     private LinkedList<String> idList = new LinkedList<>();
+    private HashMap<String, BluetoothDevice> nearDeviceMap = new HashMap<>();
 
     private AcceptBLETask acceptBLETask;
 
@@ -247,7 +250,7 @@ public class InitActivity extends Activity {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     String val = new String(descriptor.getValue());
                     if (val.length() > 0) {
-                        // idList.add(val);
+                        nearDeviceMap.put(val, gatt.getDevice());
                         writeDebug("id aggiunto :" + val);
                     }
                 }
@@ -273,6 +276,8 @@ public class InitActivity extends Activity {
             acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
             acceptBLETask.setStartServerList(tempResult);
             acceptBLETask.insertIdInMap(idList);
+            acceptBLETask.insertMapDevice(nearDeviceMap);
+
             acceptBLETask.startServer();
             deviceAdapter.setAcceptBLETask(acceptBLETask);
             return;

@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Set;
 
 import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.models.User;
@@ -135,8 +136,9 @@ public class AcceptBLETask {
                             }
 
                             final LinkedList<ConnectBLETask> clients = new LinkedList<>();
-                            for (ScanResult temp : serversToAsk) {
-                                ConnectBLETask client = Utility.createBroadCastNextServerIdClient(temp.getDevice(), new String(mGattCharacteristicNextServerId.getValue()), context, value);
+                            for (String idTemp : nearDeviceMap.keySet()) {
+                                BluetoothDevice dev = nearDeviceMap.get(idTemp);
+                                ConnectBLETask client = Utility.createBroadCastNextServerIdClient(dev, new String(mGattCharacteristicNextServerId.getValue()), context, value);
                                 client.startClient();
                                 clients.add(client);
                             }
@@ -174,9 +176,9 @@ public class AcceptBLETask {
                             mNode = ServerNode.buildRoutingTable(map, getId());
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
                             LinkedList<ConnectBLETask> clients = new LinkedList<>();
-                            for (ScanResult temp : serversToAsk) {
-                                Log.d(TAG, "OUD: " + "Nel for");
-                                ConnectBLETask client = Utility.createBroadcastRoutingTableClient(temp.getDevice(), new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
+                            for (String idTemp : nearDeviceMap.keySet()) {
+                                BluetoothDevice dev = nearDeviceMap.get(idTemp);
+                                ConnectBLETask client = Utility.createBroadcastRoutingTableClient(dev, new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
                                 client.startClient();
                                 clients.add(client);
                             }
@@ -505,16 +507,20 @@ public class AcceptBLETask {
 
 
     public void initializeId(final int offset) {
-        if (offset >= serversToAsk.size()) {
+        if (offset >= nearDeviceMap.size()) {
             //TODO: senti @Andrea per fare restart Init Activity
             return;
         }
-        ScanResult temp = serversToAsk.get(offset);
-        if (temp.getDevice() == null) {
+        Set<String> set = nearDeviceMap.keySet();
+
+        String[] arr = new String[set.size()];
+        arr = set.toArray(arr);
+        BluetoothDevice dev = nearDeviceMap.get(arr[offset]);
+        if (dev == null) {
             Log.d(TAG, "OUD: " + "device null");
             return; //vedi sopra
         }
-        final User u = new User(temp.getDevice(), temp.getDevice().getName());
+        final User u = new User(dev, dev.getName());
         ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -549,7 +555,7 @@ public class AcceptBLETask {
                     }
 
                     mNode = new ServerNode(id);
-                    for (String temp : nearId) {
+                    for (String temp : nearDeviceMap.keySet()) {
                         Log.d(TAG, "OUD: " + "vicini : " + temp);
                         mNode.addNearServer(new ServerNode(temp));
                     }
@@ -610,10 +616,10 @@ public class AcceptBLETask {
 
     public void startServer() {
         // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
-        Log.d(TAG, "OUD: " + "dev found:" + serversToAsk.size());
+        Log.d(TAG, "OUD: " + "dev found:" + nearDeviceMap.size());
 
 
-        if (serversToAsk != null && serversToAsk.size() != 0) {
+        if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
             initializeId(0);
         } else {

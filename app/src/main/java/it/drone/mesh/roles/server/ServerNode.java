@@ -143,7 +143,7 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
-                //Sif(i != 1 && i != 2) return -1;
+                if(i > 1) return -1;
                 return i;
             }
         }

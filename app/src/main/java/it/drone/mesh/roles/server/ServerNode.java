@@ -15,6 +15,7 @@ public class ServerNode {
     //private Device device;
     private LinkedList<ServerNode> nearServers;
     private LinkedList<ServerNode> routingTable;
+    private byte clientByte;
     private BluetoothDevice[] clientList;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
@@ -32,6 +33,7 @@ public class ServerNode {
         for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
             clientList[i] = null;
         }
+        clientByte = 0b00000000;
     }
 
     public ServerNode getServer(String serverId) {
@@ -74,6 +76,7 @@ public class ServerNode {
     }
 
     public void setClientOnline(String id, BluetoothDevice device) {    //PASSARE SOLO LA PARTE DI ID RELATIVA AL CLIENT
+        clientByte = Utility.setBit(clientByte,Integer.parseInt(id));
         clientList[Integer.parseInt(id)] = device;
         Log.d(TAG, "OUD: ho aggiunto il client " + id);
     }
@@ -214,11 +217,8 @@ public class ServerNode {
                 if (Utility.getBit(destArrayByte[index], i) != 0) alreadyDone = true;
             }
             if (alreadyDone) continue;
-            destArrayByte[index] = 0b00000001;
-            for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-                if (s.clientList[i] != null)
-                    destArrayByte[index] = Utility.setBit(destArrayByte[index], i);
-            }
+            destArrayByte[index] = s.clientByte;
+            destArrayByte[index] = Utility.setBit(destArrayByte[index],0);
             s.parseClientMapToByte(destArrayByte);
         }
 

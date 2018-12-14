@@ -274,7 +274,7 @@ public class Utility {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());

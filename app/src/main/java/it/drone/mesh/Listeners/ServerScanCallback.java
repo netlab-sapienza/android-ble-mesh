@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.Listeners;
 
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
@@ -48,7 +48,6 @@ public class ServerScanCallback extends ScanCallback {
 
     // TODO: 12/12/2018 migliorare e vedere se può passare messaggi più utili, per ora serve solo a scopo di debug
     public interface OnServerFoundListerner {
-        void OnServerFound(String message);
+        void OnServerFound(String id);
     }
-
 }

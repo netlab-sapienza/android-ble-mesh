@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.R;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.roles.common.RoutingTable;
@@ -66,7 +67,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendMessage(device.getId(), TEST_MESSAGE, new Utility.OnMessageSentListener() {
+                sendMessage(device.getId(), TEST_MESSAGE, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(String message) {
                         device.writeInput(message);
@@ -95,7 +96,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
      * @param message       messaggio da inviare
      * @param listener      Listener di risposta
      */
-    private void sendMessage(String destinationId, String message, Utility.OnMessageSentListener listener) {
+    private void sendMessage(String destinationId, String message, Listeners.OnMessageSentListener listener) {
 
         if (connectBLETask != null) {
             connectBLETask.startClient(); // potrebbe non dover essere fatto
@@ -116,7 +117,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     public void setConnectBLETask(ConnectBLETask connectBLETask) {
         this.connectBLETask = connectBLETask;
-        this.connectBLETask.addReceivedListener(new Utility.OnMessageReceivedListener() {
+        this.connectBLETask.addReceivedListener(new Listeners.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(String idMitt, String message) {
                 for (Device device : devices) {

@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.ConnectionActivity;
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
@@ -314,7 +315,7 @@ public class ScannerFragment extends ListFragment {
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
-        connectBLETask.addReceivedListener(new Utility.OnMessageReceivedListener() {
+        connectBLETask.addReceivedListener(new Listeners.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());

@@ -13,6 +13,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.RoutingTable;
@@ -27,7 +28,7 @@ public class ConnectBLETask {
     private Context context;
     private String id;
     private HashMap<String, String> messageMap;
-    private ArrayList<Utility.OnMessageReceivedListener> receivedListeners;
+    private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
@@ -151,7 +152,7 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
-                    for (Utility.OnMessageReceivedListener listener : receivedListeners)
+                    for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                         listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     messageMap.remove(senderId);
 
@@ -247,7 +248,7 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
-    public boolean sendMessage(String message, String dest, Utility.OnMessageSentListener listener) {
+    public boolean sendMessage(String message, String dest, Listeners.OnMessageSentListener listener) {
         return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 
@@ -279,15 +280,15 @@ public class ConnectBLETask {
         this.id = id;
     }
 
-    public ArrayList<Utility.OnMessageReceivedListener> getReceivedListeners() {
+    public ArrayList<Listeners.OnMessageReceivedListener> getReceivedListeners() {
         return receivedListeners;
     }
 
-    public void addReceivedListener(Utility.OnMessageReceivedListener onMessageReceivedListener) {
+    public void addReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
         this.receivedListeners.add(onMessageReceivedListener);
     }
 
-    public void removeReceivedListener(Utility.OnMessageReceivedListener onMessageReceivedListener) {
+    public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
         this.receivedListeners.remove(onMessageReceivedListener);
     }
 }

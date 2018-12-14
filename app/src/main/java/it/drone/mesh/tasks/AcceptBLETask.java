@@ -21,6 +21,7 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.Utility;
@@ -141,7 +142,7 @@ public class AcceptBLETask {
                             }
                             if (isNearToMe) {
                                 String idNewServer = new String("" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8));
-                                Utility.updateServerToAsk(mBluetoothAdapter, serversToAsk, nearDeviceMap, idNewServer, new Utility.OnNewServerDiscoveredListener() {
+                                Utility.updateServerToAsk(mBluetoothAdapter, serversToAsk, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                     @Override
                                     public void OnNewServerDiscovered(ScanResult server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
@@ -300,7 +301,7 @@ public class AcceptBLETask {
                                 @Override
                                 public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
                                     String nearId = new String(descriptor.getValue());
-                                    Utility.sendMessage(message, gatt, infoSorg, infoDest, new Utility.OnMessageSentListener() {
+                                    Utility.sendMessage(message, gatt, infoSorg, infoDest, new Listeners.OnMessageSentListener() {
                                         @Override
                                         public void OnMessageSent(String message) {
                                             Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");

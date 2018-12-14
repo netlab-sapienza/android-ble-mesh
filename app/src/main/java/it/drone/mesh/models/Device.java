@@ -14,7 +14,6 @@ public class Device {
     private StringBuffer input;
     private StringBuffer output;
     private String signalPower;
-    private BluetoothDevice device; //o forse sarebbe meglio il gatt?
 
 
     public Device(String id) {

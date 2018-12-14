@@ -32,12 +32,13 @@ import android.widget.Toast;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.ServerScanCallback;
+import it.drone.mesh.Listeners.ServerScanCallback;
 import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.roles.common.exceptions.NotEnabledException;
 import it.drone.mesh.roles.common.exceptions.NotSupportedException;
@@ -283,7 +284,7 @@ public class InitActivity extends Activity {
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
         final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this);
-        connectBLE.addReceivedListener(new Utility.OnMessageReceivedListener() {
+        connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());

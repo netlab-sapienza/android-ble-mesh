@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import it.drone.mesh.Listeners.Listeners;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.server.ServerNode;
@@ -166,7 +167,7 @@ public class Utility {
         return res;
     }
 
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, OnMessageSentListener listener) {
+    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, Listeners.OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
         boolean result = true;
 
@@ -430,7 +431,7 @@ public class Utility {
         });
     }
 
-    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final HashMap<String, BluetoothDevice> nearMapDecice, final String nuovoId, final OnNewServerDiscoveredListener listener) {
+    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final HashMap<String, BluetoothDevice> nearMapDecice, final String nuovoId, final Listeners.OnNewServerDiscoveredListener listener) {
         final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
         final ScanCallback mScanCallback = new ScanCallback() {
             @Override
@@ -461,24 +462,5 @@ public class Utility {
         }, 4500);
         //UserList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
-    }
-
-
-    public interface OnMessageReceivedListener {
-        public void OnMessageReceived(String idMitt, String message);
-    }
-
-    public interface OnMessageSentListener {
-        public void OnMessageSent(String message);
-
-        public void OnCommunicationError(String error);
-    }
-
-    public interface OnScanCompletedListener {
-        public void OnScanCompleted(ArrayList<Device> devicesFound);
-    }
-
-    public interface OnNewServerDiscoveredListener {
-        public void OnNewServerDiscovered(ScanResult server);
     }
 }

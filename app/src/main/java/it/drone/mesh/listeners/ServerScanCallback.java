@@ -1,4 +1,4 @@
-package it.drone.mesh.Listeners;
+package it.drone.mesh.listeners;
 
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;

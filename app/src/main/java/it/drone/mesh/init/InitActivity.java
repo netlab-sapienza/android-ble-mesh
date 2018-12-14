@@ -32,8 +32,8 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-import it.drone.mesh.Listeners.Listeners;
-import it.drone.mesh.Listeners.ServerScanCallback;
+import it.drone.mesh.listeners.Listeners;
+import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
@@ -96,6 +96,8 @@ public class InitActivity extends Activity {
                         acceptBLETask.stopServer();
                     else if (connectBLETask != null)
                         connectBLETask.stopClient();
+                    whoami.setText(R.string.whoami);
+                    myid.setText(R.string.myid);
                     writeDebug("Service stopped");
                 } else {
                     initializeService();
@@ -279,14 +281,14 @@ public class InitActivity extends Activity {
         connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
-                Handler mHandler = new Handler(Looper.getMainLooper());
-                mHandler.post(new Runnable() {
+                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
+                        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
                     }
                 });
 
-                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
             }
         });
         connectBLE.startClient();

@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.ConnectionActivity;
-import it.drone.mesh.Listeners.Listeners;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.models.User;
@@ -305,8 +305,6 @@ public class ScannerFragment extends ListFragment {
                 c.startService(new Intent(c, AdvertiserService.class));
                 Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
                 AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
-                acceptBLETask.setStartServerList(tempResult);
-                acceptBLETask.insertIdInMap(idList);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.startServer();
             }

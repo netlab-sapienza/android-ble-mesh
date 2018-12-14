@@ -21,11 +21,9 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
-import it.drone.mesh.Listeners.Listeners;
-import it.drone.mesh.models.Device;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.server.ServerNode;
 import it.drone.mesh.tasks.ConnectBLETask;
@@ -193,8 +191,11 @@ public class Utility {
             }
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
-        if (result && listener!= null) listener.OnMessageSent(message);
-        else if (listener!=null) listener.OnCommunicationError("Error");
+        if (result && listener != null) {
+            listener.OnMessageSent(message);
+        } else if (listener != null) {
+            listener.OnCommunicationError("Error");
+        }
         return result;
     }
 
@@ -434,21 +435,17 @@ public class Utility {
         });
     }
 
-    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final LinkedList<ScanResult> serverToAsk, final HashMap<String, BluetoothDevice> nearMapDecice, final String nuovoId, final Listeners.OnNewServerDiscoveredListener listener) {
+    public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final HashMap<String, BluetoothDevice> nearMapDevice, final String nuovoId, final Listeners.OnNewServerDiscoveredListener listener) {
         final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
         final ScanCallback mScanCallback = new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, final ScanResult result) {
                 super.onScanResult(callbackType, result);
-                for (ScanResult temp : serverToAsk) {
-                    if (temp.getDevice().equals(result.getDevice())) {
-                        Log.d(TAG, "OUD: " + "result già presente");
-                        return;
-                    }
-                }
-                serverToAsk.add(result);
+                if (nearMapDevice.values().contains(result.getDevice())) {
+                    Log.d(TAG, "OUD: " + "risultato già presente");
+                    return;
+                } else nearMapDevice.put(nuovoId, result.getDevice());
                 listener.OnNewServerDiscovered(result);
-                nearMapDecice.put(nuovoId, result.getDevice());
                 Log.d(TAG, "OUD: " + "ho aggiunto " + result.getDevice().getName());
             }
         };

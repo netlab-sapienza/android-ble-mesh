@@ -131,7 +131,7 @@ public class ServerNode {
     public int nextId(BluetoothDevice dev) {
         if (dev == null) {
             for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
-                if (clientList[i] == null) return i ;
+                if (clientList[i] == null) return i;
             }
             return -1;
         }
@@ -143,7 +143,7 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
-                if(i > 1) return -1;
+                //if (i > 1) return -1;
                 return i;
             }
         }
@@ -157,7 +157,7 @@ public class ServerNode {
         String s = "";
         for (int i = 0; i < clientList.length; i++) {
             if (clientList[i] != null) s += i + (i == clientList.length - 1 ? "" : ",");
-            else s+= "null,";
+            else s += "null,";
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
 
@@ -204,10 +204,27 @@ public class ServerNode {
             }
             s.parseMapToByte(destArrayByte);
         }
+    }
+
+    public void parseClientMapToByte(byte[] destArrayByte) {
+        for (ServerNode s : nearServers) {
+            int index = Integer.parseInt(s.getId());
+            boolean alreadyDone = false;
+            for (int i = 0; i < 8; i++) {
+                if (Utility.getBit(destArrayByte[index], i) != 0) alreadyDone = true;
+            }
+            if (alreadyDone) continue;
+            destArrayByte[index] = 0b00000000;
+            for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
+                if (s.clientList[i] != null)
+                    destArrayByte[index] = Utility.setBit(destArrayByte[index], i);
+            }
+            s.parseClientMapToByte(destArrayByte);
+        }
 
     }
 
-    public static ServerNode buildRoutingTable(byte[][] mapByte, String id) {
+    public static ServerNode buildRoutingTable(byte[][] mapByte, String id, BluetoothDevice[] clientList) {
         Log.d(TAG, "OUD: " + "MapByte è una " + mapByte.length + " x " + mapByte[0].length);
         for (int i = 0; i < 16; i++) {
             Log.d(TAG, "buildRoutingTable: I: " + i);
@@ -224,12 +241,15 @@ public class ServerNode {
         }
         for (int i = 0; i < 16; i++) {
             if (arrayNode[i] != null) {
-                Log.d(TAG, "OUD: "+ i);
+                Log.d(TAG, "OUD: " + i);
                 byte clientByte = mapByte[i][1];
+
                 for (int k = 0; k < 8; k++) {
                     if (Utility.getBit(clientByte, k) == 1)
-                        arrayNode[i].setClientOnline("" + k, null);
+                        if (!id.equals("" + i)) arrayNode[i].setClientOnline("" + k, null);
+                        else arrayNode[i].setClientOnline("" + k, clientList[i]);
                 }
+
                 for (int k = 2; k < SERVER_PACKET_SIZE; k++) {
                     byte nearServerByte = mapByte[i][k];
                     int[] infoNearServer = Utility.getIdServerByteInfo(nearServerByte);
@@ -281,8 +301,7 @@ public class ServerNode {
             if (("" + tempId).equals(this.id)) {
                 addNearServer(nuovoServer);
                 res = true;
-            }
-            else {
+            } else {
                 ServerNode tempServer = getServer("" + tempId);
                 if (tempServer != null) tempServer.addNearServer(nuovoServer);
             }
@@ -291,8 +310,7 @@ public class ServerNode {
             if (("" + tempId).equals(this.id)) {
                 addNearServer(nuovoServer);
                 res = true;
-            }
-            else {
+            } else {
                 ServerNode tempServer = getServer("" + tempId);
                 if (tempServer != null) tempServer.addNearServer(nuovoServer);
             }

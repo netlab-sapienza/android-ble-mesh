@@ -16,7 +16,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import it.drone.mesh.Listeners.Listeners;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.User;
 import it.drone.mesh.roles.common.Constants;
 import it.drone.mesh.roles.common.RoutingTable;
@@ -157,8 +157,9 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "YES last message");
                     for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                         listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
-                    //messageMap.remove(senderId);
+                    messageMap.remove(senderId);
 
+                    /*
                     Handler mHandler = new Handler(Looper.getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override
@@ -167,6 +168,7 @@ public class ConnectBLETask {
                             messageMap.remove(senderId);
                         }
                     });
+                    */
 
                 }
 

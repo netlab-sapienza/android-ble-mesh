@@ -90,7 +90,7 @@ public class Device {
     }
 
     public void writeInput(String input) {
-        this.input.append(input);
+        this.input.append(input).append("\n");
     }
 
     public StringBuffer getOutput() {
@@ -98,7 +98,7 @@ public class Device {
     }
 
     public void writeOutput(String output) {
-        this.output.append(output);
+        this.output.append(output).append("\n");
     }
 
     public String getSignalPower() {

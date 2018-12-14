@@ -3,6 +3,7 @@ package it.drone.mesh.init;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +16,8 @@ import it.drone.mesh.R;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.roles.common.Utility;
+import it.drone.mesh.tasks.AcceptBLETask;
+import it.drone.mesh.tasks.ConnectBLETask;
 
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
 
@@ -22,6 +25,9 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     private ArrayList<Device> devices;
     private Context _applicationContext;
     private final static String TAG = DeviceAdapter.class.getSimpleName();
+
+    private ConnectBLETask connectBLETask;
+    private AcceptBLETask acceptBLETask;
 
     DeviceAdapter(Context _applicationContext) {
         RoutingTable routingTable = RoutingTable.getInstance();
@@ -90,9 +96,44 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
      * @param listener      Listener di risposta
      */
     private void sendMessage(String destinationId, String message, Utility.OnMessageSentListener listener) {
-        //ConnectBLETask connectBLETask = new ConnectBLETask();
-        //connectBLETask.startClient();
-        //connectBLETask.sendMessage(message, destinationId, listener);
+
+        if (connectBLETask != null) {
+            connectBLETask.startClient(); // potrebbe non dover essere fatto
+            connectBLETask.sendMessage(message, destinationId, listener);
+        } else if (acceptBLETask != null) {
+            // TODO: 14/12/18 logica sendMessageAcceptBLETask
+            //acceptBLETask.sendMessage(); // TODO: 14/12/18 send message accept
+
+        } else {
+            Log.e(TAG, "sendMessage: connect accept tasks tutti e due null");
+        }
+
+    }
+
+    public ConnectBLETask getConnectBLETask() {
+        return connectBLETask;
+    }
+
+    public void setConnectBLETask(ConnectBLETask connectBLETask) {
+        this.connectBLETask = connectBLETask;
+        this.connectBLETask.addReceivedListener(new Utility.OnMessageReceivedListener() {
+            @Override
+            public void OnMessageReceived(String idMitt, String message) {
+                for (Device device : devices) {
+                    if (device.getId().equals(idMitt)) {
+                        device.writeOutput(message);
+                    }
+                }
+            }
+        });
+    }
+
+    public AcceptBLETask getAcceptBLETask() {
+        return acceptBLETask;
+    }
+
+    public void setAcceptBLETask(AcceptBLETask acceptBLETask) {
+        this.acceptBLETask = acceptBLETask;
     }
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {

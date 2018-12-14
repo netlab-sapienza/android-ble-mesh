@@ -10,6 +10,7 @@ import android.content.Context;
 import android.util.Log;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import it.drone.mesh.models.User;
@@ -26,7 +27,7 @@ public class ConnectBLETask {
     private Context context;
     private String id;
     private HashMap<String, String> messageMap;
-    final private Utility.OnMessageReceivedListener receivedListener;
+    private ArrayList<Utility.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
 
     public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
@@ -35,16 +36,18 @@ public class ConnectBLETask {
         this.user = user;
         this.mGattCallback = callback;
         this.id = null;
-        receivedListener = null;
+        receivedListeners = new ArrayList<>();
+        routingTable = RoutingTable.getInstance();
     }
 
-    public ConnectBLETask(User user, final Context context, Utility.OnMessageReceivedListener list) {
+    public ConnectBLETask(User user, final Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
         this.user = user;
         this.id = null;
         this.messageMap = new HashMap<>();
-        receivedListener = list;
+        receivedListeners = new ArrayList<>();
+        routingTable = RoutingTable.getInstance();
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -148,8 +151,8 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
-                    if (receivedListener != null)
-                        receivedListener.OnMessageReceived("" + senderId, messageMap.get(senderId));
+                    for (Utility.OnMessageReceivedListener listener : receivedListeners)
+                        listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     messageMap.remove(senderId);
 
                     /*Handler mHandler = new Handler(Looper.getMainLooper());
@@ -274,6 +277,18 @@ public class ConnectBLETask {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public ArrayList<Utility.OnMessageReceivedListener> getReceivedListeners() {
+        return receivedListeners;
+    }
+
+    public void addReceivedListener(Utility.OnMessageReceivedListener onMessageReceivedListener) {
+        this.receivedListeners.add(onMessageReceivedListener);
+    }
+
+    public void removeReceivedListener(Utility.OnMessageReceivedListener onMessageReceivedListener) {
+        this.receivedListeners.remove(onMessageReceivedListener);
     }
 }
 

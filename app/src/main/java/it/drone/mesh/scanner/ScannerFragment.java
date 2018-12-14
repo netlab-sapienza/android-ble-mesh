@@ -313,7 +313,8 @@ public class ScannerFragment extends ListFragment {
         }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext(), new Utility.OnMessageReceivedListener() {
+        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, getContext());
+        connectBLETask.addReceivedListener(new Utility.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());

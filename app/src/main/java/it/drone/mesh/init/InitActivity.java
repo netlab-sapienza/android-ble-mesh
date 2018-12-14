@@ -69,7 +69,7 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
 
     private ConnectBLETask connectBLETask;
-    private String clientId; // TODO: 12/12/2018 serve davvero?  NO! lo usavamo per passarlo alla connection Activity che non credo sia nei tuoi piani,in caso contrario se preferisci puoi fare connect.getId() ma tocca assicurarsi di essere un client
+    // private String clientId; // TODO: 12/12/2018 serve davvero?  NO! lo usavamo per passarlo alla connection Activity che non credo sia nei tuoi piani,in caso contrario se preferisci puoi fare connect.getId() ma tocca assicurarsi di essere un client
     private LinkedList<ScanResult> tempResult = new LinkedList<>();
     private LinkedList<String> idList = new LinkedList<>();
 
@@ -111,9 +111,13 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setVisibility(View.VISIBLE);
     }
 
-
+    /**
+     * Controlla che l'app sia eseguibile e inizia lo scanner
+     */
     private void initializeService() {
         writeDebug("Start initializing server");
+
+        // questa inizializzione potrebbe essere ridondante
         try {
             server = BLEServer.getInstance(this);
         } catch (NotSupportedException e) {
@@ -183,6 +187,7 @@ public class InitActivity extends Activity {
     /**
      * Since now the UserList is populated, the device starts asking for an Id
      * Funzione ricorsiva per chiedere a tutti i Server il proprio Id.
+     *
      * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività
      */
 
@@ -254,11 +259,14 @@ public class InitActivity extends Activity {
     /**
      * Funzione ricorsiva per provare a connettersi come client ai server trovati; Se non ce ne sono o nessuno è disponibile
      * diventi tu stesso Server
-     * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività e si diventa server
+     *
+     * @param offset ---> indice nell'UserList dei vari server, con offset > size si diventa server
      */
     public void tryConnection(final int offset) {
         if (connectBLETask != null) {
             writeDebug("OUD: " + "You're a client and your id is" + connectBLETask.getId());
+            // TODO: 14/12/18 controllare se va fatto qua il setConnectBLE
+            deviceAdapter.setConnectBLETask(connectBLETask);
             return;
         }
         final int size = UserList.getUserList().size();
@@ -274,7 +282,8 @@ public class InitActivity extends Activity {
         }
         final User newUser = UserList.getUser(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this, new Utility.OnMessageReceivedListener() {
+        final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this);
+        connectBLE.addReceivedListener(new Utility.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 Handler mHandler = new Handler(Looper.getMainLooper());
@@ -284,8 +293,6 @@ public class InitActivity extends Activity {
                         writeDebug("Messaggio ricevuto dall'utente " + idMitt + " : " + message);
                     }
                 });
-
-
             }
         });
         connectBLE.startClient();
@@ -297,11 +304,11 @@ public class InitActivity extends Activity {
                 if (connectBLE.hasCorrectId()) {
                     String tempId = connectBLE.getId();
                     writeDebug("id trovato dopo 5 secondi di attesa : " + tempId);
-                    int parsed;
+                    //int parsed;
                     try {
-                        parsed = Integer.parseInt(tempId);
+                        //parsed = Integer.parseInt(tempId);
                         writeDebug("id assegnato correttamente");
-                        clientId = parsed + "";
+                        //clientId = parsed + "";
                         connectBLETask = connectBLE;
                         //     mAdapter.add(tempResult.get(offset));
                         //     mAdapter.notifyDataSetChanged();

@@ -110,7 +110,7 @@ public class ConnectBLETask {
                         }
                         if (flag) {
                             Log.d(TAG, "OUD: SERVER ONLINE ID: " + i);
-                            for (int j = 0; j < 8; j++) {
+                            for (int j = 1; j < 8; j++) {
                                 if (Utility.getBit(value[i], j) == 1) {
                                     Log.d(TAG, "OUD: client : " + j);
                                     routingTable.addDevice(i, j);

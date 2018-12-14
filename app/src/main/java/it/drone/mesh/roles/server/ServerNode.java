@@ -143,7 +143,7 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
-                //if (i > 1) return -1;
+                if (i > 1) return -1;
                 return i;
             }
         }
@@ -214,7 +214,7 @@ public class ServerNode {
                 if (Utility.getBit(destArrayByte[index], i) != 0) alreadyDone = true;
             }
             if (alreadyDone) continue;
-            destArrayByte[index] = 0b00000000;
+            destArrayByte[index] = 0b00000001;
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
                 if (s.clientList[i] != null)
                     destArrayByte[index] = Utility.setBit(destArrayByte[index], i);

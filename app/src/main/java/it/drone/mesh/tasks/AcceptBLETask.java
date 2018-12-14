@@ -169,7 +169,7 @@ public class AcceptBLETask {
                             }
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             byte[][] map = Utility.buildMapFromString(messageMap.get(senderId));
-                            mNode = ServerNode.buildRoutingTable(map, getId(),mNode.getClientList());
+                            mNode = ServerNode.buildRoutingTable(map, getId(), mNode.getClientList());
 
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 1];
                             mNode.parseClientMapToByte(clientRoutingTable);
@@ -402,8 +402,8 @@ public class AcceptBLETask {
                             message[(i * tempMap[0].length) + j] = tempMap[i][j];
                         }
                     }
-                    int nextVal = Integer.parseInt(new String (mGattDescriptorRoutingTable.getValue())) +1;
-                    mGattDescriptorRoutingTable.setValue((""+nextVal).getBytes());
+                    int nextVal = Integer.parseInt(new String(mGattDescriptorRoutingTable.getValue())) + 1;
+                    mGattDescriptorRoutingTable.setValue(("" + nextVal).getBytes());
                     for (String idTemp : nearDeviceMap.keySet()) {
                         BluetoothDevice dev = nearDeviceMap.get(idTemp);
                         ConnectBLETask client = Utility.createBroadcastRoutingTableClient(dev, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
@@ -458,6 +458,7 @@ public class AcceptBLETask {
     public void initializeId(final int offset) {
         if (offset >= nearDeviceMap.size()) {
             //TODO: senti @Andrea per fare restart Init Activity
+            Log.e(TAG, "initializeId: offset >= nearDeviceMap.size()");
             return;
         }
         Set<String> set = nearDeviceMap.keySet();

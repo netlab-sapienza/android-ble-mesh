@@ -51,6 +51,7 @@
                 android:background="#4b000000"
                 android:minLines="1"
                 android:maxLines="10"
+                android:minHeight="100dp"
                 android:text="@string/debug_explain" />
 
 

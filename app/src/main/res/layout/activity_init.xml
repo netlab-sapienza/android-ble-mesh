@@ -48,8 +48,9 @@
                 android:id="@+id/debugger"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:maxLines="5"
+                android:background="#4b000000"
                 android:minLines="1"
+                android:maxLines="10"
                 android:text="@string/debug_explain" />
 
 

@@ -32,10 +32,10 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
+import it.drone.mesh.listeners.Listeners;
+import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.User;
 import it.drone.mesh.models.UserList;
 import it.drone.mesh.roles.common.Constants;
@@ -121,7 +121,7 @@ public class InitActivity extends Activity {
     private void initializeService() {
         writeDebug("Start initializing server");
 
-        // questa inizializzione potrebbe essere ridondante
+        // questa inizializzazione potrebbe essere ridondante
         try {
             server = BLEServer.getInstance(this);
         } catch (NotSupportedException e) {
@@ -285,10 +285,10 @@ public class InitActivity extends Activity {
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
                     }
                 });
-
+                deviceAdapter.notifyDataSetChanged();
             }
         });
         connectBLE.startClient();
@@ -316,7 +316,7 @@ public class InitActivity extends Activity {
                 }
             }
         }, HANDLER_PERIOD);
-        writeDebug("Assegnazione id 5 secondi");
+        writeDebug("Assegnazione id tra 5 secondi");
     }
 
 

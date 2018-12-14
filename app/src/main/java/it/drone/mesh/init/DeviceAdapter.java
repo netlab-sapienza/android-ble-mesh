@@ -14,8 +14,8 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
-import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.R;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.roles.common.RoutingTable;
 import it.drone.mesh.tasks.AcceptBLETask;
@@ -71,8 +71,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         final Device device = devices.get(i);
 
         deviceViewHolder.id.setText(device.getId());
-        deviceViewHolder.power.setText(device.getSignalPower());
-        deviceViewHolder.lastTime.setText(device.getTimeSinceString());
         deviceViewHolder.input.setText(device.getInput());
         deviceViewHolder.output.setText(device.getOutput());
         deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
@@ -93,7 +91,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
                     @Override
                     public void OnCommunicationError(String error) {
-
                         deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
                         notifyDataSetChanged();
                     }
@@ -158,14 +155,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {
 
-        TextView id, lastTime, power, input, output;
+        TextView id, input, output;
         Button testButton;
 
         DeviceViewHolder(View itemView) {
             super(itemView);
             id = itemView.findViewById(R.id.device_id);
-            lastTime = itemView.findViewById(R.id.last_time_device);
-            power = itemView.findViewById(R.id.power_device);
             input = itemView.findViewById(R.id.inputText);
             output = itemView.findViewById(R.id.outputText);
             testButton = itemView.findViewById(R.id.button_test_message);

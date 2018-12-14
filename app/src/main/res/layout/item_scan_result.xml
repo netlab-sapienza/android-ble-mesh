@@ -21,48 +21,48 @@
         android:paddingStart="5dp"
         android:paddingEnd="5dp"
         android:text="@string/name" />
+    <!--
+        <TextView
+            android:id="@+id/last_time_placeholder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/device_id_placeholder"
+            android:text="@string/last_time_placeholder"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/last_time_placeholder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/device_id_placeholder"
-        android:text="@string/last_time_placeholder"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/last_time_device"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/device_id_placeholder"
+            android:layout_toEndOf="@id/last_time_placeholder"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="@string/name" />
 
-    <TextView
-        android:id="@+id/last_time_device"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/device_id_placeholder"
-        android:layout_toEndOf="@id/last_time_placeholder"
-        android:paddingStart="5dp"
-        android:paddingEnd="5dp"
-        android:text="@string/name" />
+        <TextView
+            android:id="@+id/power_placeholder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/last_time_placeholder"
+            android:text="@string/signal_power_placeholder"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/power_placeholder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/last_time_placeholder"
-        android:text="@string/signal_power_placeholder"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/power_device"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/last_time_placeholder"
-        android:layout_toEndOf="@id/power_placeholder"
-        android:paddingStart="5dp"
-        android:paddingEnd="5dp"
-        android:text="@string/name" />
+        <TextView
+            android:id="@+id/power_device"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/last_time_placeholder"
+            android:layout_toEndOf="@id/power_placeholder"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="@string/name" />-->
 
     <TextView
         android:id="@+id/inputText_placeholder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/power_placeholder"
+        android:layout_below="@+id/device_id_placeholder"
         android:layout_alignStart="@id/device_id_placeholder"
         android:text="@string/input_placeholder"
         android:textStyle="bold" />

@@ -1,6 +1,8 @@
 package it.drone.mesh.init;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -36,7 +38,13 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         routingTable.subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
             @Override
             public void OnDeviceAdded(Device device) {
-                notifyDataSetChanged();
+                Handler h = new Handler(Looper.getMainLooper());
+                h.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyDataSetChanged();
+                    }
+                });
             }
 
             @Override
@@ -72,11 +80,13 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                     public void OnMessageSent(String message) {
                         device.writeInput(message);
                         deviceViewHolder.input.setText(device.getInput());
+                        notifyDataSetChanged();
                     }
 
                     @Override
                     public void OnCommunicationError(String error) {
                         deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
+                        notifyDataSetChanged();
                     }
                 });
             }
@@ -99,12 +109,11 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     private void sendMessage(String destinationId, String message, Listeners.OnMessageSentListener listener) {
 
         if (connectBLETask != null) {
-            connectBLETask.startClient(); // potrebbe non dover essere fatto
-            connectBLETask.sendMessage(message, destinationId, listener);
+            boolean res = connectBLETask.sendMessage(message, destinationId,listener);
+            Log.d(TAG, "OUD: " + "Messaggio inviato: " + res);
         } else if (acceptBLETask != null) {
             // TODO: 14/12/18 logica sendMessageAcceptBLETask
             //acceptBLETask.sendMessage(); // TODO: 14/12/18 send message accept
-
         } else {
             Log.e(TAG, "sendMessage: connect accept tasks tutti e due null");
         }

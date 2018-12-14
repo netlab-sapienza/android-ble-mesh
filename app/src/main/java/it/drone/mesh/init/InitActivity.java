@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.UiThread;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.widget.RecyclerView;
@@ -93,7 +94,7 @@ public class InitActivity extends Activity {
                     isServiceStarted = false;
                     if (acceptBLETask != null)
                         acceptBLETask.stopServer();
-                    if (connectBLETask != null)
+                    else if (connectBLETask != null)
                         connectBLETask.stopClient();
                     writeDebug("Service stopped");
                 } else {
@@ -264,12 +265,6 @@ public class InitActivity extends Activity {
      * @param offset ---> indice nell'UserList dei vari server, con offset > size si diventa server
      */
     public void tryConnection(final int offset) {
-        if (connectBLETask != null) {
-            writeDebug("OUD: " + "You're a client and your id is" + connectBLETask.getId());
-            // TODO: 14/12/18 controllare se va fatto qua il setConnectBLE
-            deviceAdapter.setConnectBLETask(connectBLETask);
-            return;
-        }
         final int size = UserList.getUserList().size();
         if (offset >= size) {
 
@@ -279,6 +274,7 @@ public class InitActivity extends Activity {
             acceptBLETask.setStartServerList(tempResult);
             acceptBLETask.insertIdInMap(idList);
             acceptBLETask.startServer();
+            deviceAdapter.setAcceptBLETask(acceptBLETask);
             return;
         }
         final User newUser = UserList.getUser(offset);
@@ -311,6 +307,9 @@ public class InitActivity extends Activity {
                         writeDebug("id assegnato correttamente");
                         //clientId = parsed + "";
                         connectBLETask = connectBLE;
+                        writeDebug("OUD: " + "You're a client and your id is" + connectBLETask.getId());
+                        // TODO: 14/12/18 controllare se va fatto qua il setConnectBLE
+                        deviceAdapter.setConnectBLETask(connectBLETask);
                         //     mAdapter.add(tempResult.get(offset));
                         //     mAdapter.notifyDataSetChanged();
                     } catch (Exception e) {
@@ -327,12 +326,15 @@ public class InitActivity extends Activity {
     }
 
 
-    private void writeDebug(String message) {
-        if (debugger.getLineCount() == debugger.getMaxLines())
-            debugger.setText(String.format("%s\n", message));
-        else
-            debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
-
+    private void writeDebug(final String message) {
+        InitActivity.this.runOnUiThread(new Runnable() {
+            public void run() {
+                if (debugger.getLineCount() == debugger.getMaxLines())
+                    debugger.setText(String.format("%s\n", message));
+                else
+                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
+            }
+        });
         Log.d(TAG, "OUD:" + message);
     }
 

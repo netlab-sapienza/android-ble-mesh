@@ -7,7 +7,10 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -154,16 +157,16 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "YES last message");
                     for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                         listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
-                    messageMap.remove(senderId);
+                    //messageMap.remove(senderId);
 
-                    /*Handler mHandler = new Handler(Looper.getMainLooper());
+                    Handler mHandler = new Handler(Looper.getMainLooper());
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId  + ", messaggio: " + messageMap.get(senderId), Toast.LENGTH_SHORT).show();
                             messageMap.remove(senderId);
                         }
-                    });*/
+                    });
 
                 }
 
@@ -249,7 +252,7 @@ public class ConnectBLETask {
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
     public boolean sendMessage(String message, String dest, Listeners.OnMessageSentListener listener) {
-        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
+        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest),listener);
     }
 
     public void startClient() {

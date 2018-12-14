@@ -162,6 +162,7 @@ public class Utility {
 
     public static int[] getIdArrayByString(String id) {
         int[] res = new int[2];
+        Log.d(TAG, "getIdArrayByString: id: " + id);
         res[0] = (id.length() == 2) ? (Integer.parseInt(id.substring(0, 1))) : (Integer.parseInt(id.substring(0, 2)));
         res[1] = (id.length() == 2) ? (Integer.parseInt(id.substring(1, 2))) : (Integer.parseInt(id.substring(2, 3)));
         return res;
@@ -192,7 +193,9 @@ public class Utility {
             }
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
-        return false;
+        if (result && listener!= null) listener.OnMessageSent(message);
+        else if (listener!=null) listener.OnCommunicationError("Error");
+        return result;
     }
 
     public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {

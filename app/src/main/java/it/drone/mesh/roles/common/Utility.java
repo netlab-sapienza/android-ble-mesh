@@ -42,7 +42,10 @@ public class Utility {
     // Stops scanning after 5 seconds.
     public static final long SCAN_PERIOD = 5000;
 
-    public static String TAG = Utility.class.getSimpleName();
+    public final static String BETA_FILENAME_SENT = "sent_messages.txt";
+    public final static String BETA_FILENAME_RECEIVED = "received_messages.txt";
+
+    private static String TAG = Utility.class.getSimpleName();
     public static int PACK_LEN = 18;
     public static int DEST_PACK_MESSAGE_LEN = 16;
 
@@ -243,8 +246,8 @@ public class Utility {
      * Use this check to determine whether BLE is supported on the device. Then
      * you can selectively disable BLE-related features.
      *
-     * @param context
-     * @return
+     * @param context application Context
+     * @return true if BLE is supported
      */
     public static boolean isBLESupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
@@ -274,8 +277,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
-        User u = new User(device, device.getName());
-        return new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        return new ConnectBLETask(new User(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -338,6 +340,9 @@ public class Utility {
                         public void run() {
                             if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
+                            else
+                                Log.e(TAG, "OUD: " + "Errore invio routing table");
+
                         }
                     }, 500);
 
@@ -477,7 +482,7 @@ public class Utility {
      * @param fileName name of the file
      * @param data     actual data to be saved
      */
-    public void saveData(ArrayList<String> header, String fileName, ArrayList data) throws IOException {
+    public static void saveData(ArrayList<String> header, String fileName, ArrayList data) throws IOException {
         // Convert arrays to delimited strings
         String header_str = TextUtils.join("\t", header);
         String data_str = TextUtils.join("\t", data);
@@ -496,7 +501,6 @@ public class Utility {
             writer.append('\n');
             writer.flush();
             writer.close();
-
         }
         // Add actual data
         FileWriter writer = new FileWriter(dataFile, true);

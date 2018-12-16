@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="it.drone.mesh"
-    android:versionCode="1"
-    android:versionName="1.0">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="it.drone.mesh">
 
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-feature android:name="android.hardware.bluetooth_le" />
 
     <application
-        android:allowBackup="true"
+        android:name=".AppGlobal"
+        android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:name="it.drone.mesh.MainActivity"
+            android:name=".MainActivity"
             android:label="@string/app_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            <!--
+                   <intent-filter>
+                       <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+                       <category android:name="android.intent.category.LAUNCHER" />
+                   </intent-filter>
+                -->
         </activity>
 
         <!--
@@ -28,11 +34,20 @@
              when the app is no longer on screen in a reliable manner.
         -->
         <service
-            android:name="it.drone.mesh.advertiser.AdvertiserService"
+            android:name=".advertiser.AdvertiserService"
             android:enabled="true"
             android:exported="false" />
 
-        <activity android:name="it.drone.mesh.ConnectionActivity" />
+        <activity android:name=".ConnectionActivity" />
+        <activity android:name=".init.InitActivity">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
     </application>
 
 </manifest>

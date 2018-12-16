@@ -32,6 +32,7 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
+    private AcceptBLETask bleTask;
 
     /**
      * Listens for notifications that the {@code AdvertiserService} has failed to start advertising.
@@ -164,8 +165,8 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
         Context c = getActivity();
         c.startService(getServiceIntent(c));
         Log.d(TAG, "OUD: " + "startAdvertising: StART Server");
-        AcceptBLETask acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
-        acceptBLETask.startServer();
+        bleTask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, getContext());
+        bleTask.startServer();
     }
 
     /**
@@ -173,6 +174,7 @@ public class AdvertiserFragment extends Fragment implements View.OnClickListener
      */
     private void stopAdvertising() {
         Context c = getActivity();
+        bleTask.stopServer();
         c.stopService(getServiceIntent(c));
         mSwitch.setChecked(false);
     }

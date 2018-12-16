@@ -18,7 +18,6 @@ import it.drone.mesh.R;
  * Holds and displays {@link ScanResult}s, used by {@link ScannerFragment}.
  */
 public class ScanResultAdapter extends BaseAdapter {
-
     private ArrayList<ScanResult> mArrayList;
 
     private Context mContext;
@@ -36,7 +35,7 @@ public class ScanResultAdapter extends BaseAdapter {
      * Takes in a number of nanoseconds and returns a human-readable string giving a vague
      * description of how long ago that was.
      */
-    public static String getTimeSinceString(Context context, long timeNanoseconds) {
+    private static String getTimeSinceString(Context context, long timeNanoseconds) {
         String lastSeenText = context.getResources().getString(R.string.last_seen) + " ";
 
         long timeSince = SystemClock.elapsedRealtimeNanos() - timeNanoseconds;
@@ -92,7 +91,7 @@ public class ScanResultAdapter extends BaseAdapter {
 
         // Reuse an old view if we can, otherwise create a new one.
         if (view == null) {
-            view = mInflater.inflate(R.layout.item_scan_result, null);
+            view = mInflater.inflate(R.layout.item_old_scan_result, null);
         }
 
         TextView deviceNameView = view.findViewById(R.id.device_name);
@@ -141,6 +140,11 @@ public class ScanResultAdapter extends BaseAdapter {
             // Add new Device's ScanResult to list.
             mArrayList.add(scanResult);
         }
+    }
+
+    public boolean remove(ScanResult sc) {
+        boolean res = mArrayList.remove(sc);
+        return res;
     }
 
     /**

@@ -11,7 +11,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import it.drone.mesh.models.User;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.roles.common.Constants;
 
 public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
     private final static String TAG = ConnectBtTask.class.getSimpleName();
@@ -30,7 +30,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         //mBluetoothAdapter.cancelDiscovery();
         BluetoothSocket tmp = null;
         try {
-            tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.Service_UUID.getUuid());
+            tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.ServiceUUID);
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + e.toString());
         }

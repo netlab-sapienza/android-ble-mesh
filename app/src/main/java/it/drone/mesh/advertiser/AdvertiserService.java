@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.MainActivity;
 import it.drone.mesh.R;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.roles.common.Constants;
 
 /**
  * Manages BLE Advertising independent of the main app.
@@ -66,7 +66,7 @@ public class AdvertiserService extends Service {
 
     @Override
     public void onDestroy() {
-        /**
+        /*
          * Note that onDestroy is not guaranteed to be called quickly or at all. Services exist at
          * the whim of the system, and onDestroy can be delayed or skipped entirely if memory need
          * is critical.
@@ -127,7 +127,7 @@ public class AdvertiserService extends Service {
      * Starts BLE Advertising.
      */
     private void startAdvertising() {
-        goForeground();
+        //goForeground();
 
         Log.d(TAG, "OUD: " + "Service: Starting Advertising");
 
@@ -179,7 +179,7 @@ public class AdvertiserService extends Service {
      */
     private AdvertiseData buildAdvertiseData() {
 
-        /**
+        /*
          * Note: There is a strict limit of 31 Bytes on packets sent over BLE Advertisements.
          *  This includes everything put into AdvertiseData including UUIDs, device info, &
          *  arbitrary service or manufacturer data.

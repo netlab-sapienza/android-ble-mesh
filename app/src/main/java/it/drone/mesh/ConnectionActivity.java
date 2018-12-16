@@ -4,35 +4,32 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import it.drone.mesh.models.User;
-import it.drone.mesh.tasks.ConnectBLETask;
-import it.drone.mesh.utility.Constants;
+import java.util.NoSuchElementException;
 
-import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_ADDRESS;
-import static it.drone.mesh.utility.Constants.EXTRAS_DEVICE_NAME;
+import it.drone.mesh.models.User;
+import it.drone.mesh.models.UserList;
+import it.drone.mesh.roles.common.Utility;
+
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_ADDRESS;
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_ID;
+import static it.drone.mesh.roles.common.Constants.EXTRAS_DEVICE_NAME;
 
 public class ConnectionActivity extends Activity {
 
     private final static String TAG = ConnectionActivity.class.getSimpleName();
-    private final static int DO_UPDATE_TEXT = 0;
-    private final static int DO_THAT = 1;
+
     // Create a BroadcastReceiver for ACTION_FOUND.
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -46,12 +43,13 @@ public class ConnectionActivity extends Activity {
             }
         }
     };
+
     private String mDeviceName;
     private String mDeviceAddress;
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mBluetoothSocket;
-    private Handler mHandler;
+    private String clientId;
     private User user;
 
     private TextView outputText;
@@ -77,21 +75,8 @@ public class ConnectionActivity extends Activity {
 
         mDeviceName = getIntent().getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = getIntent().getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        clientId = getIntent().getStringExtra(EXTRAS_DEVICE_ID);
 
-        mHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                final int what = msg.what;
-                Log.d(TAG, "OUD: " + "handleMessage: SONO ENTRATO NELL'HANDLER");
-                switch (what) {
-                    case DO_UPDATE_TEXT:
-                        doUpdate();
-                        break;
-                    case DO_THAT:
-                        break;
-                }
-            }
-        };
 
         //IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         //registerReceiver(mReceiver, filter);
@@ -99,17 +84,23 @@ public class ConnectionActivity extends Activity {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.d(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
+                Log.e(TAG, "OUD: " + "Unable to initialize BluetoothManager.");
                 return;
             }
         }
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
-            Log.d(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
+            Log.e(TAG, "OUD: " + "Unable to obtain a BluetoothAdapter.");
             return;
         }
 
-        user = UserList.getUser(mDeviceName);
+        try {
+            user = UserList.getUser(mDeviceName);
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Lista :" + UserList.printList());
+        }
+
 
         //ConnectBLETask connectBLETask = new ConnectBLETask(UserList.getUser(mDeviceName), this);
         //connectBLETask.startClient();
@@ -121,19 +112,49 @@ public class ConnectionActivity extends Activity {
         //connectTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    /**
+     * Invia il messaggio messagge al device selezionato nella schermata precedente
+     *
+     * @param message messaggio da inviare
+     */
     private void sendMessage(String message) {
-        // Toast.makeText(this,message,Toast.LENGTH_SHORT).show();
-
         Log.d(TAG, "OUD: " + "sendMessage: Inizio invio messaggio");
         //final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(mDeviceAddress);
         final BluetoothGatt gatt = /*UserList.getUser(mDeviceName).getBluetoothGatt();*/ user.getBluetoothGatt();
+        int[] infoSorg = new int[2];
+        infoSorg[0] = Integer.parseInt("" + clientId.charAt(0));
+        infoSorg[1] = Integer.parseInt("" + clientId.charAt(1));
 
-        if (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) && !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
-            ConnectBLETask connectBLETask = new ConnectBLETask(user, this.getApplicationContext());
+        int[] infoDest = new int[2];
+        infoDest[0] = Integer.parseInt(message.substring(0, 1));    //id del destinatario Server
+        infoDest[1] = Integer.parseInt(message.substring(1, 2));    //id del destinatario Client
+
+        message = message.substring(2, message.length());
+        boolean res = Utility.sendMessage(message, gatt, infoSorg, infoDest, null);
+        Log.d(TAG, "OUD: " + "sendMessage: Inviato ? " + res);
+        /*
+        ConnectBLETask connectBLETask = null;
+        while (!(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)) || !(BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT))) {
+            connectBLETask = new ConnectBLETask(user, this);
             connectBLETask.startClient();
+            try {
+                Thread.sleep(200);
+            } catch (Exception e) {
+                Log.d(TAG, "OUD: " + "Andata male la wait");
+            }
+            Log.d(TAG, "OUD: " + "Restauro connessione");
+            Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
+            Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
         }
-        Log.d(TAG, "OUD: " + "StateServer connesso ? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT_SERVER)));
-        Log.d(TAG, "OUD: " + "StateGatt connesso? -> " + (BluetoothProfile.STATE_CONNECTED == mBluetoothManager.getConnectionState(user.getBluetoothDevice(), BluetoothProfile.GATT)));
+
+        if (connectBLETask != null) {
+            while (!connectBLETask.getServiceDiscovered()) {
+                Log.d(TAG, "OUD: " + "Wait for services");
+            }
+        }
+        */
+        /*
+        byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(4, 5), message);
 
         for (BluetoothGattService service : gatt.getServices()) {
             Log.d(TAG, "OUD: " + "sendMessage: inizio ciclo");
@@ -143,23 +164,41 @@ public class ConnectionActivity extends Activity {
                     for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                         Log.d(TAG, "OUD:" + "Char: " + chars.toString());
                         if (chars.getUuid().toString().equals(Constants.Characteristic_UUID.toString())) {
-                            chars.setValue(message);
-                            //gatt.beginReliableWrite();
-                            boolean res = gatt.writeCharacteristic(chars);
-                            //gatt.executeReliableWrite();
-                            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                            for (int i = 0; i < finalMessage.length; i++) {
+                                chars.setValue(finalMessage[i]);
+                                gatt.beginReliableWrite();
+                                boolean res = gatt.writeCharacteristic(chars);
+                                gatt.executeReliableWrite();
+                                Log.d(TAG, "OUD: " + new String(finalMessage[i]));
+                                Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+                                try {
+                                    Thread.sleep(300);
+                                } catch (Exception e) {
+                                    Log.d(TAG, "OUD: " + "Andata male la wait");
+                                }
+                            }
                         }
                     }
                 }
             }
 
         }
-        Log.d(TAG, "OUD: " + "sendMessage: end ");
+        Log.d(TAG, "OUD: " + "sendMessage: end ");*/
+    }
 
+    /**
+     * Aggiorna l'output con il messaggio nuovo
+     * <p>
+     * NB questo metodo viene invocato se e solo se c'è stata un'effettiva scrittura, quindi potrebbe non comparire subito
+     *
+     * @param message messaggio da aggiungere
+     */
+    private void addOutputMessage(String message) {
+        outputText.setText(outputText.getText().toString().concat("\n").concat(message));
     }
 
     private void doUpdate() {
-        outputText.setText(String.valueOf(System.currentTimeMillis()));
+        outputText.setText(outputText.getText().toString().concat("\n").concat(String.valueOf(System.currentTimeMillis())));
     }
 
 }

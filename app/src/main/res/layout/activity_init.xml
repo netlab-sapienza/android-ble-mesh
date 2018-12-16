@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".init.InitActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/myid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/myid" />
+
+                <Button
+                    android:id="@+id/startServices"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/myid"
+                    android:text="@string/start_service"
+                    android:textColor="@color/colorPrimary" />
+
+                <TextView
+                    android:id="@+id/whoami"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/startServices"
+                    android:text="@string/whoami" />
+
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/debugger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#4b000000"
+                android:minLines="1"
+                android:maxLines="10"
+                android:minHeight="100dp"
+                android:text="@string/debug_explain" />
+
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/recy_scan_results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
+
+
+        </LinearLayout>
+
+
+    </ScrollView>
+
+
+</android.support.constraint.ConstraintLayout>

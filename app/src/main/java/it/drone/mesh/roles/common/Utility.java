@@ -15,10 +15,15 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -463,4 +468,43 @@ public class Utility {
         //UserList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }
+
+    /**
+     * To save metrics and values of characteristics this should be passed
+     * Saves the data in a file in the download directory of the phone.
+     *
+     * @param header   first description string on top of the file
+     * @param fileName name of the file
+     * @param data     actual data to be saved
+     */
+    public void saveData(ArrayList<String> header, String fileName, ArrayList data) throws IOException {
+        // Convert arrays to delimited strings
+        String header_str = TextUtils.join("\t", header);
+        String data_str = TextUtils.join("\t", data);
+
+        File root = new File(Environment.
+                getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS).getPath());
+
+        File dataFile = new File(root, fileName);
+        // If file doesn't exist
+        if (!dataFile.exists()) {
+            // Add headers
+            FileWriter writer = new FileWriter(dataFile, true);
+            writer.append(header_str);
+            writer.append('\n');
+            writer.append('\n');
+            writer.flush();
+            writer.close();
+
+        }
+        // Add actual data
+        FileWriter writer = new FileWriter(dataFile, true);
+        writer.append(data_str);
+        writer.append('\n');
+        writer.flush();
+        writer.close();
+    }
+
+
 }

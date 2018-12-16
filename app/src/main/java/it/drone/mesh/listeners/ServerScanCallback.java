@@ -46,7 +46,6 @@ public class ServerScanCallback extends ScanCallback {
         Log.d(TAG, "OUD: " + "Scan failed with error: " + errorCode);
     }
 
-    // TODO: 12/12/2018 migliorare e vedere se può passare messaggi più utili, per ora serve solo a scopo di debug
     public interface OnServerFoundListerner {
         void OnServerFound(String id);
     }

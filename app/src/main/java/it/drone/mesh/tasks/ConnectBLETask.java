@@ -254,7 +254,7 @@ public class ConnectBLETask {
         return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
     }
 
-    public void startClient() {
+    public boolean startClient() {
         this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
         user.setBluetoothGatt(this.mGatt);
         user.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
@@ -263,6 +263,7 @@ public class ConnectBLETask {
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
         boolean ret = this.mGatt.discoverServices();
         Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
+        return ret;
     }
 
     public void stopClient() {

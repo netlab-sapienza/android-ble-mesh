@@ -282,15 +282,15 @@ public class InitActivity extends Activity {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                /*
+
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
+                        deviceAdapter.notifyDataSetChanged();
                         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
                     }
                 });
-                */
-                deviceAdapter.notifyDataSetChanged();
+
             }
         });
         connectBLE.startClient();

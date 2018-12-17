@@ -510,5 +510,44 @@ public class Utility {
         writer.close();
     }
 
+    public static ConnectBLETask createBroadcastNewClientOnline(BluetoothDevice device, final int serverId, final int clientId, Context context) {
+        return new ConnectBLETask(new User(device, device.getName()), context, new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
+                    gatt.discoverServices();
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                }
+                super.onConnectionStateChange(gatt, status, newState);
+            }
+
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                if (service == null) return;
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
+                if (characteristic == null) return;
+                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorCLientOnlineUUID);
+                if (descriptor == null) return;
+                byte[] val = new byte[2];
+                val[0] = Utility.byteMessageBuilder(serverId, clientId);
+                descriptor.setValue(val);
+                boolean res = gatt.writeDescriptor(descriptor);
+
+                Log.d(TAG, "OUD: " + "write descriptor client online: " + res);
+                super.onServicesDiscovered(gatt, status);
+            }
+
+            @Override
+            public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                if (status == BluetoothGatt.GATT_SUCCESS)
+                    Log.d(TAG, "OUD: i wrote new client online descriptor");
+                super.onDescriptorWrite(gatt, descriptor, status);
+            }
+        });
+    }
+
 
 }

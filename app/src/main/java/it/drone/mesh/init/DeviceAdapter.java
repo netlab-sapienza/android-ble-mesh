@@ -77,7 +77,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             public void onClick(View view) {
                 // Il formato messaggi per la beta è startTime,num_hop al posto di TEST_MESSAGE
                 // all'inizio num_hop = 0
-                sendMessage(device.getId(), System.currentTimeMillis() + ";;0;;", new Listeners.OnMessageSentListener() {
+                sendMessage(device.getId(), System.currentTimeMillis() + ";;0;;" + TEST_MESSAGE, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(final String message) {
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -132,10 +132,14 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         try {
             // HOP dovrebbe venire sempre 0 ma sulla specifica ci sta scritto che ci deve essere, quindi ¯\_(ツ)_/¯
             ArrayList<String> list = new ArrayList<>();
+            ArrayList<String> list2 = new ArrayList<>();
             for (String s: Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP")) {
                 list.add(s);
             }
-            Utility.saveData(list, Utility.BETA_FILENAME_SENT, (ArrayList<String>) Arrays.asList(myId, destinationId, info[0], info[1]));
+            for (String s : Arrays.asList(myId, destinationId, info[0], info[1])) {
+                list2.add(s);
+            }
+            Utility.saveData(list, Utility.BETA_FILENAME_SENT, list2);
         } catch (IOException e) {
             Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
             e.printStackTrace();

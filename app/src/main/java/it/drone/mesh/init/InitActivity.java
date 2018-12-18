@@ -192,9 +192,8 @@ public class InitActivity extends Activity {
 
     private void askIdNearServer(final int offset) {
         final int size = UserList.getUserList().size();
-
         if (offset >= size) {
-            tryConnection(0); //finito di leggere gli id passa a connettersi
+            tryConnection(offset); //finito di leggere gli id passa a connettersi
             return;
         }
 
@@ -248,8 +247,8 @@ public class InitActivity extends Activity {
                         writeDebug("id aggiunto :" + val);
                     }
                 }
+                tryConnection(offset);
                 super.onDescriptorRead(gatt, descriptor, status);
-                askIdNearServer(offset + 1);
             }
         });
         connectBLETask.startClient();
@@ -310,11 +309,11 @@ public class InitActivity extends Activity {
                         whoami.setText(R.string.client);
                     } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
-                        tryConnection(offset + 1);
+                        askIdNearServer(offset + 1);
                     }
                 } else {
                     Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                    tryConnection(offset + 1);
+                    askIdNearServer(offset + 1);
                 }
             }
         }, HANDLER_PERIOD);

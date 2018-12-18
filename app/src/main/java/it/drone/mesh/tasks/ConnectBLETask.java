@@ -261,9 +261,9 @@ public class ConnectBLETask {
         user.getBluetoothGatt().connect();
         setId("");
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
-        boolean ret = this.mGatt.discoverServices();
-        Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
-        return ret;
+        //boolean ret = this.mGatt.discoverServices();
+        //Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
+        return true;
     }
 
     public void stopClient() {

@@ -159,7 +159,8 @@ public class ServerNode {
         Log.d(TAG, "OUD: " + "My clients are: ");
         String s = "";
         for (int i = 0; i < clientList.length; i++) {
-            if (clientList[i] != null) s += i + (i == clientList.length - 1 ? "" : ",");
+            if (Utility.getBit(clientByte, i) == 1)
+                s += i + (i == clientList.length - 1 ? "" : ",");
             else s += "null,";
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
@@ -171,6 +172,13 @@ public class ServerNode {
             s += nearServers.get(i).getId() + (i == size - 1 ? "" : ",");
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
+    }
+
+    public void printMapStatus() {
+        for (int i = 1; i < 8; i++) {
+            ServerNode n = getServer("" + i);
+            if (n != null) n.printStatus();
+        }
     }
 
     public void parseMapToByte(byte[][] destArrayByte) {
@@ -186,7 +194,8 @@ public class ServerNode {
             byte secondByte = 0b00000000;
             LinkedList<ServerNode> nearTemp = s.getNearServerList();
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-                if (s.clientList[i] != null) secondByte = Utility.setBit(secondByte, i);
+                if (Utility.getBit(s.clientByte, i) == 1)
+                    secondByte = Utility.setBit(secondByte, i);
             }
             tempArrayByte[1] = secondByte;
             int tempIndex = 2;

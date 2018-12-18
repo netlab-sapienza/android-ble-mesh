@@ -121,6 +121,7 @@ public class AcceptBLETask {
                             Utility.printByte(value[4]);
                             boolean isNearToMe = mNode.updateRoutingTable(value);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
+                            mNode.printMapStatus();
                             mGattServer.sendResponse(device, requestId, 0, 0, value);
                             byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
                             mNode.parseMapToByte(tempMap);
@@ -167,6 +168,7 @@ public class AcceptBLETask {
                             }
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             byte[][] map = Utility.buildMapFromString(messageMap.get(senderId));
+                            mNode.printMapStatus();
                             mNode = ServerNode.buildRoutingTable(map, getId(), mNode.getClientList());
 
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 1];
@@ -256,7 +258,7 @@ public class AcceptBLETask {
                                 Log.d(TAG, "OUD: messaggio broadcoast");
                                 return;
                             }
-                            BluetoothDevice dest = mNode.getClient("" + infoDest[1]);   // TODO: 05/12/18 Controllare a quale server mandarlo
+                            BluetoothDevice dest = mNode.getClient("" + infoDest[1]);
                             if (dest == null) {
                                 Log.d(TAG, "OUD: " + "null");
                                 return;
@@ -416,6 +418,7 @@ public class AcceptBLETask {
                             ConnectBLETask client = Utility.createBroadcastNewClientOnline(dev, infoNewCLient[0], infoNewCLient[1], context);
                             client.startClient();
                         }
+                        mNode.getServer("" + infoNewCLient[0]).setClientOnline("" + infoNewCLient[1], null);
                     }
 
                 }
@@ -581,6 +584,12 @@ public class AcceptBLETask {
         if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
             initializeId(0);
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(TAG, "OUD: size r.t. +" + mNode.getRoutingTable().size());
+                }
+            }, 2000);
         } else {
             setId("1");
             mNode = new ServerNode(id);

@@ -340,9 +340,10 @@ public class Utility {
                         public void run() {
                             if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
-                            else
-                                Log.e(TAG, "OUD: " + "Errore invio routing table");
-
+                            else {
+                                Log.d(TAG, "OUD: " + "Routing non inviata table ");
+                                //Utility.sendRoutingTable(temp,gatt,infoSorg,infoDest);
+                            }
                         }
                     }, 500);
 

@@ -19,11 +19,6 @@ public class ServerNode {
     private BluetoothDevice[] clientList;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
-    /*
-    public ServerNode(String id, BluetoothDevice device) {
-        this.id = id;
-    }
-    */
 
     public ServerNode(String id) {
         this.id = id;

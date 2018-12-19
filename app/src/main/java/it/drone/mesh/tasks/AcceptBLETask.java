@@ -192,7 +192,6 @@ public class AcceptBLETask {
                             }
                             messageMap.put(senderId, "");
                         }
-
                     } else {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }

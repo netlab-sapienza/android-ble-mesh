@@ -54,6 +54,7 @@ public class InitActivity extends Activity {
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
     private static final long HANDLER_PERIOD = 5000;
     private final static String TAG = InitActivity.class.getSimpleName();
+    private static final int PERMISSION_REQUEST_WRITE = 564;
 
 
     Button startServices;
@@ -339,6 +340,7 @@ public class InitActivity extends Activity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
+                askPermissionsStorage(savedInstanceState);
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
             }
@@ -349,6 +351,26 @@ public class InitActivity extends Activity {
             // permission not granted, we must decide what to do
             Toast.makeText(this, "Permissions not granted API < 23", Toast.LENGTH_LONG).show();
         }
+
+
+    }
+
+    private void askPermissionsStorage(Bundle savedInstanceState) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                writeDebug("Write storage permissions granted");
+            } else {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_WRITE);
+            }
+            // fix per API < 23
+        } else if (PermissionChecker.PERMISSION_GRANTED == PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            writeDebug("Write storage permissions granted");
+        } else {
+            // permission not granted, we must decide what to do
+            Toast.makeText(this, "Permissions not granted API < 23", Toast.LENGTH_LONG).show();
+        }
+
     }
 
     /**
@@ -368,8 +390,18 @@ public class InitActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     checkBluetoothAvailability();
+                    askPermissionsStorage(null);
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
+                }
+            }
+            case PERMISSION_REQUEST_WRITE: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "onRequestPermissionsResult: OK");
+                    writeDebug("Write storage permissions granted");
+                } else {
+                    writeDebug("Write storage permissions denied");
                 }
             }
 

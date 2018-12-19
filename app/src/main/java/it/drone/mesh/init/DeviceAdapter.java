@@ -133,7 +133,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             // HOP dovrebbe venire sempre 0 ma sulla specifica ci sta scritto che ci deve essere, quindi ¯\_(ツ)_/¯
             ArrayList<String> list = new ArrayList<>();
             ArrayList<String> list2 = new ArrayList<>();
-            for (String s: Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP")) {
+            for (String s : Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP")) {
                 list.add(s);
             }
             for (String s : Arrays.asList(myId, destinationId, info[0], info[1])) {
@@ -171,13 +171,28 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 for (Device device : devices)
                     if (device.getId().equals(idMitt))
                         device.writeOutput(message);
-                notifyDataSetChanged();
+
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyDataSetChanged();
+                    }
+                });
 
                 // INIZIO LOGICA BETA
                 String myId = connectBLETask.getId();
-                String[] info = message.split(",");
+                String[] info = message.split(";;");
                 try {
-                    Utility.saveData((ArrayList<String>) Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, (ArrayList<String>) Arrays.asList(myId, idMitt, info[0], info[1]));
+                    ArrayList<String> list = new ArrayList<>();
+                    ArrayList<String> list2 = new ArrayList<>();
+                    for (String s : Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP")) {
+                        list.add(s);
+                    }
+                    for (String s : Arrays.asList(myId, idMitt, info[0], info[1])) {
+                        list2.add(s);
+                    }
+
+                    Utility.saveData(list, Utility.BETA_FILENAME_RECEIVED, list2);
                 } catch (IOException e) {
                     Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                     e.printStackTrace();

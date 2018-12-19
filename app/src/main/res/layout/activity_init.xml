@@ -25,6 +25,7 @@
                     android:id="@+id/myid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:padding="5dp"
                     android:text="@string/myid" />
 
                 <Button
@@ -40,6 +41,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@id/startServices"
+                    android:padding="5dp"
                     android:text="@string/whoami" />
 
             </RelativeLayout>
@@ -49,9 +51,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#4b000000"
-                android:minLines="1"
                 android:maxLines="10"
                 android:minHeight="100dp"
+                android:minLines="1"
                 android:text="@string/debug_explain" />
 
 

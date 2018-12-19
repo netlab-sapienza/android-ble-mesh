@@ -482,7 +482,7 @@ public class Utility {
      * @param fileName name of the file
      * @param data     actual data to be saved
      */
-    public static void saveData(ArrayList<String> header, String fileName, ArrayList data) throws IOException {
+    public static void saveData(List<String> header, String fileName, List data) throws IOException {
         // Convert arrays to delimited strings
         String header_str = TextUtils.join("\t", header);
         String data_str = TextUtils.join("\t", data);

@@ -131,15 +131,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         String[] info = message.split(";;");
         try {
             // HOP dovrebbe venire sempre 0 ma sulla specifica ci sta scritto che ci deve essere, quindi ¯\_(ツ)_/¯
-            ArrayList<String> list = new ArrayList<>();
-            ArrayList<String> list2 = new ArrayList<>();
-            for (String s : Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP")) {
-                list.add(s);
-            }
-            for (String s : Arrays.asList(myId, destinationId, info[0], info[1])) {
-                list2.add(s);
-            }
-            Utility.saveData(list, Utility.BETA_FILENAME_SENT, list2);
+            Utility.saveData(Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, Arrays.asList(myId, destinationId, info[0], info[1]));
         } catch (IOException e) {
             Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
             e.printStackTrace();
@@ -183,16 +175,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 String myId = connectBLETask.getId();
                 String[] info = message.split(";;");
                 try {
-                    ArrayList<String> list = new ArrayList<>();
-                    ArrayList<String> list2 = new ArrayList<>();
-                    for (String s : Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP")) {
-                        list.add(s);
-                    }
-                    for (String s : Arrays.asList(myId, idMitt, info[0], info[1])) {
-                        list2.add(s);
-                    }
-
-                    Utility.saveData(list, Utility.BETA_FILENAME_RECEIVED, list2);
+                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, info[0], info[1]));
                 } catch (IOException e) {
                     Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                     e.printStackTrace();

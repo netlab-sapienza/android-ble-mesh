@@ -21,11 +21,11 @@ import android.widget.Toast;
 import java.util.HashMap;
 import java.util.Set;
 
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.Utility;
-import it.drone.mesh.roles.server.ServerNode;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.server.ServerNode;
 
 
 public class AcceptBLETask {
@@ -276,8 +276,8 @@ public class AcceptBLETask {
                             Log.d(TAG, "OUD: next-hop : " + dest.getId());
                             final BluetoothDevice near = nearDeviceMap.get(dest.getId());
                             Log.d(TAG, "OUD: next-hop : " + near.getName());
-                            final User user = new User(near, near.getName());
-                            final ConnectBLETask connectBLETask = new ConnectBLETask(user, context, new BluetoothGattCallback() {
+                            final Server server = new Server(near, near.getName());
+                            final ConnectBLETask connectBLETask = new ConnectBLETask(server, context, new BluetoothGattCallback() {
                                 @Override
                                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                                     if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -480,7 +480,7 @@ public class AcceptBLETask {
             Log.d(TAG, "OUD: " + "device null");
             return; //vedi sopra
         }
-        final User u = new User(dev, dev.getName());
+        final Server u = new Server(dev, dev.getName());
         ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {

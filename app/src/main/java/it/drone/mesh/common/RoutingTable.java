@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.common;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -55,13 +55,13 @@ public class RoutingTable {
         addDevice(new Device("" + serverId + "" + clientId));
     }
 
+    public void cleanRoutingTable() {
+        routingTable.clear();
+    }
+
     public interface OnRoutingTableUpdateListener {
         public void OnDeviceAdded(Device device);
 
         public void OnDeviceRemoved(Device device);
-    }
-
-    public void cleanRoutingTable() {
-        routingTable.clear();
     }
 }

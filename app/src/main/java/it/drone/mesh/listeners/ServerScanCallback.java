@@ -6,8 +6,8 @@ import android.util.Log;
 
 import java.util.List;
 
-import it.drone.mesh.models.User;
-import it.drone.mesh.models.UserList;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.models.ServerList;
 
 /**
  * Custom ScanCallback object - Every result is an user on the mesh network
@@ -30,13 +30,13 @@ public class ServerScanCallback extends ScanCallback {
     public void onScanResult(int callbackType, ScanResult result) {
         super.onScanResult(callbackType, result);
 
-        for (User temp : UserList.getUserList()) {
+        for (Server temp : ServerList.getUserList()) {
             if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                 return;
         }
 
-        final User newUser = new User(result.getDevice(), result.getDevice().getName());
-        UserList.addUser(newUser);
+        final Server newServer = new Server(result.getDevice(), result.getDevice().getName());
+        ServerList.addUser(newServer);
         listener.OnServerFound("Ho trovato un nuovo server");
     }
 

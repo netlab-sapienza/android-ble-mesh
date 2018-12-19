@@ -34,20 +34,20 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.Utility;
+import it.drone.mesh.common.exceptions.NotEnabledException;
+import it.drone.mesh.common.exceptions.NotSupportedException;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
-import it.drone.mesh.models.User;
-import it.drone.mesh.models.UserList;
-import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.Utility;
-import it.drone.mesh.roles.common.exceptions.NotEnabledException;
-import it.drone.mesh.roles.common.exceptions.NotSupportedException;
-import it.drone.mesh.roles.server.BLEServer;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.models.ServerList;
+import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
-import static it.drone.mesh.roles.common.Constants.REQUEST_ENABLE_BT;
-import static it.drone.mesh.roles.common.Utility.SCAN_PERIOD;
+import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 public class InitActivity extends Activity {
 
@@ -145,7 +145,7 @@ public class InitActivity extends Activity {
     public void startScanning() {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
-            UserList.cleanUserList();
+            ServerList.cleanUserList();
             //tempResult.clear();
             // Will stop the scanning after a set time.
             new Handler().postDelayed(new Runnable() {
@@ -185,22 +185,22 @@ public class InitActivity extends Activity {
     }
 
     /**
-     * Since now the UserList is populated, the device starts asking for an Id
+     * Since now the ServerList is populated, the device starts asking for an Id
      * Funzione ricorsiva per chiedere a tutti i Server il proprio Id.
      *
-     * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività
+     * @param offset ---> indice nell'ServerList dei vari server, con offset > size finisce la ricorsività
      */
 
     private void askIdNearServer(final int offset) {
-        final int size = UserList.getUserList().size();
+        final int size = ServerList.getUserList().size();
         if (offset >= size) {
             tryConnection(offset); //finito di leggere gli id passa a connettersi
             return;
         }
 
-        final User newUser = UserList.getUser(offset);
-        writeDebug("askNearServer with: " + newUser.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, this, new BluetoothGattCallback() {
+        final Server newServer = ServerList.getUser(offset);
+        writeDebug("askNearServer with: " + newServer.getUserName());
+        final ConnectBLETask connectBLETask = new ConnectBLETask(newServer, this, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -259,10 +259,10 @@ public class InitActivity extends Activity {
      * Funzione ricorsiva per provare a connettersi come client ai server trovati; Se non ce ne sono o nessuno è disponibile
      * diventi tu stesso Server
      *
-     * @param offset ---> indice nell'UserList dei vari server, con offset > size si diventa server
+     * @param offset ---> indice nell'ServerList dei vari server, con offset > size si diventa server
      */
     public void tryConnection(final int offset) {
-        final int size = UserList.getUserList().size();
+        final int size = ServerList.getUserList().size();
         if (offset >= size) {
 
             startService(new Intent(this, AdvertiserService.class));
@@ -275,14 +275,13 @@ public class InitActivity extends Activity {
             myid.setText(acceptBLETask.getId());
             return;
         }
-        User newUser = UserList.getUser(offset);
-        Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this);
+        Server newServer = ServerList.getUser(offset);
+        Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
+        final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
         connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
             @Override
             public void OnMessageReceived(final String idMitt, final String message) {
                 writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
@@ -340,7 +339,7 @@ public class InitActivity extends Activity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
-                askPermissionsStorage(savedInstanceState);
+                askPermissionsStorage();
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
             }
@@ -355,7 +354,7 @@ public class InitActivity extends Activity {
 
     }
 
-    private void askPermissionsStorage(Bundle savedInstanceState) {
+    private void askPermissionsStorage() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -390,7 +389,7 @@ public class InitActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     checkBluetoothAvailability();
-                    askPermissionsStorage(null);
+                    askPermissionsStorage();
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
                 }

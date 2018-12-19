@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.common;
 
 import android.bluetooth.le.ScanResult;
 import android.util.Log;

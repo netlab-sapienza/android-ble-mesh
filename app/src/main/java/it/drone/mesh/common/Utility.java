@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.common;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.server.ServerNode;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 /**
@@ -44,10 +44,9 @@ public class Utility {
 
     public final static String BETA_FILENAME_SENT = "sent_messages.txt";
     public final static String BETA_FILENAME_RECEIVED = "received_messages.txt";
-
-    private static String TAG = Utility.class.getSimpleName();
     public static int PACK_LEN = 18;
     public static int DEST_PACK_MESSAGE_LEN = 16;
+    private static String TAG = Utility.class.getSimpleName();
 
     public static int getBit(byte val, int offset) {
         return (val >> offset) & 1;
@@ -277,7 +276,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
-        return new ConnectBLETask(new User(device, device.getName()), context, new BluetoothGattCallback() {
+        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -368,7 +367,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, final String nextId, Context context, final byte[] value) {
-        User u = new User(device, device.getName());
+        Server u = new Server(device, device.getName());
         return new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -471,7 +470,7 @@ public class Utility {
                 mBluetoothScan.stopScan(mScanCallback);
             }
         }, 4500);
-        //UserList.cleanUserList();
+        //ServerList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }
 
@@ -512,7 +511,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastNewClientOnline(BluetoothDevice device, final int serverId, final int clientId, Context context) {
-        return new ConnectBLETask(new User(device, device.getName()), context, new BluetoothGattCallback() {
+        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {

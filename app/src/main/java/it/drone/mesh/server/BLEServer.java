@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.server;
+package it.drone.mesh.server;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -18,15 +18,15 @@ import android.util.Log;
 import java.util.List;
 
 import it.drone.mesh.R;
-import it.drone.mesh.roles.common.RoutingTable;
-import it.drone.mesh.roles.common.ScanResultList;
-import it.drone.mesh.roles.common.exceptions.NotEnabledException;
-import it.drone.mesh.roles.common.exceptions.NotSupportedException;
+import it.drone.mesh.common.RoutingTable;
+import it.drone.mesh.common.ScanResultList;
+import it.drone.mesh.common.exceptions.NotEnabledException;
+import it.drone.mesh.common.exceptions.NotSupportedException;
 
-import static it.drone.mesh.roles.common.Utility.SCAN_PERIOD;
-import static it.drone.mesh.roles.common.Utility.buildScanFilters;
-import static it.drone.mesh.roles.common.Utility.buildScanSettings;
-import static it.drone.mesh.roles.common.Utility.isBLESupported;
+import static it.drone.mesh.common.Utility.SCAN_PERIOD;
+import static it.drone.mesh.common.Utility.buildScanFilters;
+import static it.drone.mesh.common.Utility.buildScanSettings;
+import static it.drone.mesh.common.Utility.isBLESupported;
 
 /**
  * BLEServer ha il compito di offrire un servizio che implementi le seguenti funzioni:

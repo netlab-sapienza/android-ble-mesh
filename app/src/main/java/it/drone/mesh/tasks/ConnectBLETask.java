@@ -13,16 +13,16 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.RoutingTable;
+import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.RoutingTable;
-import it.drone.mesh.roles.common.Utility;
+import it.drone.mesh.models.Server;
 
 public class ConnectBLETask {
     private final static String TAG = ConnectBLETask.class.getName();
 
-    private User user;
+    private Server server;
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
@@ -31,20 +31,20 @@ public class ConnectBLETask {
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
 
-    public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
+    public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
-        this.user = user;
+        this.server = server;
         this.mGattCallback = callback;
         this.id = null;
         receivedListeners = new ArrayList<>();
         routingTable = RoutingTable.getInstance();
     }
 
-    public ConnectBLETask(User user, final Context context) {
+    public ConnectBLETask(Server server, final Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
-        this.user = user;
+        this.server = server;
         this.id = null;
         this.messageMap = new HashMap<>();
         receivedListeners = new ArrayList<>();
@@ -255,10 +255,10 @@ public class ConnectBLETask {
     }
 
     public boolean startClient() {
-        this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
-        user.setBluetoothGatt(this.mGatt);
-        user.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
-        user.getBluetoothGatt().connect();
+        this.mGatt = server.getBluetoothDevice().connectGatt(context, false, mGattCallback);
+        server.setBluetoothGatt(this.mGatt);
+        server.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+        server.getBluetoothGatt().connect();
         setId("");
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
         //boolean ret = this.mGatt.discoverServices();

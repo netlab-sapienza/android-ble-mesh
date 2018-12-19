@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common.exceptions;
+package it.drone.mesh.common.exceptions;
 
 public class NotSupportedException extends Exception {
 

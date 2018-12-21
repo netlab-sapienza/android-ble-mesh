@@ -36,13 +36,10 @@ import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.Utility;
-import it.drone.mesh.common.exceptions.NotEnabledException;
-import it.drone.mesh.common.exceptions.NotSupportedException;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
-import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -51,17 +48,15 @@ import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 public class InitActivity extends Activity {
 
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    private static final String TAG = InitActivity.class.getSimpleName();
+
     private static final long HANDLER_PERIOD = 5000;
-    private final static String TAG = InitActivity.class.getSimpleName();
     private static final int PERMISSION_REQUEST_WRITE = 564;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
 
-
-    Button startServices;
-    BLEServer server;
-    TextView debugger, whoami, myid;
-    RecyclerView recyclerDeviceList;
-    DeviceAdapter deviceAdapter;
+    private Button startServices;
+    private TextView debugger, whoami, myid;
+    private DeviceAdapter deviceAdapter;
 
     ServerScanCallback mScanCallback;
     private BluetoothAdapter mBluetoothAdapter;
@@ -110,7 +105,7 @@ public class InitActivity extends Activity {
             }
         });
 
-        recyclerDeviceList = findViewById(R.id.recy_scan_results);
+        RecyclerView recyclerDeviceList = findViewById(R.id.recy_scan_results);
         deviceAdapter = new DeviceAdapter();
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
@@ -121,18 +116,6 @@ public class InitActivity extends Activity {
      */
     private void initializeService() {
         writeDebug("Start initializing server");
-
-        // questa inizializzazione potrebbe essere ridondante
-        try {
-            server = BLEServer.getInstance(this);
-        } catch (NotSupportedException e) {
-            e.printStackTrace();
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            return;
-        } catch (NotEnabledException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            return;
-        }
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
@@ -264,15 +247,21 @@ public class InitActivity extends Activity {
     public void tryConnection(final int offset) {
         final int size = ServerList.getUserList().size();
         if (offset >= size) {
-
             startService(new Intent(this, AdvertiserService.class));
             writeDebug("Start Server");
             acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
             acceptBLETask.insertMapDevice(nearDeviceMap);
             acceptBLETask.startServer();
             deviceAdapter.setAcceptBLETask(acceptBLETask);
-            whoami.setText(R.string.server);
-            myid.setText(acceptBLETask.getId());
+            runOnUiThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            whoami.setText(R.string.server);
+                            myid.setText(acceptBLETask.getId());
+                        }
+                    }
+            );
             return;
         }
         Server newServer = ServerList.getUser(offset);
@@ -286,15 +275,14 @@ public class InitActivity extends Activity {
                     @Override
                     public void run() {
                         deviceAdapter.notifyDataSetChanged();
-                        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                        // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
                     }
                 });
 
             }
         });
         connectBLE.startClient();
-        Handler mHandler = new Handler(Looper.getMainLooper());
-        mHandler.postDelayed(new Runnable() {
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
                 Log.d(TAG, "OUD: Run ");
@@ -309,6 +297,7 @@ public class InitActivity extends Activity {
                         whoami.setText(R.string.client);
                     } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
+                        e.printStackTrace();
                         askIdNearServer(offset + 1);
                     }
                 } else {
@@ -322,7 +311,7 @@ public class InitActivity extends Activity {
 
 
     private void writeDebug(final String message) {
-        InitActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
             public void run() {
                 if (debugger.getLineCount() == debugger.getMaxLines())
                     debugger.setText(String.format("%s\n", message));
@@ -330,7 +319,7 @@ public class InitActivity extends Activity {
                     debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
             }
         });
-        Log.d(TAG, "OUD:" + message);
+        Log.d(TAG, message);
     }
 
 
@@ -384,7 +373,7 @@ public class InitActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
+            case PERMISSION_REQUEST_COARSE_LOCATION:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
@@ -393,8 +382,8 @@ public class InitActivity extends Activity {
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
                 }
-            }
-            case PERMISSION_REQUEST_WRITE: {
+                break;
+            case PERMISSION_REQUEST_WRITE:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
@@ -402,8 +391,6 @@ public class InitActivity extends Activity {
                 } else {
                     writeDebug("Write storage permissions denied");
                 }
-            }
-
         }
     }
 

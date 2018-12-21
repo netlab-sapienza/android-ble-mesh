@@ -41,7 +41,6 @@ public class ServerList {
     }
 
     public static void cleanUserList() {
-        Log.d(TAG, "OUD:" + "Lista pulita");
         servers.clear();
     }
 
@@ -55,7 +54,6 @@ public class ServerList {
         }
 
         Log.e(TAG, "removeUser: Server not found, Lista: " + printList());
-
         return null;
     }
 

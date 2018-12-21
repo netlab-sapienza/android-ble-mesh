@@ -15,9 +15,9 @@ import it.drone.mesh.models.ServerList;
 public class ServerScanCallback extends ScanCallback {
 
     private final static String TAG = ServerScanCallback.class.getName();
-    private OnServerFoundListerner listener;
+    private OnServerFoundListener listener;
 
-    public ServerScanCallback(OnServerFoundListerner listener) {
+    public ServerScanCallback(OnServerFoundListener listener) {
         this.listener = listener;
     }
 
@@ -34,8 +34,7 @@ public class ServerScanCallback extends ScanCallback {
             if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                 return;
         }
-
-        final Server newServer = new Server(result.getDevice(), result.getDevice().getName());
+        Server newServer = new Server(result.getDevice(), result.getDevice().getName());
         ServerList.addUser(newServer);
         listener.OnServerFound("Ho trovato un nuovo server");
     }
@@ -46,7 +45,7 @@ public class ServerScanCallback extends ScanCallback {
         Log.d(TAG, "OUD: " + "Scan failed with error: " + errorCode);
     }
 
-    public interface OnServerFoundListerner {
+    public interface OnServerFoundListener {
         void OnServerFound(String id);
     }
 }

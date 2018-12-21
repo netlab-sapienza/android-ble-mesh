@@ -40,12 +40,7 @@ public class Constants {
     public static final UUID RoutingTableDescriptorUUID = UUID.fromString("2322b81d-0000-1000-8000-00805f9b34fb");
 
 
-    public static final int REQUEST_ENABLE_BT = 1;
-
-    // Strings for data exchange activity
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-    public static final String EXTRAS_DEVICE_ID = "DEVICE_ID";
+    public static final int REQUEST_ENABLE_BT = 322;
 
 }
 

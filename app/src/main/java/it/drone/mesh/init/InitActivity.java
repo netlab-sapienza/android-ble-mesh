@@ -139,7 +139,7 @@ public class InitActivity extends Activity {
             }, SCAN_PERIOD);
 
             // Kick off a new scan.
-            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListerner() {
+            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
                 @Override
                 public void OnServerFound(String message) {
                     writeDebug(message);

@@ -40,11 +40,8 @@ public class AdvertiserService extends Service {
      */
     public static boolean running = false;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
-
     private AdvertiseCallback mAdvertiseCallback;
-
     private Handler mHandler;
-
     private Runnable timeoutRunnable;
 
     /**

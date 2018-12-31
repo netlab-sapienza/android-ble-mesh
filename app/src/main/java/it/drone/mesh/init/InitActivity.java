@@ -30,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.R;
@@ -43,7 +44,10 @@ import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
+import static it.drone.mesh.common.Constants.MAX_ATTEMPTS_UNTIL_SERVER;
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 public class InitActivity extends Activity {
@@ -71,6 +75,9 @@ public class InitActivity extends Activity {
 
     private AcceptBLETask acceptBLETask;
 
+    private int attemptsUntilServer = 1;
+    private long randomValueScanPeriod;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,6 +86,7 @@ public class InitActivity extends Activity {
         debugger = findViewById(R.id.debugger);
         whoami = findViewById(R.id.whoami);
         myid = findViewById(R.id.myid);
+        randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
 
@@ -88,13 +96,17 @@ public class InitActivity extends Activity {
                 if (isServiceStarted) {
                     startServices.setText(R.string.start_service);
                     isServiceStarted = false;
-                    if (acceptBLETask != null)
+                    if (acceptBLETask != null) {
                         acceptBLETask.stopServer();
-                    else if (connectBLETask != null)
+                        acceptBLETask = null;
+                    } else if (connectBLETask != null) {
                         connectBLETask.stopClient();
+                        connectBLETask = null;
+                    }
                     whoami.setText(R.string.whoami);
                     myid.setText(R.string.myid);
                     writeDebug("Service stopped");
+                    attemptsUntilServer = 1;
                 } else {
                     initializeService();
                     startServices.setText(R.string.stop_service);
@@ -129,7 +141,6 @@ public class InitActivity extends Activity {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
             ServerList.cleanUserList();
-            //tempResult.clear();
             // Will stop the scanning after a set time.
             new Handler().postDelayed(new Runnable() {
                 @Override
@@ -175,13 +186,13 @@ public class InitActivity extends Activity {
      */
 
     private void askIdNearServer(final int offset) {
-        final int size = ServerList.getUserList().size();
+        final int size = ServerList.getServerList().size();
         if (offset >= size) {
             tryConnection(offset); //finito di leggere gli id passa a connettersi
             return;
         }
 
-        final Server newServer = ServerList.getUser(offset);
+        final Server newServer = ServerList.getServer(offset);
         writeDebug("askNearServer with: " + newServer.getUserName());
         final ConnectBLETask connectBLETask = new ConnectBLETask(newServer, this, new BluetoothGattCallback() {
             @Override
@@ -213,13 +224,8 @@ public class InitActivity extends Activity {
                     return;
                 }
                 boolean res = gatt.readDescriptor(desc);
-                Log.d(TAG, "OUD: " + "Read Server id: " + res);
+                writeDebug("Read Server id: " + res);
                 super.onServicesDiscovered(gatt, status);
-            }
-
-            @Override
-            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                super.onCharacteristicRead(gatt, characteristic, status);
             }
 
             @Override
@@ -245,26 +251,39 @@ public class InitActivity extends Activity {
      * @param offset ---> indice nell'ServerList dei vari server, con offset > size si diventa server
      */
     public void tryConnection(final int offset) {
-        final int size = ServerList.getUserList().size();
+        final int size = ServerList.getServerList().size();
         if (offset >= size) {
-            startService(new Intent(this, AdvertiserService.class));
-            writeDebug("Start Server");
-            acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
-            acceptBLETask.insertMapDevice(nearDeviceMap);
-            acceptBLETask.startServer();
-            deviceAdapter.setAcceptBLETask(acceptBLETask);
-            runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            whoami.setText(R.string.server);
-                            myid.setText(acceptBLETask.getId());
-                        }
+            if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
+                long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
+                writeDebug("Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        startScanning();
                     }
-            );
+                }, sleepPeriod);
+                attemptsUntilServer++;
+            } else {
+                startService(new Intent(this, AdvertiserService.class));
+                writeDebug("Start Server");
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
+                acceptBLETask.insertMapDevice(nearDeviceMap);
+                acceptBLETask.startServer();
+                deviceAdapter.setAcceptBLETask(acceptBLETask);
+                runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                whoami.setText(R.string.server);
+                                myid.setText(acceptBLETask.getId());
+                            }
+                        }
+                );
+            }
             return;
         }
-        Server newServer = ServerList.getUser(offset);
+        Server newServer = ServerList.getServer(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
         final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
         connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {

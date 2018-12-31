@@ -15,7 +15,7 @@ public class ServerList {
     private static ArrayList<Server> servers = new ArrayList<>();
 
 
-    public static Server getUser(int index) throws NoSuchElementException {
+    public static Server getServer(int index) throws NoSuchElementException {
         Server u = servers.get(index);
         if (u == null)
             throw new NoSuchElementException("Server non presente all'interno della lista");
@@ -23,20 +23,20 @@ public class ServerList {
             return u;
     }
 
-    public static Server getUser(String name) throws NoSuchElementException {
+    public static Server getServer(String serverName) throws NoSuchElementException {
         for (Server i : servers) {
-            if (i.getUserName().equals(name))
+            if (i.getUserName().equals(serverName))
                 return i;
         }
         throw new NoSuchElementException("Server non presente all'interno della lista");
     }
 
-    public static void addUser(Server server) {
+    public static void addServer(Server server) {
         servers.add(server);
         Log.i(TAG, "added Server: " + server.getUserName());
     }
 
-    public static List<Server> getUserList() {
+    public static List<Server> getServerList() {
         return servers;
     }
 
@@ -44,7 +44,7 @@ public class ServerList {
         servers.clear();
     }
 
-    public static Server removeUser(String name) {
+    public static Server removeServer(String name) {
         for (Server i : servers) {
             if (i.getUserName().equals(name)) {
                 servers.remove(i);

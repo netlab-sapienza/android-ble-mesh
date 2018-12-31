@@ -28,13 +28,16 @@
                     android:padding="5dp"
                     android:text="@string/myid" />
 
-                <Button
+                <android.support.v7.widget.AppCompatButton
                     android:id="@+id/startServices"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toEndOf="@id/myid"
+                    android:background="@drawable/rounded_button"
+                    android:padding="12dp"
                     android:text="@string/start_service"
-                    android:textColor="@color/colorPrimary" />
+                    android:textAllCaps="false"
+                    android:textSize="16sp" />
 
                 <TextView
                     android:id="@+id/whoami"
@@ -50,6 +53,7 @@
                 android:id="@+id/debugger"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="5dp"
                 android:background="#4b000000"
                 android:maxLines="10"
                 android:minHeight="100dp"

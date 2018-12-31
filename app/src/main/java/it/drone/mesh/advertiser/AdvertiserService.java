@@ -31,7 +31,7 @@ public class AdvertiserService extends Service {
     public static final String ADVERTISING_FAILED_EXTRA_CODE = "failureCode";
     public static final int ADVERTISING_TIMED_OUT = 6;
     private static final String TAG = AdvertiserService.class.getSimpleName();
-    private static final int FOREGROUND_NOTIFICATION_ID = 1;
+
     /**
      * A global variable to let AdvertiserFragment check if the Service is running without needing
      * to start or bind to it.

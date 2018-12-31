@@ -65,7 +65,7 @@ public class AcceptBLETask {
         mGattDescriptorNextId = new BluetoothGattDescriptor(Constants.NEXT_ID_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientConfigurationDescriptor = new BluetoothGattDescriptor(Constants.Client_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineConfigurationDescriptor = new BluetoothGattDescriptor(Constants.ClientOnline_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-        mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorCLientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
 
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicClientOnline = new BluetoothGattCharacteristic(Constants.ClientOnlineCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -399,7 +399,7 @@ public class AcceptBLETask {
                         ConnectBLETask client = Utility.createBroadcastNewClientOnline(dev, Integer.parseInt(getId()), currentid, context);
                         client.startClient();
                     }
-                } else if (descriptor.getUuid().equals(Constants.DescriptorCLientOnlineUUID)) {
+                } else if (descriptor.getUuid().equals(Constants.DescriptorClientOnlineUUID)) {
                     byte[] val = mGattCharacteristicClientOnline.getValue();
                     int[] infoNewCLient = Utility.getByteInfo(descriptor.getValue()[0]);
                     if (Utility.getBit(val[infoNewCLient[0]], infoNewCLient[1]) == 1) {

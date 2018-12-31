@@ -529,7 +529,7 @@ public class Utility {
                 if (service == null) return;
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
                 if (characteristic == null) return;
-                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorCLientOnlineUUID);
+                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorClientOnlineUUID);
                 if (descriptor == null) return;
                 byte[] val = new byte[2];
                 val[0] = Utility.byteMessageBuilder(serverId, clientId);

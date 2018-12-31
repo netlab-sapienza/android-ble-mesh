@@ -267,7 +267,8 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        this.mGatt.disconnect();
+        if (this.mGatt != null)
+            this.mGatt.disconnect();
         this.mGatt = null;
     }
 

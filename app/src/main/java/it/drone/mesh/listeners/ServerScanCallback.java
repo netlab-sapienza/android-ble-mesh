@@ -30,12 +30,12 @@ public class ServerScanCallback extends ScanCallback {
     public void onScanResult(int callbackType, ScanResult result) {
         super.onScanResult(callbackType, result);
 
-        for (Server temp : ServerList.getUserList()) {
+        for (Server temp : ServerList.getServerList()) {
             if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                 return;
         }
         Server newServer = new Server(result.getDevice(), result.getDevice().getName());
-        ServerList.addUser(newServer);
+        ServerList.addServer(newServer);
         listener.OnServerFound("Ho trovato un nuovo server");
     }
 

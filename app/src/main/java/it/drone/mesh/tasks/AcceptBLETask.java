@@ -18,6 +18,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -50,11 +51,13 @@ public class AcceptBLETask {
     private ServerNode mNode;
     private String id;
     private HashMap<String, BluetoothDevice> nearDeviceMap;
+    private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
+        connectionRejectedListeners = new ArrayList<>();
         messageMap = new HashMap<>();
         nearDeviceMap = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -433,21 +436,6 @@ public class AcceptBLETask {
                 Log.d(TAG, "OUD: " + "I've notified " + device.getName());
                 super.onNotificationSent(device, status);
             }
-
-            @Override
-            public void onMtuChanged(BluetoothDevice device, int mtu) {
-                super.onMtuChanged(device, mtu);
-            }
-
-            @Override
-            public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-                super.onPhyUpdate(device, txPhy, rxPhy, status);
-            }
-
-            @Override
-            public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-                super.onPhyRead(device, txPhy, rxPhy, status);
-            }
         };
 
     }
@@ -464,8 +452,9 @@ public class AcceptBLETask {
 
     public void initializeId(final int offset) {
         if (offset >= nearDeviceMap.size()) {
-            //TODO: senti @Andrea per fare restart Init Activity
             Log.e(TAG, "initializeId: offset >= nearDeviceMap.size()");
+            for (OnConnectionRejectedListener listener : connectionRejectedListeners)
+                listener.OnConnectionRejected();
             return;
         }
         Set<String> set = nearDeviceMap.keySet();
@@ -623,5 +612,17 @@ public class AcceptBLETask {
             Log.d(TAG, "OUD: id: " + id + "Device: " + nearDeviceMap.get(id).getName());
         }
         this.nearDeviceMap = nearDeviceMap;
+    }
+
+    public void addConnectionRejectedListener(OnConnectionRejectedListener connectionRejectedListeners) {
+        this.connectionRejectedListeners.add(connectionRejectedListeners);
+    }
+
+    public void removeConnectionRejectedListener(OnConnectionRejectedListener connectionRejectedListener) {
+        this.connectionRejectedListeners.remove(connectionRejectedListener);
+    }
+
+    public interface OnConnectionRejectedListener {
+        void OnConnectionRejected();
     }
 }

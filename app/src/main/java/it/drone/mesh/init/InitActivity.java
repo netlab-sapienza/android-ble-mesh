@@ -77,6 +77,7 @@ public class InitActivity extends Activity {
 
     private int attemptsUntilServer = 1;
     private long randomValueScanPeriod;
+    private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +96,14 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
+        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
+            @Override
+            public void OnConnectionRejected() {
+                writeErrorDebug("Connection Rejected, stopping service");
+                startServices.performClick();
+            }
+        };
+
         startServices.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -103,6 +112,7 @@ public class InitActivity extends Activity {
                     isServiceStarted = false;
                     if (acceptBLETask != null) {
                         acceptBLETask.stopServer();
+                        acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
                         acceptBLETask = null;
                     } else if (connectBLETask != null) {
                         connectBLETask.stopClient();
@@ -275,6 +285,7 @@ public class InitActivity extends Activity {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
+                acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
@@ -487,12 +498,15 @@ public class InitActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isServiceStarted) {
+        if (isServiceStarted) {/*
             if (connectBLETask != null)
                 connectBLETask.stopClient();
             if (acceptBLETask != null)
                 acceptBLETask.stopServer();
             isServiceStarted = false;
+            */
+            // se esplode tornare allo stato precedente
+            startServices.performClick();
         }
     }
 }

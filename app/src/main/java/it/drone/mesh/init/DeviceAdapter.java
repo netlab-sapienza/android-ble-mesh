@@ -193,6 +193,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         this.acceptBLETask = acceptBLETask;
     }
 
+    public void cleanView() {
+        RoutingTable.getInstance().cleanRoutingTable();
+        devices.clear();
+        notifyDataSetChanged();
+    }
+
     class DeviceViewHolder extends RecyclerView.ViewHolder {
 
         TextView id, input, output;

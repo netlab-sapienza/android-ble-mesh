@@ -45,7 +45,6 @@ public class AcceptBLETask {
     private BluetoothGattCharacteristic mGattCharacteristicRoutingTable;
     private BluetoothGattDescriptor mGattDescriptorRoutingTable;
     private BluetoothManager mBluetoothManager;
-    private BluetoothAdapter mBluetoothAdapter;
     private HashMap<String, String> messageMap;
     private Context context;
     private ServerNode mNode;
@@ -54,7 +53,6 @@ public class AcceptBLETask {
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
-        this.mBluetoothAdapter = mBluetoothAdapter;
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
         messageMap = new HashMap<>();
@@ -96,7 +94,6 @@ public class AcceptBLETask {
             // WHAT HAPPENS WHEN I GET A CHARACTERISTIC READ REQ
             @Override
             public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
-
                 Log.d(TAG, "OUD: " + "I've been asked to read from " + device.getName() + ", my value: " + new String(characteristic.getValue()));
                 mGattServer.sendResponse(device, requestId, 0, 0, characteristic.getValue());
                 super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
@@ -232,7 +229,7 @@ public class AcceptBLETask {
                                     Log.d(TAG, "OUD: " + "Notification sent? --> " + res);
                                 }
                             } catch (IllegalArgumentException e) {
-                                Log.d(TAG, "OUD: " + e.getMessage());
+                                e.printStackTrace();
                             }
                             return;
                         }

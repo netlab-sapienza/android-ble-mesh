@@ -34,18 +34,39 @@ public class ServerScanCallback extends ScanCallback {
             if (temp.getBluetoothDevice().getName().equals(result.getDevice().getName()))
                 return;
         }
-        Server newServer = new Server(result.getDevice(), result.getDevice().getName());
-        ServerList.addServer(newServer);
+        ServerList.addServer(new Server(result.getDevice(), result.getDevice().getName()));
         listener.OnServerFound("Ho trovato un nuovo server");
     }
 
     @Override
     public void onScanFailed(int errorCode) {
         super.onScanFailed(errorCode);
-        Log.d(TAG, "OUD: " + "Scan failed with error: " + errorCode);
+        switch (errorCode) {
+            case SCAN_FAILED_ALREADY_STARTED:
+                listener.OnErrorScan("Scan already started", errorCode);
+                Log.e(TAG, "Scan already started");
+                break;
+            case SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
+                listener.OnErrorScan("Scan failed application registration failed", errorCode);
+                Log.e(TAG, "Scan failed application registration failed");
+                break;
+            case SCAN_FAILED_FEATURE_UNSUPPORTED:
+                listener.OnErrorScan("Scan failed,this feature is unsupported", errorCode);
+                Log.e(TAG, "Scan failed,this feature is unsupported");
+                break;
+            case SCAN_FAILED_INTERNAL_ERROR:
+                listener.OnErrorScan("Scan failed internal error", errorCode);
+                Log.e(TAG, "Scan failed internal error");
+                break;
+            default:
+                listener.OnErrorScan("", errorCode);
+                Log.e(TAG, "Scan failed unidentified errorCode " + errorCode);
+        }
     }
 
     public interface OnServerFoundListener {
         void OnServerFound(String id);
+
+        void OnErrorScan(String message, int errorCodeCallback);
     }
 }

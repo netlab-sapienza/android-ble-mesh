@@ -59,7 +59,7 @@ public class InitActivity extends Activity {
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
 
     private Button startServices;
-    private TextView debugger, whoami, myid;
+    private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
     ServerScanCallback mScanCallback;
@@ -84,11 +84,16 @@ public class InitActivity extends Activity {
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
         debugger = findViewById(R.id.debugger);
-        whoami = findViewById(R.id.whoami);
-        myid = findViewById(R.id.myid);
+        whoAmI = findViewById(R.id.whoami);
+        myId = findViewById(R.id.myid);
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
+
+        RecyclerView recyclerDeviceList = findViewById(R.id.recy_scan_results);
+        deviceAdapter = new DeviceAdapter();
+        recyclerDeviceList.setAdapter(deviceAdapter);
+        recyclerDeviceList.setVisibility(View.VISIBLE);
 
         startServices.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -103,10 +108,11 @@ public class InitActivity extends Activity {
                         connectBLETask.stopClient();
                         connectBLETask = null;
                     }
-                    whoami.setText(R.string.whoami);
-                    myid.setText(R.string.myid);
+                    whoAmI.setText(R.string.whoami);
+                    myId.setText(R.string.myid);
                     writeDebug("Service stopped");
                     attemptsUntilServer = 1;
+                    deviceAdapter.cleanView();
                 } else {
                     initializeService();
                     startServices.setText(R.string.stop_service);
@@ -116,11 +122,6 @@ public class InitActivity extends Activity {
 
             }
         });
-
-        RecyclerView recyclerDeviceList = findViewById(R.id.recy_scan_results);
-        deviceAdapter = new DeviceAdapter();
-        recyclerDeviceList.setAdapter(deviceAdapter);
-        recyclerDeviceList.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -154,6 +155,11 @@ public class InitActivity extends Activity {
                 @Override
                 public void OnServerFound(String message) {
                     writeDebug(message);
+                }
+
+                @Override
+                public void OnErrorScan(String message, int errorCodeCallback) {
+                    writeErrorDebug(message);
                 }
             });
 
@@ -230,6 +236,7 @@ public class InitActivity extends Activity {
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                Log.d(TAG, "onDescriptorRead: status value is : " + status);
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     String val = new String(descriptor.getValue());
                     if (val.length() > 0) {
@@ -275,8 +282,8 @@ public class InitActivity extends Activity {
                         new Runnable() {
                             @Override
                             public void run() {
-                                whoami.setText(R.string.server);
-                                myid.setText(acceptBLETask.getId());
+                                whoAmI.setText(R.string.server);
+                                myId.setText(acceptBLETask.getId());
                             }
                         }
                 );
@@ -312,8 +319,8 @@ public class InitActivity extends Activity {
                         connectBLETask = connectBLE;
                         writeDebug("OUD: " + "You're a client and your id is " + connectBLETask.getId());
                         deviceAdapter.setConnectBLETask(connectBLETask);
-                        myid.setText(connectBLETask.getId());
-                        whoami.setText(R.string.client);
+                        myId.setText(connectBLETask.getId());
+                        whoAmI.setText(R.string.client);
                     } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
                         e.printStackTrace();
@@ -339,6 +346,18 @@ public class InitActivity extends Activity {
             }
         });
         Log.d(TAG, message);
+    }
+
+    private void writeErrorDebug(final String message) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                if (debugger.getLineCount() == debugger.getMaxLines())
+                    debugger.setText(String.format("%s\n", message));
+                else
+                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
+            }
+        });
+        Log.e(TAG, message);
     }
 
 

@@ -343,7 +343,7 @@ public class AcceptBLETask {
                 if (descriptor.getUuid().toString().equals((mGattDescriptorNextId.getUuid().toString()))) {
                     int current_id = mNode.nextId(device);
                     if (current_id == -1) {
-                        mGattServer.sendResponse(device, requestId, 6, 0, descriptor.getValue());
+                        mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_REQUEST_NOT_SUPPORTED, 0, descriptor.getValue());
                     } else {
                         mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
                         mNode.setClientOnline("" + current_id, device);

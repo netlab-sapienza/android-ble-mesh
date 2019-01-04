@@ -27,6 +27,7 @@ public class ConnectBLETask {
     private BluetoothGatt mGatt;
     private Context context;
     private String id;
+    private String serverId;
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
@@ -177,12 +178,12 @@ public class ConnectBLETask {
                 if (status == 0) {
                     Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
                     if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
-                        setId(new String(descriptor.getValue(), Charset.defaultCharset()));
+                        setServerId(new String(descriptor.getValue(), Charset.defaultCharset()));
                         Log.d(TAG, "OUD: " + "id : " + getId());
                         boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.NEXT_ID_UUID));
                         Log.d(TAG, "OUD: " + "read next id descriptor : " + res);
                     } else if (descriptor.getUuid().toString().equals(Constants.NEXT_ID_UUID.toString())) {
-                        setId(getId() + new String(descriptor.getValue(), Charset.defaultCharset()));
+                        setId(getServerId() + new String(descriptor.getValue(), Charset.defaultCharset()));
                         Log.d(TAG, "OUD: " + "id : " + getId());
                         BluetoothGattDescriptor configDesc = gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.Client_Configuration_UUID);
                         configDesc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
@@ -278,6 +279,14 @@ public class ConnectBLETask {
 
     public String getId() {
         return this.id;
+    }
+
+    public String getServerId() {
+        return this.serverId;
+    }
+
+    public void setServerId(String id) {
+        this.serverId = id;
     }
 
     public void setId(String id) {

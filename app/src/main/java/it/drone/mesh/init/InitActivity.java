@@ -4,13 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
@@ -35,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
-import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
@@ -191,74 +184,7 @@ public class InitActivity extends Activity {
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
-        askIdNearServer(0);
-    }
-
-    /**
-     * Since now the ServerList is populated, the device starts asking for an Id
-     * Funzione ricorsiva per chiedere a tutti i Server il proprio Id.
-     *
-     * @param offset ---> indice nell'ServerList dei vari server, con offset > size finisce la ricorsività
-     */
-
-    private void askIdNearServer(final int offset) {
-        final int size = ServerList.getServerList().size();
-        if (offset >= size) {
-            tryConnection(offset); //finito di leggere gli id passa a connettersi
-            return;
-        }
-
-        final Server newServer = ServerList.getServer(offset);
-        writeDebug("askNearServer with: " + newServer.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newServer, this, new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    writeDebug("Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
-                    gatt.discoverServices();
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    writeDebug("Disconnected from GATT client " + gatt.getDevice().getName());
-                }
-                super.onConnectionStateChange(gatt, status, newState);
-            }
-
-            @Override
-            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                if (service == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                if (characteristic == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
-                if (desc == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                boolean res = gatt.readDescriptor(desc);
-                writeDebug("Read Server id: " + res);
-                super.onServicesDiscovered(gatt, status);
-            }
-
-            @Override
-            public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "onDescriptorRead: status value is : " + status);
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String val = new String(descriptor.getValue());
-                    if (val.length() > 0) {
-                        nearDeviceMap.put(val, gatt.getDevice());
-                        writeDebug("id aggiunto :" + val);
-                    }
-                }
-                tryConnection(offset);
-                super.onDescriptorRead(gatt, descriptor, status);
-            }
-        });
-        connectBLETask.startClient();
+        tryConnection(0);
     }
 
     /**
@@ -289,19 +215,18 @@ public class InitActivity extends Activity {
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
-                runOnUiThread(
+                new Handler(Looper.getMainLooper()).postDelayed(
                         new Runnable() {
                             @Override
                             public void run() {
                                 whoAmI.setText(R.string.server);
-                                myId.setText(acceptBLETask.getId());
+                                myId.setText(acceptBLETask.getId()); // TODO: 03/01/19 @Andrea gli devi dare almeno 5 sec di tempo per fare in modo che l'id venga assegnato.
                             }
-                        }
-                );
+                        }, HANDLER_PERIOD);
             }
             return;
         }
-        Server newServer = ServerList.getServer(offset);
+        final Server newServer = ServerList.getServer(offset);
         Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
         final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
         connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
@@ -335,11 +260,15 @@ public class InitActivity extends Activity {
                     } catch (Exception e) {
                         Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
                         e.printStackTrace();
-                        askIdNearServer(offset + 1);
+                        tryConnection(offset + 1);
                     }
                 } else {
+                    if (connectBLE.getServerId() != null) {
+                        nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
+                        Log.d(TAG, "OUD: " + "Inserito server " + connectBLE.getServerId() + " nella mappa");
+                    }
                     Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                    askIdNearServer(offset + 1);
+                    tryConnection(offset + 1);
                 }
             }
         }, HANDLER_PERIOD);

@@ -427,15 +427,15 @@ public class InitActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isServiceStarted) {/*
+        if (isServiceStarted) {
             if (connectBLETask != null)
                 connectBLETask.stopClient();
             if (acceptBLETask != null)
                 acceptBLETask.stopServer();
             isServiceStarted = false;
-            */
+
             // se esplode tornare allo stato precedente
-            startServices.performClick();
+            //startServices.performClick();
         }
     }
 }

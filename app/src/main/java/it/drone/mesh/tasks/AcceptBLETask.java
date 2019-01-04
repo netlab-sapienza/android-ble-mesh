@@ -139,7 +139,7 @@ public class AcceptBLETask {
                                 client.startClient();
                             }
                             if (isNearToMe) {
-                                String idNewServer = new String("" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8));
+                                String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
                                 Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                     @Override
                                     public void OnNewServerDiscovered(ScanResult server) {

@@ -134,9 +134,7 @@ public class ConnectBLETask {
                     return;
                 }
 
-                for (int i = 0; i < value.length - 2; i++) {
-                    correct_message[i] = value[i + 2];
-                }
+                System.arraycopy(value, 2, correct_message, 0, value.length - 2);
 
                 final String senderId = Utility.getStringId(sorgByte);
 

@@ -192,7 +192,7 @@ public class Utility {
             Log.d(TAG, "OUD: " + new String(finalMessage[i]));
             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
             try {
-                Thread.sleep(300);
+                Thread.sleep(400);
             } catch (Exception e) {
                 Log.d(TAG, "OUD: " + "Andata male la wait");
             }

@@ -124,17 +124,13 @@ public class Utility {
                 firstByte = clearBit(firstByte, 0);
                 pack[0] = firstByte;
                 pack[1] = destByte;
-                for (int j = 0; j < lastLen; j++) {
-                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
-                }
+                System.arraycopy(sInByte, (i * DEST_PACK_MESSAGE_LEN), pack, 2, lastLen);
                 finalMessage[i] = pack;
             } else {
                 byte[] pack = new byte[PACK_LEN];
                 pack[0] = firstByte;
                 pack[1] = destByte;
-                for (int j = 0; j < DEST_PACK_MESSAGE_LEN; j++) {
-                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
-                }
+                System.arraycopy(sInByte, (i * DEST_PACK_MESSAGE_LEN), pack, 2, DEST_PACK_MESSAGE_LEN);
                 finalMessage[i] = pack;
             }
         }

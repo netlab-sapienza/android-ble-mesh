@@ -248,9 +248,7 @@ public class ServerNode {
                 tempIndex++;
                 i++;
             }
-            for (int i = 0; i < SERVER_PACKET_SIZE; i++) {
-                destArrayByte[index][i] = tempArrayByte[i];
-            }
+            System.arraycopy(tempArrayByte, 0, destArrayByte[index], 0, SERVER_PACKET_SIZE);
             s.parseMapToByte(destArrayByte);
         }
     }

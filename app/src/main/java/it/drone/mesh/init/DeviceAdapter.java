@@ -175,7 +175,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 String myId = connectBLETask.getId();
                 String[] info = message.split(";;");
                 try {
-                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, info[0], info[1]));
+                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - Long.getLong(info[0]), info[1]));
                 } catch (IOException e) {
                     Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                     e.printStackTrace();

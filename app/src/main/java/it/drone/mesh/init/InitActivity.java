@@ -34,6 +34,7 @@ import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
+import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -213,6 +214,13 @@ public class InitActivity extends Activity {
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
+                acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
+                    @Override
+                    public void OnRoutingTableUpdated(ServerNode node) {
+                        String status = node.getMapStringStatus();
+                        writeDebug(status);
+                    }
+                });
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
                 new Handler(Looper.getMainLooper()).postDelayed(
@@ -426,16 +434,17 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         if (isServiceStarted) {
-            if (connectBLETask != null)
+            if (connectBLETask != null)  {
                 connectBLETask.stopClient();
-            if (acceptBLETask != null)
+                connectBLETask = null;
+            }
+            if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
+                acceptBLETask = null;
+            }
             isServiceStarted = false;
-
-            // se esplode tornare allo stato precedente
-            //startServices.performClick();
         }
+        super.onDestroy();
     }
 }

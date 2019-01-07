@@ -52,12 +52,14 @@ public class AcceptBLETask {
     private String id;
     private HashMap<String, BluetoothDevice> nearDeviceMap;
     private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
+    private ArrayList<OnRoutingTableUpdatedListener> routingTableUpdatedListeners;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
         this.context = context;
         connectionRejectedListeners = new ArrayList<>();
+        routingTableUpdatedListeners = new ArrayList<>();
         messageMap = new HashMap<>();
         nearDeviceMap = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -121,7 +123,12 @@ public class AcceptBLETask {
                             Utility.printByte(value[4]);
                             boolean isNearToMe = mNode.updateRoutingTable(value);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
+
                             mNode.printMapStatus();
+                            for (OnRoutingTableUpdatedListener l: routingTableUpdatedListeners) {
+                                l.OnRoutingTableUpdated(mNode);
+                            }
+
                             mGattServer.sendResponse(device, requestId, 0, 0, value);
                             byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
                             mNode.parseMapToByte(tempMap);
@@ -129,9 +136,7 @@ public class AcceptBLETask {
                             int dim = tempMap.length * tempMap[0].length;
                             final byte[] message = new byte[dim];
                             for (int i = 0; i < tempMap.length; i++) {
-                                for (int j = 0; j < tempMap[0].length; j++) {
-                                    message[(i * tempMap[0].length) + j] = tempMap[i][j];
-                                }
+                                System.arraycopy(tempMap[i], 0, message, (i * tempMap[0].length), tempMap[0].length);
                             }
                             for (String idTemp : nearDeviceMap.keySet()) {
                                 BluetoothDevice dev = nearDeviceMap.get(idTemp);
@@ -153,9 +158,7 @@ public class AcceptBLETask {
                             Log.d(TAG, "OUD: " + "Nnuuova table nella rete value :" + value.length);
                             final String senderId = Utility.getStringId(value[0]);
                             byte[] correctMap = new byte[value.length - 2];
-                            for (int i = 0; i < value.length - 2; i++) {
-                                correctMap[i] = value[i + 2];
-                            }
+                            System.arraycopy(value, 2, correctMap, 0, value.length - 2);
                             String previousMsg = messageMap.get(senderId);
                             if (previousMsg == null) previousMsg = "";
 
@@ -169,6 +172,9 @@ public class AcceptBLETask {
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             byte[][] map = Utility.buildMapFromString(messageMap.get(senderId));
                             mNode.printMapStatus();
+                            for (OnRoutingTableUpdatedListener l: routingTableUpdatedListeners) {
+                                l.OnRoutingTableUpdated(mNode);
+                            }
                             mNode = ServerNode.buildRoutingTable(map, getId(), mNode.getClientList());
 
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 1];
@@ -207,9 +213,7 @@ public class AcceptBLETask {
                         byte[] correct_message = new byte[value.length - 2];
                         byte sorgByte = value[0];
                         byte destByte = value[1];
-                        for (int i = 0; i < value.length - 2; i++) {
-                            correct_message[i] = value[i + 2];
-                        }
+                        System.arraycopy(value, 2, correct_message, 0, value.length - 2);
                         valueReceived = new String((correct_message));
                         Log.d(TAG, "OUD: " + valueReceived);
                         final int[] infoSorg = Utility.getByteInfo(sorgByte);
@@ -564,22 +568,20 @@ public class AcceptBLETask {
     public void startServer() {
         // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
         Log.d(TAG, "OUD: " + "dev found:" + nearDeviceMap.size());
-
-
         if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
             initializeId(0);
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    Log.d(TAG, "OUD: size r.t. +" + mNode.getRoutingTable().size());
+                    Log.d(TAG, "OUD: size r.t. " + mNode.getRoutingTable().size());
                 }
-            }, 2000);
+            }, 5000);
         } else {
             setId("1");
             mNode = new ServerNode(id);
             mGattCharacteristicNextServerId.setValue("2".getBytes());
-            Log.d(TAG, "OUD: startServer: en");
+            Log.d(TAG, "OUD: startServer: i'm the first");
             mGattDescriptorRoutingTable.setValue("1".getBytes());
             mGattDescriptor.setValue(id.getBytes());
             mGattCharacteristicClientOnline.setValue(new byte[17]);
@@ -605,6 +607,7 @@ public class AcceptBLETask {
     public void stopServer() {
         this.mGattServer.clearServices();
         this.mGattServer.close();
+        this.mGattServer = null;
     }
 
     public void insertMapDevice(HashMap<String, BluetoothDevice> nearDeviceMap) {
@@ -622,7 +625,19 @@ public class AcceptBLETask {
         this.connectionRejectedListeners.remove(connectionRejectedListener);
     }
 
+    public void addRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
+        this.routingTableUpdatedListeners.add(routingTableUpdatedListener);
+    }
+
+    public void removeRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
+        this.routingTableUpdatedListeners.remove(routingTableUpdatedListener);
+    }
+
     public interface OnConnectionRejectedListener {
         void OnConnectionRejected();
+    }
+
+    public interface OnRoutingTableUpdatedListener {
+        void OnRoutingTableUpdated(ServerNode node);
     }
 }

@@ -211,11 +211,43 @@ public class ServerNode {
         Log.d(TAG, "OUD: " + "[" + s + "]");
     }
 
+    public String getStringStatus()  {
+        String ret = "";
+        ret += "I'm node " + id + "\n";
+        ret += "My clients are: \n";
+
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < clientList.length; i++) {
+            if (Utility.getBit(clientByte, i) == 1)
+                s.append(i).append(i == clientList.length - 1 ? "" : ",");
+            else s.append("null,");
+        }
+        ret += "[" + s.toString() + "]\n";
+
+        ret += "I have " + nearServers.size() + " near servers\n";
+        int size = nearServers.size();
+        s = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            s.append(nearServers.get(i).getId()).append(i == size - 1 ? "" : ",");
+        }
+        ret += "[" + s.toString() + "]\n";
+        return ret;
+    }
+
     public void printMapStatus() {
         for (int i = 1; i < 8; i++) {
             ServerNode n = getServer("" + i);
             if (n != null) n.printStatus();
         }
+    }
+
+    public String getMapStringStatus() {
+        StringBuilder ret = new StringBuilder();
+        for (int i = 1; i < 8; i++) {
+            ServerNode n = getServer("" + i);
+            if (n != null) ret.append(n.getStringStatus()).append("\n");
+        }
+        return ret.toString();
     }
 
     public void parseMapToByte(byte[][] destArrayByte) {

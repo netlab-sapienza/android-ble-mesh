@@ -266,9 +266,11 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        if (this.mGatt != null)
+        if (this.mGatt != null) {
             this.mGatt.disconnect();
-        this.mGatt = null;
+            this.mGatt.close();
+            this.mGatt = null;
+        }
     }
 
     public boolean hasCorrectId() {

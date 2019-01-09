@@ -34,6 +34,7 @@ import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
+import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -61,6 +62,7 @@ public class InitActivity extends Activity {
     private BluetoothLeScanner mBluetoothLeScanner;
 
     private boolean isServiceStarted = false;
+    private boolean isScanning = false;
 
     private ConnectBLETask connectBLETask;
 
@@ -71,9 +73,11 @@ public class InitActivity extends Activity {
     private int attemptsUntilServer = 1;
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
+    private boolean canIBeServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
@@ -114,12 +118,20 @@ public class InitActivity extends Activity {
                     whoAmI.setText(R.string.whoami);
                     myId.setText(R.string.myid);
                     writeDebug("Service stopped");
+                    if(isScanning) {
+                        writeDebug("Stopping Scanning");
+                        // Stop the scan, wipe the callback.
+                        mBluetoothLeScanner.stopScan(mScanCallback);
+                        mScanCallback = null;
+                        isScanning = false;
+                    }
                     attemptsUntilServer = 1;
                     deviceAdapter.cleanView();
                 } else {
                     initializeService();
                     startServices.setText(R.string.stop_service);
                     isServiceStarted = true;
+                    cleanDebug();
                     writeDebug("Service started");
                 }
 
@@ -144,6 +156,7 @@ public class InitActivity extends Activity {
     public void startScanning() {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
+            isScanning = true;
             ServerList.cleanUserList();
             // Will stop the scanning after a set time.
             new Handler().postDelayed(new Runnable() {
@@ -181,6 +194,7 @@ public class InitActivity extends Activity {
      */
     public void stopScanning() {
         writeDebug("Stopping Scanning");
+        isScanning = false;
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
@@ -195,6 +209,10 @@ public class InitActivity extends Activity {
      */
     public void tryConnection(final int offset) {
         final int size = ServerList.getServerList().size();
+        if(!isServiceStarted) {
+            writeDebug("Service stopped succesfully");
+            return;
+        }
         if (offset >= size) {
             if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
                 long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
@@ -207,12 +225,21 @@ public class InitActivity extends Activity {
                     }
                 }, sleepPeriod);
                 attemptsUntilServer++;
-            } else {
+            }
+            else if(canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
+                acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
+                    @Override
+                    public void OnRoutingTableUpdated(ServerNode node) {
+                        String status = node.getMapStringStatus();
+                        cleanDebug();
+                        writeDebug(status);
+                    }
+                });
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
                 new Handler(Looper.getMainLooper()).postDelayed(
@@ -223,6 +250,11 @@ public class InitActivity extends Activity {
                                 myId.setText(acceptBLETask.getId()); // TODO: 03/01/19 @Andrea gli devi dare almeno 5 sec di tempo per fare in modo che l'id venga assegnato.
                             }
                         }, HANDLER_PERIOD);
+            }
+            else {
+                //ricomincia
+                writeDebug("No server founds. Retry later");
+                startServices.performClick();
             }
             return;
         }
@@ -275,6 +307,9 @@ public class InitActivity extends Activity {
         writeDebug("Assegnazione id tra 5 secondi");
     }
 
+    private void cleanDebug() {
+        debugger.setText("");
+    }
 
     private void writeDebug(final String message) {
         runOnUiThread(new Runnable() {
@@ -365,6 +400,7 @@ public class InitActivity extends Activity {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
+                    checkBluetoothAvailability();
                     writeDebug("Write storage permissions granted");
                 } else {
                     writeDebug("Write storage permissions denied");
@@ -399,6 +435,7 @@ public class InitActivity extends Activity {
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
+                        canIBeServer = true;
                     } else {
                         writeDebug("Your device does not support multiple advertisement, you can be only client");
                     }
@@ -426,16 +463,17 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
-        if (isServiceStarted) {/*
-            if (connectBLETask != null)
+        if (isServiceStarted) {
+            if (connectBLETask != null)  {
                 connectBLETask.stopClient();
-            if (acceptBLETask != null)
+                connectBLETask = null;
+            }
+            if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
+                acceptBLETask = null;
+            }
             isServiceStarted = false;
-            */
-            // se esplode tornare allo stato precedente
-            startServices.performClick();
         }
+        super.onDestroy();
     }
 }

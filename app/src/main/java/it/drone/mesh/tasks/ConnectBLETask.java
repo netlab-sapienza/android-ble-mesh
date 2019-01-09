@@ -71,7 +71,6 @@ public class ConnectBLETask {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
-                                    //provare anche con indication value
                                     BluetoothGattDescriptor desc = chars.getDescriptor(Constants.DescriptorUUID);
                                     boolean res = gatt.readDescriptor(desc);
                                     Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
@@ -101,7 +100,7 @@ public class ConnectBLETask {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
                     routingTable.cleanRoutingTable();
                     byte[] value = characteristic.getValue();
-                    for (int i = 0; i < value.length; i++) {
+                    for (int i = 0; i < value.length; i++) { //aggiorno l'upper tier
                         boolean flag = false;
                         for (int j = 0; j < 8; j++) {
                             if (Utility.getBit(value[i], j) == 1) flag = true;
@@ -266,9 +265,11 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        if (this.mGatt != null)
+        if (this.mGatt != null) {
             this.mGatt.disconnect();
-        this.mGatt = null;
+            this.mGatt.close();
+            this.mGatt = null;
+        }
     }
 
     public boolean hasCorrectId() {

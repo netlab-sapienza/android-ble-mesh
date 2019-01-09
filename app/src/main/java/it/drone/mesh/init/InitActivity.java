@@ -118,7 +118,7 @@ public class InitActivity extends Activity {
                     whoAmI.setText(R.string.whoami);
                     myId.setText(R.string.myid);
                     writeDebug("Service stopped");
-                    if(isScanning) {
+                    if (isScanning) {
                         writeDebug("Stopping Scanning");
                         // Stop the scan, wipe the callback.
                         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -209,7 +209,7 @@ public class InitActivity extends Activity {
      */
     public void tryConnection(final int offset) {
         final int size = ServerList.getServerList().size();
-        if(!isServiceStarted) {
+        if (!isServiceStarted) {
             writeDebug("Service stopped succesfully");
             return;
         }
@@ -225,8 +225,7 @@ public class InitActivity extends Activity {
                     }
                 }, sleepPeriod);
                 attemptsUntilServer++;
-            }
-            else if(canIBeServer) {
+            } else if (canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
@@ -250,8 +249,7 @@ public class InitActivity extends Activity {
                                 myId.setText(acceptBLETask.getId()); // TODO: 03/01/19 @Andrea gli devi dare almeno 5 sec di tempo per fare in modo che l'id venga assegnato.
                             }
                         }, HANDLER_PERIOD);
-            }
-            else {
+            } else {
                 //ricomincia
                 writeDebug("No server founds. Retry later");
                 startServices.performClick();
@@ -279,7 +277,7 @@ public class InitActivity extends Activity {
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "OUD: Run ");
+                // Log.d(TAG, "OUD: Run ");
                 if (connectBLE.hasCorrectId()) {
                     writeDebug("Id trovato: " + connectBLE.getId());
                     try {
@@ -290,14 +288,14 @@ public class InitActivity extends Activity {
                         myId.setText(connectBLETask.getId());
                         whoAmI.setText(R.string.client);
                     } catch (Exception e) {
-                        Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
+                        Log.e(TAG, "OUD: " + "id non assegnato con eccezione");
                         e.printStackTrace();
                         tryConnection(offset + 1);
                     }
                 } else {
                     if (connectBLE.getServerId() != null) {
                         nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
-                        Log.d(TAG, "OUD: " + "Inserito server " + connectBLE.getServerId() + " nella mappa");
+                        writeDebug("OUD: " + "Inserito server " + connectBLE.getServerId() + " nella mappa");
                     }
                     Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
                     tryConnection(offset + 1);
@@ -464,7 +462,7 @@ public class InitActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (isServiceStarted) {
-            if (connectBLETask != null)  {
+            if (connectBLETask != null) {
                 connectBLETask.stopClient();
                 connectBLETask = null;
             }

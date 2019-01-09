@@ -194,24 +194,24 @@ public class ServerNode {
     public void printStatus() {
         Log.d(TAG, "OUD: " + "I'm node " + id);
         Log.d(TAG, "OUD: " + "My clients are: ");
-        String s = "";
+        StringBuilder s = new StringBuilder();
         for (int i = 0; i < clientList.length; i++) {
             if (Utility.getBit(clientByte, i) == 1)
-                s += i + (i == clientList.length - 1 ? "" : ",");
-            else s += "null,";
+                s.append(i).append(i == clientList.length - 1 ? "" : ",");
+            else s.append("null,");
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
 
         Log.d(TAG, "OUD: " + "I have " + nearServers.size() + " near servers");
         int size = nearServers.size();
-        s = "";
+        s = new StringBuilder();
         for (int i = 0; i < size; i++) {
-            s += nearServers.get(i).getId() + (i == size - 1 ? "" : ",");
+            s.append(nearServers.get(i).getId()).append(i == size - 1 ? "" : ",");
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
     }
 
-    public String getStringStatus()  {
+    public String getStringStatus() {
         String ret = "";
         ret += "I'm node " + id + "\n";
         ret += "My clients are: \n";
@@ -225,10 +225,9 @@ public class ServerNode {
         ret += "[" + s.toString() + "]\n";
 
         ret += "I have " + nearServers.size() + " near servers\n";
-        int size = nearServers.size();
         s = new StringBuilder();
-        for (int i = 0; i < size; i++) {
-            s.append(nearServers.get(i).getId()).append(i == size - 1 ? "" : ",");
+        for (int i = 0; i < nearServers.size(); i++) {
+            s.append(nearServers.get(i).getId()).append(i == nearServers.size() - 1 ? "" : ",");
         }
         ret += "[" + s.toString() + "]\n";
         return ret;

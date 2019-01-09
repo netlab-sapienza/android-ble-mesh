@@ -257,7 +257,7 @@ public class AcceptBLETask {
                             }
                             BluetoothDevice dest = mNode.getClient("" + infoDest[1]);
                             if (dest == null) {
-                                Log.d(TAG, "OUD: " + "null");
+                                Log.d(TAG, "OUD: " + "null, exiting");
                                 return;
                             }
                             try {

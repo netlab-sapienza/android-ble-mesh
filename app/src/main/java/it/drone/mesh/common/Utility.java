@@ -190,7 +190,7 @@ public class Utility {
             try {
                 Thread.sleep(400);
             } catch (Exception e) {
-                Log.d(TAG, "OUD: " + "Andata male la wait");
+                Log.e(TAG, "OUD: " + "Andata male la wait");
             }
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");

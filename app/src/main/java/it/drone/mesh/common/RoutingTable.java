@@ -1,4 +1,6 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.common;
+
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -10,6 +12,7 @@ import it.drone.mesh.models.Device;
  */
 public class RoutingTable {
 
+    private final static String TAG = RoutingTable.class.getSimpleName();
     private static RoutingTable singleton;
     private LinkedList<OnRoutingTableUpdateListener> listeners;
     private ArrayList<Device> routingTable;
@@ -40,6 +43,8 @@ public class RoutingTable {
         if (removed) {
             for (OnRoutingTableUpdateListener listener : listeners)
                 listener.OnDeviceRemoved(device);
+        } else {
+            Log.e(TAG, "removeDevice: Failed");
         }
     }
 
@@ -55,13 +60,13 @@ public class RoutingTable {
         addDevice(new Device("" + serverId + "" + clientId));
     }
 
-    public interface OnRoutingTableUpdateListener {
-        public void OnDeviceAdded(Device device);
-
-        public void OnDeviceRemoved(Device device);
-    }
-
     public void cleanRoutingTable() {
         routingTable.clear();
+    }
+
+    public interface OnRoutingTableUpdateListener {
+        void OnDeviceAdded(Device device);
+
+        void OnDeviceRemoved(Device device);
     }
 }

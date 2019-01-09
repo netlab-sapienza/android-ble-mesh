@@ -4,13 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
@@ -30,37 +24,35 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
+import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
-import it.drone.mesh.models.User;
-import it.drone.mesh.models.UserList;
-import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.Utility;
-import it.drone.mesh.roles.common.exceptions.NotEnabledException;
-import it.drone.mesh.roles.common.exceptions.NotSupportedException;
-import it.drone.mesh.roles.server.BLEServer;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
-import static it.drone.mesh.roles.common.Constants.REQUEST_ENABLE_BT;
-import static it.drone.mesh.roles.common.Utility.SCAN_PERIOD;
+import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
+import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 public class InitActivity extends Activity {
 
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    private static final String TAG = InitActivity.class.getSimpleName();
+
     private static final long HANDLER_PERIOD = 5000;
-    private final static String TAG = InitActivity.class.getSimpleName();
+    private static final int PERMISSION_REQUEST_WRITE = 564;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
 
-
-    Button startServices;
-    BLEServer server;
-    TextView debugger, whoami, myid;
-    RecyclerView recyclerDeviceList;
-    DeviceAdapter deviceAdapter;
+    private Button startServices;
+    private TextView debugger, whoAmI, myId;
+    private DeviceAdapter deviceAdapter;
 
     ServerScanCallback mScanCallback;
     private BluetoothAdapter mBluetoothAdapter;
@@ -68,6 +60,7 @@ public class InitActivity extends Activity {
     private BluetoothLeScanner mBluetoothLeScanner;
 
     private boolean isServiceStarted = false;
+    private boolean isScanning = false;
 
     private ConnectBLETask connectBLETask;
 
@@ -75,16 +68,36 @@ public class InitActivity extends Activity {
 
     private AcceptBLETask acceptBLETask;
 
+    private int attemptsUntilServer = 1;
+    private long randomValueScanPeriod;
+    private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
+    private boolean canIBeServer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
         debugger = findViewById(R.id.debugger);
-        whoami = findViewById(R.id.whoami);
-        myid = findViewById(R.id.myid);
+        whoAmI = findViewById(R.id.whoami);
+        myId = findViewById(R.id.myid);
+        randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
+
+        RecyclerView recyclerDeviceList = findViewById(R.id.recy_scan_results);
+        deviceAdapter = new DeviceAdapter();
+        recyclerDeviceList.setAdapter(deviceAdapter);
+        recyclerDeviceList.setVisibility(View.VISIBLE);
+
+        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
+            @Override
+            public void OnConnectionRejected() {
+                writeErrorDebug("Connection Rejected, stopping service");
+                startServices.performClick();
+            }
+        };
 
         startServices.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,27 +105,36 @@ public class InitActivity extends Activity {
                 if (isServiceStarted) {
                     startServices.setText(R.string.start_service);
                     isServiceStarted = false;
-                    if (acceptBLETask != null)
+                    if (acceptBLETask != null) {
                         acceptBLETask.stopServer();
-                    else if (connectBLETask != null)
+                        acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
+                        acceptBLETask = null;
+                    } else if (connectBLETask != null) {
                         connectBLETask.stopClient();
-                    whoami.setText(R.string.whoami);
-                    myid.setText(R.string.myid);
+                        connectBLETask = null;
+                    }
+                    whoAmI.setText(R.string.whoami);
+                    myId.setText(R.string.myid);
                     writeDebug("Service stopped");
+                    if (isScanning) {
+                        writeDebug("Stopping Scanning");
+                        // Stop the scan, wipe the callback.
+                        mBluetoothLeScanner.stopScan(mScanCallback);
+                        mScanCallback = null;
+                        isScanning = false;
+                    }
+                    attemptsUntilServer = 1;
+                    deviceAdapter.cleanView();
                 } else {
                     initializeService();
                     startServices.setText(R.string.stop_service);
                     isServiceStarted = true;
+                    cleanDebug();
                     writeDebug("Service started");
                 }
 
             }
         });
-
-        recyclerDeviceList = findViewById(R.id.recy_scan_results);
-        deviceAdapter = new DeviceAdapter(getApplicationContext());
-        recyclerDeviceList.setAdapter(deviceAdapter);
-        recyclerDeviceList.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -120,18 +142,6 @@ public class InitActivity extends Activity {
      */
     private void initializeService() {
         writeDebug("Start initializing server");
-
-        // questa inizializzazione potrebbe essere ridondante
-        try {
-            server = BLEServer.getInstance(this);
-        } catch (NotSupportedException e) {
-            e.printStackTrace();
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            return;
-        } catch (NotEnabledException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            return;
-        }
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
@@ -144,8 +154,8 @@ public class InitActivity extends Activity {
     public void startScanning() {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
-            UserList.cleanUserList();
-            //tempResult.clear();
+            isScanning = true;
+            ServerList.cleanUserList();
             // Will stop the scanning after a set time.
             new Handler().postDelayed(new Runnable() {
                 @Override
@@ -155,10 +165,15 @@ public class InitActivity extends Activity {
             }, SCAN_PERIOD);
 
             // Kick off a new scan.
-            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListerner() {
+            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
                 @Override
                 public void OnServerFound(String message) {
                     writeDebug(message);
+                }
+
+                @Override
+                public void OnErrorScan(String message, int errorCodeCallback) {
+                    writeErrorDebug(message);
                 }
             });
 
@@ -177,151 +192,131 @@ public class InitActivity extends Activity {
      */
     public void stopScanning() {
         writeDebug("Stopping Scanning");
+        isScanning = false;
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
-        askIdNearServer(0);
-    }
-
-    /**
-     * Since now the UserList is populated, the device starts asking for an Id
-     * Funzione ricorsiva per chiedere a tutti i Server il proprio Id.
-     *
-     * @param offset ---> indice nell'UserList dei vari server, con offset > size finisce la ricorsività
-     */
-
-    private void askIdNearServer(final int offset) {
-        final int size = UserList.getUserList().size();
-
-        if (offset >= size) {
-            tryConnection(0); //finito di leggere gli id passa a connettersi
-            return;
-        }
-
-        final User newUser = UserList.getUser(offset);
-        writeDebug("askNearServer with: " + newUser.getUserName());
-        final ConnectBLETask connectBLETask = new ConnectBLETask(newUser, this, new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    writeDebug("Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
-                    gatt.discoverServices();
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    writeDebug("Disconnected from GATT client " + gatt.getDevice().getName());
-                }
-                super.onConnectionStateChange(gatt, status, newState);
-            }
-
-            @Override
-            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                if (service == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                if (characteristic == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
-                if (desc == null) {
-                    askIdNearServer(offset + 1);
-                    return;
-                }
-                boolean res = gatt.readDescriptor(desc);
-                Log.d(TAG, "OUD: " + "Read Server id: " + res);
-                super.onServicesDiscovered(gatt, status);
-            }
-
-            @Override
-            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                super.onCharacteristicRead(gatt, characteristic, status);
-            }
-
-            @Override
-            public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String val = new String(descriptor.getValue());
-                    if (val.length() > 0) {
-                        nearDeviceMap.put(val, gatt.getDevice());
-                        writeDebug("id aggiunto :" + val);
-                    }
-                }
-                super.onDescriptorRead(gatt, descriptor, status);
-                askIdNearServer(offset + 1);
-            }
-        });
-        connectBLETask.startClient();
+        tryConnection(0);
     }
 
     /**
      * Funzione ricorsiva per provare a connettersi come client ai server trovati; Se non ce ne sono o nessuno è disponibile
      * diventi tu stesso Server
      *
-     * @param offset ---> indice nell'UserList dei vari server, con offset > size si diventa server
+     * @param offset ---> indice nell'ServerList dei vari server, con offset > size si diventa server
      */
     public void tryConnection(final int offset) {
-        final int size = UserList.getUserList().size();
-        if (offset >= size) {
-
-            startService(new Intent(this, AdvertiserService.class));
-            writeDebug("Start Server");
-            acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
-            acceptBLETask.insertMapDevice(nearDeviceMap);
-            acceptBLETask.startServer();
-            deviceAdapter.setAcceptBLETask(acceptBLETask);
-            whoami.setText(R.string.server);
-            myid.setText(acceptBLETask.getId());
+        final int size = ServerList.getServerList().size();
+        if (connectBLETask != null || acceptBLETask != null) {
+            writeDebug("Already Initialized");
+            if (connectBLETask != null)
+                writeDebug("ConnectBLETask != null");
+            if (acceptBLETask != null)
+                writeDebug("AcceptBLETask != null");
             return;
         }
-        User newUser = UserList.getUser(offset);
-        Log.d(TAG, "OUD: " + "tryConnection with: " + newUser.getUserName());
-        final ConnectBLETask connectBLE = new ConnectBLETask(newUser, this);
-        connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-            @Override
-            public void OnMessageReceived(final String idMitt, final String message) {
-                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
+        if (!isServiceStarted) {
+            writeDebug("Service stopped succesfully");
+            return;
+        }
+        if (offset >= size) {
+            /*if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
+                long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
+                writeDebug("Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                        startScanning();
+                    }
+                }, sleepPeriod);
+                attemptsUntilServer++;
+            } else */
+            if (canIBeServer) {
+                startService(new Intent(this, AdvertiserService.class));
+                writeDebug("Start Server");
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
+                acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
+                acceptBLETask.insertMapDevice(nearDeviceMap);
+                acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
+                    @Override
+                    public void OnRoutingTableUpdated(final String message) {
+
+                        cleanDebug();
+                        Log.d(TAG, "OnRoutingTableUpdated: \n" + message);
+                        writeDebug(message);
+
                     }
                 });
-                deviceAdapter.notifyDataSetChanged();
+                acceptBLETask.startServer();
+                deviceAdapter.setAcceptBLETask(acceptBLETask);
+                new Handler(Looper.getMainLooper()).postDelayed(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                whoAmI.setText(R.string.server);
+                                myId.setText(acceptBLETask.getId());
+                            }
+                        }, HANDLER_PERIOD);
+            } else {
+                //ricomincia
+                writeDebug("No server founds. Retry later");
+                startServices.performClick();
             }
-        });
-        connectBLE.startClient();
-        Handler mHandler = new Handler(Looper.getMainLooper());
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "OUD: Run ");
-                if (connectBLE.hasCorrectId()) {
-                    writeDebug("Id trovato: " + connectBLE.getId());
-                    try {
+        } else {
+            final Server newServer = ServerList.getServer(offset);
+            Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
+            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
+            connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
+                @Override
+                public void OnMessageReceived(final String idMitt, final String message) {
+                    writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            deviceAdapter.notifyDataSetChanged();
+                            // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+            });
+            connectBLE.startClient();
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // Log.d(TAG, "OUD: Run ");
+                    if (connectBLE.hasCorrectId()) {
+                        writeDebug("Id trovato: " + connectBLE.getId());
                         writeDebug("Id assegnato correttamente");
                         connectBLETask = connectBLE;
-                        writeDebug("OUD: " + "You're a client and your id is " + connectBLETask.getId());
+                        writeDebug("You're a client and your id is " + connectBLETask.getId());
                         deviceAdapter.setConnectBLETask(connectBLETask);
-                        myid.setText(connectBLETask.getId());
-                        whoami.setText(R.string.client);
-                    } catch (Exception e) {
-                        Log.d(TAG, "OUD: " + "id non assegnato con eccezione");
+                        myId.setText(connectBLETask.getId());
+                        whoAmI.setText(R.string.client);
+                    } else {
+                        if (connectBLE.getServerId() != null) {
+                            nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
+                            writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
+                        }
+                        Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
                         tryConnection(offset + 1);
                     }
-                } else {
-                    Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                    tryConnection(offset + 1);
                 }
-            }
-        }, HANDLER_PERIOD);
-        writeDebug("Assegnazione id tra 5 secondi");
+            }, HANDLER_PERIOD);
+            writeDebug("Assegnazione id tra 5 secondi");
+        }
     }
 
+    private void cleanDebug() {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                debugger.setText("");
+            }
+        });
+    }
 
     private void writeDebug(final String message) {
-        InitActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
             public void run() {
                 if (debugger.getLineCount() == debugger.getMaxLines())
                     debugger.setText(String.format("%s\n", message));
@@ -329,7 +324,19 @@ public class InitActivity extends Activity {
                     debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
             }
         });
-        Log.d(TAG, "OUD:" + message);
+        Log.d(TAG, "OUD: " + message);
+    }
+
+    private void writeErrorDebug(final String message) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                if (debugger.getLineCount() == debugger.getMaxLines())
+                    debugger.setText(String.format("%s\n", message));
+                else
+                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
+            }
+        });
+        Log.e(TAG, message);
     }
 
 
@@ -338,6 +345,7 @@ public class InitActivity extends Activity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
+                askPermissionsStorage();
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
             }
@@ -348,6 +356,26 @@ public class InitActivity extends Activity {
             // permission not granted, we must decide what to do
             Toast.makeText(this, "Permissions not granted API < 23", Toast.LENGTH_LONG).show();
         }
+
+
+    }
+
+    private void askPermissionsStorage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                writeDebug("Write storage permissions granted");
+            } else {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_WRITE);
+            }
+            // fix per API < 23
+        } else if (PermissionChecker.PERMISSION_GRANTED == PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            writeDebug("Write storage permissions granted");
+        } else {
+            // permission not granted, we must decide what to do
+            Toast.makeText(this, "Permissions not granted API < 23", Toast.LENGTH_LONG).show();
+        }
+
     }
 
     /**
@@ -362,16 +390,25 @@ public class InitActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
+            case PERMISSION_REQUEST_COARSE_LOCATION:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     checkBluetoothAvailability();
+                    askPermissionsStorage();
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
                 }
-            }
-
+                break;
+            case PERMISSION_REQUEST_WRITE:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "onRequestPermissionsResult: OK");
+                    checkBluetoothAvailability();
+                    writeDebug("Write storage permissions granted");
+                } else {
+                    writeDebug("Write storage permissions denied");
+                }
         }
     }
 
@@ -402,6 +439,7 @@ public class InitActivity extends Activity {
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
+                        canIBeServer = true;
                     } else {
                         writeDebug("Your device does not support multiple advertisement, you can be only client");
                     }
@@ -429,13 +467,17 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         if (isServiceStarted) {
-            if (connectBLETask != null)
+            if (connectBLETask != null) {
                 connectBLETask.stopClient();
-            if (acceptBLETask != null)
+                connectBLETask = null;
+            }
+            if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
+                acceptBLETask = null;
+            }
             isServiceStarted = false;
         }
+        super.onDestroy();
     }
 }

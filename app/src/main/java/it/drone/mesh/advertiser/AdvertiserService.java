@@ -1,7 +1,5 @@
 package it.drone.mesh.advertiser;
 
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -18,9 +16,8 @@ import android.widget.Toast;
 
 import java.util.concurrent.TimeUnit;
 
-import it.drone.mesh.MainActivity;
 import it.drone.mesh.R;
-import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.common.Constants;
 
 /**
  * Manages BLE Advertising independent of the main app.
@@ -34,7 +31,7 @@ public class AdvertiserService extends Service {
     public static final String ADVERTISING_FAILED_EXTRA_CODE = "failureCode";
     public static final int ADVERTISING_TIMED_OUT = 6;
     private static final String TAG = AdvertiserService.class.getSimpleName();
-    private static final int FOREGROUND_NOTIFICATION_ID = 1;
+
     /**
      * A global variable to let AdvertiserFragment check if the Service is running without needing
      * to start or bind to it.
@@ -43,11 +40,8 @@ public class AdvertiserService extends Service {
      */
     public static boolean running = false;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
-
     private AdvertiseCallback mAdvertiseCallback;
-
     private Handler mHandler;
-
     private Runnable timeoutRunnable;
 
     /**
@@ -143,24 +137,6 @@ public class AdvertiserService extends Service {
         }
 
         Log.d(TAG, "OUD: " + "Server: Start initialize the server");
-    }
-
-    /**
-     * Move service to the foreground, to avoid execution limits on background processes.
-     * <p>
-     * Callers should call stopForeground(true) when background work is complete.
-     */
-    private void goForeground() {
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-                notificationIntent, 0);
-        Notification n = new Notification.Builder(this)
-                .setContentTitle("Advertising device via Bluetooth")
-                .setContentText("This device is discoverable to others nearby.")
-                .setSmallIcon(R.drawable.ic_launcher)
-                .setContentIntent(pendingIntent)
-                .build();
-        startForeground(FOREGROUND_NOTIFICATION_ID, n);
     }
 
     /**

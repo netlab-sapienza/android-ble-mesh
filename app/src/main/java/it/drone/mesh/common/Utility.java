@@ -1,4 +1,4 @@
-package it.drone.mesh.roles.common;
+package it.drone.mesh.common;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.server.ServerNode;
+import it.drone.mesh.models.Server;
+import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 /**
@@ -42,9 +42,11 @@ public class Utility {
     // Stops scanning after 5 seconds.
     public static final long SCAN_PERIOD = 5000;
 
-    public static String TAG = Utility.class.getSimpleName();
+    public final static String BETA_FILENAME_SENT = "sent_messages.txt";
+    public final static String BETA_FILENAME_RECEIVED = "received_messages.txt";
     public static int PACK_LEN = 18;
     public static int DEST_PACK_MESSAGE_LEN = 16;
+    private static String TAG = Utility.class.getSimpleName();
 
     public static int getBit(byte val, int offset) {
         return (val >> offset) & 1;
@@ -122,17 +124,13 @@ public class Utility {
                 firstByte = clearBit(firstByte, 0);
                 pack[0] = firstByte;
                 pack[1] = destByte;
-                for (int j = 0; j < lastLen; j++) {
-                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
-                }
+                System.arraycopy(sInByte, (i * DEST_PACK_MESSAGE_LEN), pack, 2, lastLen);
                 finalMessage[i] = pack;
             } else {
                 byte[] pack = new byte[PACK_LEN];
                 pack[0] = firstByte;
                 pack[1] = destByte;
-                for (int j = 0; j < DEST_PACK_MESSAGE_LEN; j++) {
-                    pack[j + 2] = sInByte[j + (i * DEST_PACK_MESSAGE_LEN)];
-                }
+                System.arraycopy(sInByte, (i * DEST_PACK_MESSAGE_LEN), pack, 2, DEST_PACK_MESSAGE_LEN);
                 finalMessage[i] = pack;
             }
         }
@@ -190,9 +188,9 @@ public class Utility {
             Log.d(TAG, "OUD: " + new String(finalMessage[i]));
             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
             try {
-                Thread.sleep(300);
+                Thread.sleep(400);
             } catch (Exception e) {
-                Log.d(TAG, "OUD: " + "Andata male la wait");
+                Log.e(TAG, "OUD: " + "Andata male la wait");
             }
         }
         Log.d(TAG, "OUD: " + "sendMessage: end ");
@@ -228,7 +226,7 @@ public class Utility {
             gatt.executeReliableWrite();
             Log.d(TAG, "OUD: " + "Inviato? -> " + res);
             try {
-                Thread.sleep(300);
+                Thread.sleep(400);
             } catch (Exception e) {
                 Log.d(TAG, "OUD: " + "Andata male la wait");
             }
@@ -243,8 +241,8 @@ public class Utility {
      * Use this check to determine whether BLE is supported on the device. Then
      * you can selectively disable BLE-related features.
      *
-     * @param context
-     * @return
+     * @param context application Context
+     * @return true if BLE is supported
      */
     public static boolean isBLESupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
@@ -274,8 +272,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
-        User u = new User(device, device.getName());
-        return new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -338,6 +335,10 @@ public class Utility {
                         public void run() {
                             if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
+                            else {
+                                Log.d(TAG, "OUD: " + "Routing non inviata table ");
+                                //Utility.sendRoutingTable(temp,gatt,infoSorg,infoDest);
+                            }
                         }
                     }, 500);
 
@@ -362,7 +363,7 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, final String nextId, Context context, final byte[] value) {
-        User u = new User(device, device.getName());
+        Server u = new Server(device, device.getName());
         return new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -465,7 +466,7 @@ public class Utility {
                 mBluetoothScan.stopScan(mScanCallback);
             }
         }, 4500);
-        //UserList.cleanUserList();
+        //ServerList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }
 
@@ -477,7 +478,7 @@ public class Utility {
      * @param fileName name of the file
      * @param data     actual data to be saved
      */
-    public void saveData(ArrayList<String> header, String fileName, ArrayList data) throws IOException {
+    public static void saveData(List<String> header, String fileName, List data) throws IOException {
         // Convert arrays to delimited strings
         String header_str = TextUtils.join("\t", header);
         String data_str = TextUtils.join("\t", data);
@@ -496,7 +497,6 @@ public class Utility {
             writer.append('\n');
             writer.flush();
             writer.close();
-
         }
         // Add actual data
         FileWriter writer = new FileWriter(dataFile, true);
@@ -504,6 +504,45 @@ public class Utility {
         writer.append('\n');
         writer.flush();
         writer.close();
+    }
+
+    public static ConnectBLETask createBroadcastNewClientOnline(BluetoothDevice device, final int serverId, final int clientId, Context context) {
+        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
+            @Override
+            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
+                    gatt.discoverServices();
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                }
+                super.onConnectionStateChange(gatt, status, newState);
+            }
+
+            @Override
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                if (service == null) return;
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
+                if (characteristic == null) return;
+                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorClientOnlineUUID);
+                if (descriptor == null) return;
+                byte[] val = new byte[2];
+                val[0] = Utility.byteMessageBuilder(serverId, clientId);
+                descriptor.setValue(val);
+                boolean res = gatt.writeDescriptor(descriptor);
+
+                Log.d(TAG, "OUD: " + "write descriptor client online: " + res);
+                super.onServicesDiscovered(gatt, status);
+            }
+
+            @Override
+            public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                if (status == BluetoothGatt.GATT_SUCCESS)
+                    Log.d(TAG, "OUD: i wrote new client online descriptor");
+                super.onDescriptorWrite(gatt, descriptor, status);
+            }
+        });
     }
 
 

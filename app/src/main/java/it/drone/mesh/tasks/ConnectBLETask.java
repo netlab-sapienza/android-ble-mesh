@@ -153,18 +153,6 @@ public class ConnectBLETask {
                     for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                         listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     messageMap.remove(senderId);
-
-                    /*
-                    Handler mHandler = new Handler(Looper.getMainLooper());
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId  + ", messaggio: " + messageMap.get(senderId), Toast.LENGTH_SHORT).show();
-                            messageMap.remove(senderId);
-                        }
-                    });
-                    */
-
                 }
 
                 super.onCharacteristicChanged(gatt, characteristic);
@@ -204,12 +192,12 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: onDescriptorWrite: cc");
                     BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                     if (service == null) {
-                        Log.d(TAG, "OUD: nulll");
+                        Log.d(TAG, "OUD: null");
                         return;
                     }
                     BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
                     if (characteristic == null) {
-                        Log.d(TAG, "OUD: nulll");
+                        Log.d(TAG, "OUD: null");
                         return;
                     }
                     BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.ClientOnline_Configuration_UUID);
@@ -259,8 +247,8 @@ public class ConnectBLETask {
         server.getBluetoothGatt().connect();
         setId("");
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
-        //boolean ret = this.mGatt.discoverServices();
-        //Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
+        boolean ret = this.mGatt.discoverServices();
+        Log.d(TAG, "OUD: " + "DiscoverServices -> " + ret);
     }
 
     public void stopClient() {

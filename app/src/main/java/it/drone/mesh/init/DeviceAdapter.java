@@ -75,8 +75,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Il formato messaggi per la beta è startTime,num_hop al posto di TEST_MESSAGE
-                // all'inizio num_hop = 0
                 sendMessage(device.getId(), System.currentTimeMillis() + ";;1;;" + TEST_MESSAGE, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(final String message) {
@@ -162,7 +160,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             public void OnMessageReceived(String idMitt, String message) {
                 for (Device device : devices)
                     if (device.getId().equals(idMitt))
-                        device.writeOutput("Time: "+(System.currentTimeMillis() - Long.parseLong(message.split(";;")[0])) + ", Message: " + message.split(";;")[2]);
+                        device.writeOutput("Time: " + System.currentTimeMillis() + ", Message: " + message.split(";;")[2]);
 
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override

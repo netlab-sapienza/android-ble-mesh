@@ -53,7 +53,7 @@ public class ServerList {
             }
         }
 
-        Log.e(TAG, "removeUser: Server not found, Lista: " + printList());
+        Log.e(TAG, "removeUser: Server not found, Lista: \n" + printList());
         return null;
     }
 

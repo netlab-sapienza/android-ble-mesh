@@ -34,11 +34,9 @@ import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
-import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
-import static it.drone.mesh.common.Constants.MAX_ATTEMPTS_UNTIL_SERVER;
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
@@ -209,23 +207,31 @@ public class InitActivity extends Activity {
      */
     public void tryConnection(final int offset) {
         final int size = ServerList.getServerList().size();
+        if (connectBLETask != null || acceptBLETask != null) {
+            writeDebug("Already Initialized");
+            if (connectBLETask != null)
+                writeDebug("ConnectBLETask != null");
+            if (acceptBLETask != null)
+                writeDebug("AcceptBLETask != null");
+            return;
+        }
         if (!isServiceStarted) {
             writeDebug("Service stopped succesfully");
             return;
         }
         if (offset >= size) {
-            if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
+            /*if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
                 long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
                 writeDebug("Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-
                     @Override
                     public void run() {
                         startScanning();
                     }
                 }, sleepPeriod);
                 attemptsUntilServer++;
-            } else if (canIBeServer) {
+            } else */
+            if (canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, this);
@@ -233,10 +239,12 @@ public class InitActivity extends Activity {
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
                     @Override
-                    public void OnRoutingTableUpdated(ServerNode node) {
-                        String status = node.getMapStringStatus();
+                    public void OnRoutingTableUpdated(final String message) {
+
                         cleanDebug();
-                        writeDebug(status);
+                        Log.d(TAG, "OnRoutingTableUpdated: \n" + message);
+                        writeDebug(message);
+
                     }
                 });
                 acceptBLETask.startServer();
@@ -246,7 +254,7 @@ public class InitActivity extends Activity {
                             @Override
                             public void run() {
                                 whoAmI.setText(R.string.server);
-                                myId.setText(acceptBLETask.getId()); // TODO: 03/01/19 @Andrea gli devi dare almeno 5 sec di tempo per fare in modo che l'id venga assegnato.
+                                myId.setText(acceptBLETask.getId());
                             }
                         }, HANDLER_PERIOD);
             } else {
@@ -254,59 +262,57 @@ public class InitActivity extends Activity {
                 writeDebug("No server founds. Retry later");
                 startServices.performClick();
             }
-            return;
-        }
-        final Server newServer = ServerList.getServer(offset);
-        Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
-        final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
-        connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-            @Override
-            public void OnMessageReceived(final String idMitt, final String message) {
-                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        deviceAdapter.notifyDataSetChanged();
-                        // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-                    }
-                });
+        } else {
+            final Server newServer = ServerList.getServer(offset);
+            Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
+            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
+            connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
+                @Override
+                public void OnMessageReceived(final String idMitt, final String message) {
+                    writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            deviceAdapter.notifyDataSetChanged();
+                            // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
 
-            }
-        });
-        connectBLE.startClient();
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                // Log.d(TAG, "OUD: Run ");
-                if (connectBLE.hasCorrectId()) {
-                    writeDebug("Id trovato: " + connectBLE.getId());
-                    try {
+                }
+            });
+            connectBLE.startClient();
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // Log.d(TAG, "OUD: Run ");
+                    if (connectBLE.hasCorrectId()) {
+                        writeDebug("Id trovato: " + connectBLE.getId());
                         writeDebug("Id assegnato correttamente");
                         connectBLETask = connectBLE;
-                        writeDebug("OUD: " + "You're a client and your id is " + connectBLETask.getId());
+                        writeDebug("You're a client and your id is " + connectBLETask.getId());
                         deviceAdapter.setConnectBLETask(connectBLETask);
                         myId.setText(connectBLETask.getId());
                         whoAmI.setText(R.string.client);
-                    } catch (Exception e) {
-                        Log.e(TAG, "OUD: " + "id non assegnato con eccezione");
-                        e.printStackTrace();
+                    } else {
+                        if (connectBLE.getServerId() != null) {
+                            nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
+                            writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
+                        }
+                        Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
                         tryConnection(offset + 1);
                     }
-                } else {
-                    if (connectBLE.getServerId() != null) {
-                        nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
-                        writeDebug("OUD: " + "Inserito server " + connectBLE.getServerId() + " nella mappa");
-                    }
-                    Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                    tryConnection(offset + 1);
                 }
-            }
-        }, HANDLER_PERIOD);
-        writeDebug("Assegnazione id tra 5 secondi");
+            }, HANDLER_PERIOD);
+            writeDebug("Assegnazione id tra 5 secondi");
+        }
     }
 
     private void cleanDebug() {
-        debugger.setText("");
+        runOnUiThread(new Runnable() {
+            public void run() {
+                debugger.setText("");
+            }
+        });
     }
 
     private void writeDebug(final String message) {
@@ -318,7 +324,7 @@ public class InitActivity extends Activity {
                     debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
             }
         });
-        Log.d(TAG, message);
+        Log.d(TAG, "OUD: " + message);
     }
 
     private void writeErrorDebug(final String message) {

@@ -119,8 +119,8 @@ public class AcceptBLETask {
                             boolean isNearToMe = mNode.updateRoutingTable(value);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
                             mNode.printMapStatus();
-                            for (OnRoutingTableUpdatedListener l: routingTableUpdatedListeners) {
-                                l.OnRoutingTableUpdated(mNode);
+                            for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
+                                l.OnRoutingTableUpdated(mNode.getMapStringStatus());
                             }
                             mGattDescriptorRoutingTable.setValue(("" + (Integer.parseInt(new String(mGattDescriptorRoutingTable.getValue())) + 1)).getBytes()); //incrementiamo la versione della routing table
                             mGattServer.sendResponse(device, requestId, 0, 0, value);
@@ -166,10 +166,10 @@ public class AcceptBLETask {
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             byte[][] map = Utility.buildMapFromString(messageMap.get(senderId));
                             mNode.printMapStatus();
-                            for (OnRoutingTableUpdatedListener l: routingTableUpdatedListeners) {
-                                l.OnRoutingTableUpdated(mNode);
-                            }
                             mNode = ServerNode.buildRoutingTable(map, getId(), mNode.getClientList());
+
+                            for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners)
+                                l.OnRoutingTableUpdated(mNode.getMapStringStatus());
 
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 1];
                             mNode.parseClientMapToByte(clientRoutingTable);
@@ -347,8 +347,6 @@ public class AcceptBLETask {
                         mNode.setClientOnline("" + current_id, device);
                         String value = "" + (mNode.nextId(null));
                         mGattDescriptorNextId.setValue(value.getBytes());
-
-
                         Log.d(TAG, "OUD: " + "NextId: " + value);
                     }
                 } else if (descriptor.getUuid().equals(Constants.RoutingTableDescriptorUUID)) { //richiesta da altri server di leggere la versione della table in modo da decidere se inviarla o meno
@@ -397,6 +395,9 @@ public class AcceptBLETask {
                         ConnectBLETask client = Utility.createBroadcastNewClientOnline(dev, Integer.parseInt(getId()), currentid, context);
                         client.startClient();
                     }
+                    for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
+                        l.OnRoutingTableUpdated("Aggiunto mio nuovo client con id " + currentid);
+                    }
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientOnlineUUID)) { //Un altro server mi scrive un nuovo client nella rete
                     byte[] val = mGattCharacteristicClientOnline.getValue();
                     int[] infoNewCLient = Utility.getByteInfo(descriptor.getValue()[0]);
@@ -418,8 +419,8 @@ public class AcceptBLETask {
                         }
                         mNode.getServer("" + infoNewCLient[0]).setClientOnline("" + infoNewCLient[1], null);
                         Log.d(TAG, "OUD: new client online with id " + infoNewCLient[0] + infoNewCLient[1]);
-                        for (OnRoutingTableUpdatedListener l: routingTableUpdatedListeners) {
-                            l.OnRoutingTableUpdated(mNode);
+                        for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
+                            l.OnRoutingTableUpdated("È entrato nella rete il nuovo client " + infoNewCLient[0] + "" + infoNewCLient[1]);
                         }
                     }
 
@@ -513,7 +514,7 @@ public class AcceptBLETask {
                     mGattCharacteristic.addDescriptor(mGattDescriptor);
                     mGattDescriptorNextId.setValue("1".getBytes());
                     mGattCharacteristicClientOnline.setValue(new byte[17]); //16 max server nella rete + 1 di scarto
-                    boolean ret = mGattCharacteristicNextServerId.setValue(("" + (Integer.parseInt(getId()) + 1)).getBytes());
+                    mGattCharacteristicNextServerId.setValue(("" + (Integer.parseInt(getId()) + 1)).getBytes());
                     Log.d(TAG, "OUD: Set Value: --> " + new String(mGattCharacteristicNextServerId.getValue()));
                     mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
                     mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
@@ -570,12 +571,6 @@ public class AcceptBLETask {
         if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
             initializeId(0);
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, "OUD: size r.t. " + mNode.getRoutingTable().size());
-                }
-            }, 15000);
         } else {
             setId("1");
             mNode = new ServerNode(id);
@@ -637,6 +632,6 @@ public class AcceptBLETask {
     }
 
     public interface OnRoutingTableUpdatedListener {
-        void OnRoutingTableUpdated(ServerNode node);
+        void OnRoutingTableUpdated(String id);
     }
 }

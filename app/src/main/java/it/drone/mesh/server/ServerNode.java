@@ -183,7 +183,6 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
-                //if (i > 2) return -1;
                 return i;
             }
         }
@@ -198,7 +197,7 @@ public class ServerNode {
         for (int i = 0; i < clientList.length; i++) {
             if (Utility.getBit(clientByte, i) == 1)
                 s.append(i).append(i == clientList.length - 1 ? "" : ",");
-            else s.append("null,");
+            else s.append("*,");
         }
         Log.d(TAG, "OUD: " + "[" + s + "]");
 
@@ -212,25 +211,26 @@ public class ServerNode {
     }
 
     public String getStringStatus() {
-        String ret = "";
-        ret += "I'm node " + id + "\n";
-        ret += "My clients are: \n";
-
+        String res = "";
+        res += "I'm node " + id + "\n";
+        res += "My clients are: " + "\n";
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < clientList.length; i++) {
             if (Utility.getBit(clientByte, i) == 1)
                 s.append(i).append(i == clientList.length - 1 ? "" : ",");
             else s.append("null,");
         }
-        ret += "[" + s.toString() + "]\n";
-
-        ret += "I have " + nearServers.size() + " near servers\n";
+        res += "[" + s + "]\n";
+        res += "I have " + nearServers.size() + " near servers ";
+        int size = nearServers.size();
         s = new StringBuilder();
-        for (int i = 0; i < nearServers.size(); i++) {
-            s.append(nearServers.get(i).getId()).append(i == nearServers.size() - 1 ? "" : ",");
-        }
-        ret += "[" + s.toString() + "]\n";
-        return ret;
+        for (int i = 0; i < size; i++)
+            s.append(nearServers.get(i).getId()).append(i == size - 1 ? "" : ",");
+
+        res += "[" + s + "]\n";
+        Log.d(TAG, "OUD: " + res);
+        return res;
+
     }
 
     public void printMapStatus() {
@@ -241,12 +241,13 @@ public class ServerNode {
     }
 
     public String getMapStringStatus() {
-        StringBuilder ret = new StringBuilder();
+        StringBuilder str = new StringBuilder();
         for (int i = 1; i < 8; i++) {
             ServerNode n = getServer("" + i);
-            if (n != null) ret.append(n.getStringStatus()).append("\n");
+            if (n != null) str.append(n.getStringStatus()).append("  ");
+            else str.append("nodo \"").append(i).append("\"non esistente");
         }
-        return ret.toString();
+        return str.toString();
     }
 
     public void parseMapToByte(byte[][] destArrayByte) {
@@ -289,7 +290,8 @@ public class ServerNode {
             int index = Integer.parseInt(s.getId());
             boolean alreadyDone = false;
             for (int i = 0; i < 8; i++) {
-                if (Utility.getBit(destArrayByte[index], i) != 0) alreadyDone = true;
+                if (Utility.getBit(destArrayByte[index], i) != 0)
+                    alreadyDone = true;
             }
             if (alreadyDone) continue;
             destArrayByte[index] = s.clientByte;

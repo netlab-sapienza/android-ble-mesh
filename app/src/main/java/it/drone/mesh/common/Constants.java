@@ -43,7 +43,7 @@ public class Constants {
     public static final int REQUEST_ENABLE_BT = 322;
 
     // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
-    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 4;
+    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 1;
     // periodo minimo e max di attesa in secondi
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;

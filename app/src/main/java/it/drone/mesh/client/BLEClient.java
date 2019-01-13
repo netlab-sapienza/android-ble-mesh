@@ -32,6 +32,7 @@ public class BLEClient {
     private boolean isScanning = false;
     private BluetoothDevice serverDevice;
     private boolean isServiceStarted = false;
+    private boolean hasInternet = false;
 
     private BLEClient(Context context) {
         this.context = context;
@@ -162,4 +163,11 @@ public class BLEClient {
         }
     }
 
+    public boolean getHasInternet() {
+        return hasInternet;
+    }
+
+    public void setHasInternet(boolean hasInternet) {
+        this.hasInternet = hasInternet;
+    }
 }

@@ -53,6 +53,7 @@ public class AcceptBLETask {
     private HashMap<String, BluetoothDevice> nearDeviceMap;
     private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
     private ArrayList<OnRoutingTableUpdatedListener> routingTableUpdatedListeners;
+    private boolean hasInternet = false;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
@@ -116,14 +117,24 @@ public class AcceptBLETask {
                         byte flagByte = value[1];
                         if (Utility.getBit(flagByte, 0) == 1) {  //il primo bit del secondo byte indica che è la richiesta di unione alla rete da parte di un nuovo server
                             Log.d(TAG, "OUD: " + "Nuovo server nella rete ");
-                            boolean isNearToMe = mNode.updateRoutingTable(value);
+                            byte[] correctValue = new byte[16];
+                            for (int i = 0; i < 16; i++) {
+                                correctValue[i] = value[i + 2];
+                            }
+                            boolean isNearToMe = mNode.updateRoutingTable(correctValue);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
                             mNode.printMapStatus();
                             for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
                                 l.OnRoutingTableUpdated(mNode.getMapStringStatus());
                             }
-                            mGattDescriptorRoutingTable.setValue(("" + (Integer.parseInt(new String(mGattDescriptorRoutingTable.getValue())) + 1)).getBytes()); //incrementiamo la versione della routing table
                             mGattServer.sendResponse(device, requestId, 0, 0, value);
+                            mGattDescriptorRoutingTable.setValue(("" + (Integer.parseInt(new String(mGattDescriptorRoutingTable.getValue())) + 1)).getBytes()); //incrementiamo la versione della routing table
+
+                            byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                            mNode.parseClientMapToByte(clientRoutingTable);
+                            mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
+                            // TODO: 13/01/19 Notifichiamo anche i client della presenza di un nuovo server nella rete ?? @Andrea e @Pierluigi
+
                             byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
                             mNode.parseMapToByte(tempMap);
 
@@ -171,7 +182,7 @@ public class AcceptBLETask {
                             for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners)
                                 l.OnRoutingTableUpdated(mNode.getMapStringStatus());
 
-                            byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 1];
+                            byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
                             mNode.parseClientMapToByte(clientRoutingTable);
 
                             mGattCharacteristicClientOnline.setValue(clientRoutingTable);
@@ -625,6 +636,14 @@ public class AcceptBLETask {
 
     public void removeRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
         this.routingTableUpdatedListeners.remove(routingTableUpdatedListener);
+    }
+
+    public boolean getHasInternet() {
+        return hasInternet;
+    }
+
+    public void setHasInternet(boolean hasInternet) {
+        this.hasInternet = hasInternet;
     }
 
     public interface OnConnectionRejectedListener {

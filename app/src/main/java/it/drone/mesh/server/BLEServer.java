@@ -13,10 +13,12 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.common.Constants;
@@ -27,6 +29,9 @@ import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
+import static it.drone.mesh.common.Constants.MAX_ATTEMPTS_UNTIL_SERVER;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
+import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 /**
@@ -51,9 +56,14 @@ public class BLEServer {
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
+    private boolean hasInternet = false;
+    private int attemptsUntilServer = 1;
+    private int randomValueScanPeriod;
+    //missing Listener For The UpperTier
 
 
     private BLEServer(Context context) {
+        randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
         this.context = context;
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         this.mBluetoothAdapter = mBluetoothManager.getAdapter();
@@ -86,60 +96,31 @@ public class BLEServer {
         return mBluetoothManager;
     }
 
-    public void startScanning() {
-        isScanning = true;
-        if (mScanCallback == null) {
-            ServerList.cleanUserList();
-            // Will stop the scanning after a set time.
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stopScanning();
-                }
-            }, SCAN_PERIOD);
-
-            // Kick off a new scan.
-            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
-                @Override
-                public void OnServerFound(String message) {
-                    Log.d(TAG, "OnServerFound: " + message);
-                }
-
-                @Override
-                public void OnErrorScan(String message, int errorCodeCallback) {
-                    Log.e(TAG, "OnServerFound: " + message);
-                }
-            });
-
-            mBluetoothLeScanner.startScan(Utility.buildScanFilters(), Utility.buildScanSettings(), mScanCallback);
-
-        } else {
-            Log.d(TAG, "startScanning: Scanning already started ");
-        }
-    }
-
-    public void stopScanning() {
-        Log.d(TAG, "Stopping Scanning");
-        // Stop the scan, wipe the callback.
-        mBluetoothLeScanner.stopScan(mScanCallback);
-        mScanCallback = null;
-        isScanning = false;
-        askIdToNearServer(0);
-    }
-
     private void askIdToNearServer(final int offset) {
         final int size = ServerList.getServerList().size();
         if (offset >= size) {
-            context.startService(new Intent(context, AdvertiserService.class));
-            acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
-            acceptBLETask.insertMapDevice(nearDeviceMap);
-            acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
-                @Override
-                public void OnRoutingTableUpdated(final String message) {
-                    Log.d(TAG, "OnRoutingTableUpdated: \n" + message);
-                }
-            });
-            acceptBLETask.startServer();
+            if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
+                long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
+                Log.d(TAG, "Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startScanning();
+                    }
+                }, sleepPeriod);
+                attemptsUntilServer++;
+            } else if (isServiceStarted) {
+                context.startService(new Intent(context, AdvertiserService.class));
+                acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
+                acceptBLETask.insertMapDevice(nearDeviceMap);
+                acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
+                    @Override
+                    public void OnRoutingTableUpdated(final String message) {
+                        Log.d(TAG, "OnRoutingTableUpdated: \n" + message);
+                    }
+                });
+                acceptBLETask.startServer();
+            }
         } else {
             final Server newServer = ServerList.getServer(offset);
             Log.d(TAG, "OUD: " + "Try reading ID of : " + newServer.getUserName());
@@ -194,6 +175,51 @@ public class BLEServer {
         }
     }
 
+    public void startScanning() {
+        isScanning = true;
+        if (mScanCallback == null) {
+            ServerList.cleanUserList();
+            // Will stop the scanning after a set time.
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    stopScanning();
+                }
+            }, SCAN_PERIOD);
+
+            // Kick off a new scan.
+            mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
+                @Override
+                public void OnServerFound(String message) {
+                    Log.d(TAG, "OnServerFound: " + message);
+                }
+
+                @Override
+                public void OnErrorScan(String message, int errorCodeCallback) {
+                    Log.e(TAG, "OnServerFound: " + message);
+                }
+            });
+
+            mBluetoothLeScanner.startScan(Utility.buildScanFilters(), Utility.buildScanSettings(), mScanCallback);
+
+        } else {
+            Log.d(TAG, "startScanning: Scanning already started ");
+        }
+    }
+
+    public void stopScanning() {
+        Log.d(TAG, "Stopping Scanning");
+        // Stop the scan, wipe the callback.
+        mBluetoothLeScanner.stopScan(mScanCallback);
+        mScanCallback = null;
+        isScanning = false;
+        askIdToNearServer(0);
+    }
+
+    public boolean getHasInternet() {
+        return hasInternet;
+    }
+
     public void startServer() {
         Log.d(TAG, "startServer: Scan the background,search servers to ask ");
         isServiceStarted = true;
@@ -221,4 +247,7 @@ public class BLEServer {
         }
     }
 
+    public void setHasInternet(boolean hasInternet) {
+        this.hasInternet = hasInternet;
+    }
 }

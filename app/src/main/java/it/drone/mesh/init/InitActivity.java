@@ -1,6 +1,7 @@
 package it.drone.mesh.init;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -23,10 +24,16 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.instacart.library.truetime.TrueTime;
+import com.instacart.library.truetime.TrueTimeRx;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.common.Utility;
@@ -72,9 +79,19 @@ public class InitActivity extends Activity {
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
+    private Disposable disposable;
 
+    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        disposable = TrueTimeRx.build()
+                .initializeRx("time.google.com")
+                .subscribeOn(Schedulers.io())
+                .subscribe(date -> {
+                    Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
+                    Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"offset: " + (System.currentTimeMillis() - date.getTime()),Toast.LENGTH_SHORT).show());
+                }, Throwable::printStackTrace);
         canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
@@ -91,49 +108,43 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
-            @Override
-            public void OnConnectionRejected() {
-                writeErrorDebug("Connection Rejected, stopping service");
-                startServices.performClick();
-            }
+        connectionRejectedListener = () -> {
+            writeErrorDebug("Connection Rejected, stopping service");
+            startServices.performClick();
         };
 
-        startServices.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (isServiceStarted) {
-                    startServices.setText(R.string.start_service);
-                    isServiceStarted = false;
-                    if (acceptBLETask != null) {
-                        acceptBLETask.stopServer();
-                        acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                        acceptBLETask = null;
-                    } else if (connectBLETask != null) {
-                        connectBLETask.stopClient();
-                        connectBLETask = null;
-                    }
-                    whoAmI.setText(R.string.whoami);
-                    myId.setText(R.string.myid);
-                    writeDebug("Service stopped");
-                    if (isScanning) {
-                        writeDebug("Stopping Scanning");
-                        // Stop the scan, wipe the callback.
-                        mBluetoothLeScanner.stopScan(mScanCallback);
-                        mScanCallback = null;
-                        isScanning = false;
-                    }
-                    attemptsUntilServer = 1;
-                    deviceAdapter.cleanView();
-                } else {
-                    initializeService();
-                    startServices.setText(R.string.stop_service);
-                    isServiceStarted = true;
-                    cleanDebug();
-                    writeDebug("Service started");
+        startServices.setOnClickListener(view -> {
+            if (isServiceStarted) {
+                startServices.setText(R.string.start_service);
+                isServiceStarted = false;
+                if (acceptBLETask != null) {
+                    acceptBLETask.stopServer();
+                    acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
+                    acceptBLETask = null;
+                } else if (connectBLETask != null) {
+                    connectBLETask.stopClient();
+                    connectBLETask = null;
                 }
-
+                whoAmI.setText(R.string.whoami);
+                myId.setText(R.string.myid);
+                writeDebug("Service stopped");
+                if (isScanning) {
+                    writeDebug("Stopping Scanning");
+                    // Stop the scan, wipe the callback.
+                    mBluetoothLeScanner.stopScan(mScanCallback);
+                    mScanCallback = null;
+                    isScanning = false;
+                }
+                attemptsUntilServer = 1;
+                deviceAdapter.cleanView();
+            } else {
+                initializeService();
+                startServices.setText(R.string.stop_service);
+                isServiceStarted = true;
+                cleanDebug();
+                writeDebug("Service started");
             }
+
         });
     }
 

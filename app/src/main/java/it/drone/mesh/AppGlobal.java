@@ -9,11 +9,7 @@ public class AppGlobal extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        // Qui vanno istanziate tutte le strutture dati che necessitano di inizializzazione
-        // non dovrebbero essercene per ora
-
         Log.i(TAG, "Application Started");
-
     }
 }
 

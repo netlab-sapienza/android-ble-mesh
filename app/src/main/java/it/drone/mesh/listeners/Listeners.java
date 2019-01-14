@@ -8,11 +8,15 @@ import it.drone.mesh.models.Device;
 
 public class Listeners {
     public interface OnMessageReceivedListener {
+        // void OnMessageReceived(String idMitt, String message, int hopNumber, long deliveryTime);
+
+        // TODO: 14/01/2019 fare i cambi necessari ed eliminare questa funzione
         void OnMessageReceived(String idMitt, String message);
     }
 
     public interface OnMessageSentListener {
         void OnMessageSent(String message);
+
         void OnCommunicationError(String error);
     }
 

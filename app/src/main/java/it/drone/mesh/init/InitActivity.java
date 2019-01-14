@@ -23,6 +23,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
+
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +38,11 @@ import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
@@ -50,7 +57,7 @@ public class InitActivity extends Activity {
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
 
-    private Button startServices;
+    private final static String CONSUMER_KEY = "";
     private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
@@ -72,6 +79,12 @@ public class InitActivity extends Activity {
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
+    private final static String CONSUMER_SECRET = "";
+    private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
+    private static final String OAUTH_ACCESS_TOKEN = "";
+    private final String usernameMail = "username@gmail.com";
+    private final String passwordMail = "password";
+    private Button startServices, sendTweet, sendEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +95,9 @@ public class InitActivity extends Activity {
         debugger = findViewById(R.id.debugger);
         whoAmI = findViewById(R.id.whoami);
         myId = findViewById(R.id.myid);
+        sendTweet = findViewById(R.id.tweetSomething);
+        sendEmail = findViewById(R.id.sendMail);
+
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
@@ -135,7 +151,32 @@ public class InitActivity extends Activity {
 
             }
         });
+
+        sendTweet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //if non ho internet send il mex in giro per la rete
+                // else:
+                try {
+                    tweetSomething("cip cip");
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        sendEmail.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //if non ho internet send il mex in giro per la rete
+                //else:
+                if (Utility.isDeviceOnline(getApplicationContext()))
+                    sendAMail("d", "", "");
+
+            }
+        });
     }
+
 
     /**
      * Controlla che l'app sia eseguibile e inizia lo scanner
@@ -455,14 +496,43 @@ public class InitActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+
+    private void tweetSomething(String tweetToUpdate) throws TwitterException {
+
+        ConfigurationBuilder cb = new ConfigurationBuilder();
+        cb.setDebugEnabled(true)
+                .setOAuthConsumerKey(CONSUMER_KEY)
+                .setOAuthConsumerSecret(CONSUMER_SECRET)
+                .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
+                .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
+        TwitterFactory tf = new TwitterFactory(cb.build());
+        Twitter twitter = tf.getInstance();
+        Status status = twitter.updateStatus(tweetToUpdate);
+        Toast.makeText(this, "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+
+    private void sendAMail(final String destEmail, String body, final String idMitt) {
+        BackgroundMail.newBuilder(this)
+                .withUsername(usernameMail)
+                .withPassword(passwordMail)
+                .withMailto(destEmail)
+                .withType(BackgroundMail.TYPE_PLAIN)
+                .withSubject("A message from BE-Mesh network")
+                .withBody(body)
+                .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .withOnFailCallback(new BackgroundMail.OnFailCallback() {
+                    @Override
+                    public void onFail() {
+                        Toast.makeText(getApplicationContext(), "ERROR on send email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .send();
     }
 
     @Override

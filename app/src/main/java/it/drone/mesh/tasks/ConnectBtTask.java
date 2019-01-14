@@ -10,18 +10,18 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.common.Constants;
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.models.Server;
 
 public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
     private final static String TAG = ConnectBtTask.class.getSimpleName();
 
-    private User mmUser;
+    private Server mmServer;
 
-    public ConnectBtTask(User user) {
+    public ConnectBtTask(Server server) {
         // Use a temporary object that is later assigned to mmSocket
         // because mmSocket is final.
-        mmUser = user;
+        mmServer = server;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         //mBluetoothAdapter.cancelDiscovery();
         BluetoothSocket tmp = null;
         try {
-            tmp = mmUser.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.ServiceUUID);
+            tmp = mmServer.getBluetoothDevice().createInsecureRfcommSocketToServiceRecord(Constants.ServiceUUID);
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + e.toString());
         }
@@ -49,8 +49,8 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         }
         // The connection attempt succeeded. Perform work associated with
         // the connection in a separate thread.
-        mmUser.setBluetoothSocket(tmp);
-        return mmUser.getBluetoothSocket();
+        mmServer.setBluetoothSocket(tmp);
+        return mmServer.getBluetoothSocket();
     }
 
     @Override
@@ -59,7 +59,7 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         if (result == null)
             return;
         try {
-            mmUser.getBluetoothServerSocket().close();
+            mmServer.getBluetoothServerSocket().close();
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + "couldn't close socket", e);
         }
@@ -70,12 +70,10 @@ public class ConnectBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         TimerTask timerTask = new TimerTask() {
             OutputStream tmpOut = null;
             byte[] buffer = new byte[20];
-            int bytes;
-
             @Override
             public void run() {
                 try {
-                    tmpOut = mmUser.getBluetoothSocket().getOutputStream();
+                    tmpOut = mmServer.getBluetoothSocket().getOutputStream();
                 } catch (IOException closeException) {
                     Log.d(TAG, "OUD: " + "Couldn't get an Inputstream", closeException);
                 }

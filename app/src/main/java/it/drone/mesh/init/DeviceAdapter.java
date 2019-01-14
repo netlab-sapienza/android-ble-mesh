@@ -16,10 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import it.drone.mesh.R;
+import it.drone.mesh.common.RoutingTable;
+import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
-import it.drone.mesh.roles.common.RoutingTable;
-import it.drone.mesh.roles.common.Utility;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -75,9 +75,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Il formato messaggi per la beta è startTime,num_hop al posto di TEST_MESSAGE
-                // all'inizio num_hop = 0
-                sendMessage(device.getId(), "" + System.currentTimeMillis() + ",0", new Listeners.OnMessageSentListener() {
+                sendMessage(device.getId(), System.currentTimeMillis() + ";;1;;" + TEST_MESSAGE, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(final String message) {
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -128,12 +126,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         else
             myId = "MY_ID_UNAVAILABLE";
 
-        String[] info = message.split(",");
+        String[] info = message.split(";;");
         try {
             // HOP dovrebbe venire sempre 0 ma sulla specifica ci sta scritto che ci deve essere, quindi ¯\_(ツ)_/¯
-            Utility.saveData((ArrayList<String>) Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, (ArrayList<String>) Arrays.asList(myId, destinationId, info[0], info[1]));
+            Utility.saveData(Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, Arrays.asList(myId, destinationId, info[0], info[1]));
         } catch (IOException e) {
-            Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
+            Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
             e.printStackTrace();
         }
         // FINE LOGICA BETA
@@ -162,14 +160,20 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             public void OnMessageReceived(String idMitt, String message) {
                 for (Device device : devices)
                     if (device.getId().equals(idMitt))
-                        device.writeOutput(message);
-                notifyDataSetChanged();
+                        device.writeOutput("Time: " + System.currentTimeMillis() + ", Message: " + message.split(";;")[2]);
+
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyDataSetChanged();
+                    }
+                });
 
                 // INIZIO LOGICA BETA
                 String myId = connectBLETask.getId();
-                String[] info = message.split(",");
+                String[] info = message.split(";;");
                 try {
-                    Utility.saveData((ArrayList<String>) Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, (ArrayList<String>) Arrays.asList(myId, idMitt, info[0], info[1]));
+                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - Long.parseLong(info[0]), info[1]));
                 } catch (IOException e) {
                     Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                     e.printStackTrace();
@@ -185,6 +189,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     void setAcceptBLETask(AcceptBLETask acceptBLETask) {
         this.acceptBLETask = acceptBLETask;
+    }
+
+    public void cleanView() {
+        RoutingTable.getInstance().cleanRoutingTable();
+        devices.clear();
+        notifyDataSetChanged();
     }
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {

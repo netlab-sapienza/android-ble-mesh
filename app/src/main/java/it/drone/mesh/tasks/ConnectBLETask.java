@@ -13,38 +13,39 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.RoutingTable;
+import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.models.User;
-import it.drone.mesh.roles.common.Constants;
-import it.drone.mesh.roles.common.RoutingTable;
-import it.drone.mesh.roles.common.Utility;
+import it.drone.mesh.models.Server;
 
 public class ConnectBLETask {
     private final static String TAG = ConnectBLETask.class.getName();
 
-    private User user;
+    private Server server;
     private BluetoothGattCallback mGattCallback;
     private BluetoothGatt mGatt;
     private Context context;
     private String id;
+    private String serverId;
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
 
-    public ConnectBLETask(User user, Context context, BluetoothGattCallback callback) {
+    public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
-        this.user = user;
+        this.server = server;
         this.mGattCallback = callback;
         this.id = null;
         receivedListeners = new ArrayList<>();
         routingTable = RoutingTable.getInstance();
     }
 
-    public ConnectBLETask(User user, final Context context) {
+    public ConnectBLETask(Server server, final Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
         this.context = context;
-        this.user = user;
+        this.server = server;
         this.id = null;
         this.messageMap = new HashMap<>();
         receivedListeners = new ArrayList<>();
@@ -70,7 +71,6 @@ public class ConnectBLETask {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
-                                    //provare anche con indication value
                                     BluetoothGattDescriptor desc = chars.getDescriptor(Constants.DescriptorUUID);
                                     boolean res = gatt.readDescriptor(desc);
                                     Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
@@ -100,7 +100,7 @@ public class ConnectBLETask {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
                     routingTable.cleanRoutingTable();
                     byte[] value = characteristic.getValue();
-                    for (int i = 0; i < value.length; i++) {
+                    for (int i = 0; i < value.length; i++) { //aggiorno l'upper tier
                         boolean flag = false;
                         for (int j = 0; j < 8; j++) {
                             if (Utility.getBit(value[i], j) == 1) flag = true;
@@ -133,9 +133,7 @@ public class ConnectBLETask {
                     return;
                 }
 
-                for (int i = 0; i < value.length - 2; i++) {
-                    correct_message[i] = value[i + 2];
-                }
+                System.arraycopy(value, 2, correct_message, 0, value.length - 2);
 
                 final String senderId = Utility.getStringId(sorgByte);
 
@@ -155,18 +153,6 @@ public class ConnectBLETask {
                     for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                         listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     messageMap.remove(senderId);
-
-                    /*
-                    Handler mHandler = new Handler(Looper.getMainLooper());
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId  + ", messaggio: " + messageMap.get(senderId), Toast.LENGTH_SHORT).show();
-                            messageMap.remove(senderId);
-                        }
-                    });
-                    */
-
                 }
 
                 super.onCharacteristicChanged(gatt, characteristic);
@@ -177,12 +163,12 @@ public class ConnectBLETask {
                 if (status == 0) {
                     Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
                     if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
-                        setId(new String(descriptor.getValue(), Charset.defaultCharset()));
+                        setServerId(new String(descriptor.getValue(), Charset.defaultCharset()));
                         Log.d(TAG, "OUD: " + "id : " + getId());
                         boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.NEXT_ID_UUID));
                         Log.d(TAG, "OUD: " + "read next id descriptor : " + res);
                     } else if (descriptor.getUuid().toString().equals(Constants.NEXT_ID_UUID.toString())) {
-                        setId(getId() + new String(descriptor.getValue(), Charset.defaultCharset()));
+                        setId(getServerId() + new String(descriptor.getValue(), Charset.defaultCharset()));
                         Log.d(TAG, "OUD: " + "id : " + getId());
                         BluetoothGattDescriptor configDesc = gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.Client_Configuration_UUID);
                         configDesc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
@@ -206,12 +192,12 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: onDescriptorWrite: cc");
                     BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                     if (service == null) {
-                        Log.d(TAG, "OUD: nulll");
+                        Log.d(TAG, "OUD: null");
                         return;
                     }
                     BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
                     if (characteristic == null) {
-                        Log.d(TAG, "OUD: nulll");
+                        Log.d(TAG, "OUD: null");
                         return;
                     }
                     BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.ClientOnline_Configuration_UUID);
@@ -255,10 +241,10 @@ public class ConnectBLETask {
     }
 
     public void startClient() {
-        this.mGatt = user.getBluetoothDevice().connectGatt(context, false, mGattCallback);
-        user.setBluetoothGatt(this.mGatt);
-        user.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
-        user.getBluetoothGatt().connect();
+        this.mGatt = server.getBluetoothDevice().connectGatt(context, false, mGattCallback);
+        server.setBluetoothGatt(this.mGatt);
+        server.getBluetoothGatt().requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+        server.getBluetoothGatt().connect();
         setId("");
         Log.d(TAG, "OUD: " + "startClient: " + mGatt.getDevice().getName());
         boolean ret = this.mGatt.discoverServices();
@@ -266,8 +252,11 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        this.mGatt.disconnect();
-        this.mGatt = null;
+        if (this.mGatt != null) {
+            this.mGatt.disconnect();
+            this.mGatt.close();
+            this.mGatt = null;
+        }
     }
 
     public boolean hasCorrectId() {
@@ -276,6 +265,14 @@ public class ConnectBLETask {
 
     public String getId() {
         return this.id;
+    }
+
+    public String getServerId() {
+        return this.serverId;
+    }
+
+    public void setServerId(String id) {
+        this.serverId = id;
     }
 
     public void setId(String id) {

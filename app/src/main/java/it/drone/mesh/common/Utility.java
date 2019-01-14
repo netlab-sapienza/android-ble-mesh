@@ -335,14 +335,11 @@ public class Utility {
                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
+                            if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) {
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
-                            else {
-                                Log.d(TAG, "OUD: " + "Routing non inviata table ");
-                                //Utility.sendRoutingTable(temp,gatt,infoSorg,infoDest);
                             }
                         }
-                    }, 500);
+                    }, 300);
 
                 }
             }

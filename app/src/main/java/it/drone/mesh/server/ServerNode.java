@@ -19,6 +19,7 @@ public class ServerNode {
     private LinkedList<ServerNode> nearServers;
     private LinkedList<ServerNode> routingTable;
     private byte clientByte;
+    private byte clientInternetByte;
     private BluetoothDevice[] clientList;
     private boolean hasInternet = false;
 
@@ -31,6 +32,8 @@ public class ServerNode {
             clientList[i] = null;
         }
         clientByte = 0b00000000;
+        clientInternetByte = 0b00000000;
+
     }
 
     public static ServerNode buildRoutingTable(byte[][] mapByte, String id, BluetoothDevice[] clientList) {
@@ -418,5 +421,13 @@ public class ServerNode {
 
     public void setHasInternet(boolean hasInternet) {
         this.hasInternet = hasInternet;
+    }
+
+    public void setClientInternet(int id) {
+        clientInternetByte = Utility.setBit(clientInternetByte, id);
+    }
+
+    public byte getClientByteInternet() {
+        return clientInternetByte;
     }
 }

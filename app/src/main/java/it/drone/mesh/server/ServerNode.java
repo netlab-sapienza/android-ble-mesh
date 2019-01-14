@@ -9,6 +9,8 @@ import it.drone.mesh.common.Utility;
 
 public class ServerNode {
     public static final int MAX_NUM_SERVER = 16;
+    public static final int MAX_NUM_CLIENT = 7;
+
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
     private static String TAG = ServerNode.class.getSimpleName();
@@ -183,6 +185,7 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
+                if (i > MAX_NUM_CLIENT) return -1;
                 return i;
             }
         }
@@ -328,9 +331,9 @@ public class ServerNode {
         int index = Utility.getBit(idByte, 0) + Utility.getBit(idByte, 1) * 2 + Utility.getBit(idByte, 2) * 4 + Utility.getBit(idByte, 3) * 8;
         ServerNode nuovoServer = new ServerNode("" + index);
         for (int i = 0; i < 8; i++) {
-            if (Utility.getBit(value[2], i) == 1) nuovoServer.setClientOnline("" + i, null);
+            if (Utility.getBit(value[3], i) == 1) nuovoServer.setClientOnline("" + i, null);
         }
-        for (int i = 3; i < 16; i++) {
+        for (int i = 4; i < 16; i++) {
             int tempId = Utility.getBit(value[i], 4) + Utility.getBit(value[i], 5) * 2 + Utility.getBit(value[i], 6) * 4 + Utility.getBit(value[i], 7) * 8;
             if (tempId == 0) break;
             if (("" + tempId).equals(this.id)) {

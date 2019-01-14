@@ -57,6 +57,7 @@ public class Utility {
         return val;
     }
 
+
     public static byte clearBit(byte val, int offset) {
         val = (byte) (val & ~(1 << offset));
         return val;
@@ -104,7 +105,7 @@ public class Utility {
         return b;
     }
 
-    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message) {
+    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message,boolean internet) {
         byte[] sInByte = message.getBytes();
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
         byte[][] finalMessage;
@@ -118,6 +119,7 @@ public class Utility {
         // Log.d(TAG, "OUD: messageBuilder:Entrata foqr");
         Utility.printByte(firstByte);
         Utility.printByte(destByte);
+        if (internet) destByte = Utility.setBit(destByte,0);
         for (int i = 0; i < numPackToSend; i++) {
             if (i == numPackToSend - 1) {
                 byte[] pack = new byte[lastLen + 2];
@@ -169,8 +171,8 @@ public class Utility {
         return res;
     }
 
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, Listeners.OnMessageSentListener listener) {
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
+    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest,boolean internet, Listeners.OnMessageSentListener listener) {
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message,internet);
         boolean result = true;
 
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
@@ -204,7 +206,7 @@ public class Utility {
 
     public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
         // Log.d(TAG, "OUD: PRE messagBuilder ok");
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message);
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message,false);
         // Log.d(TAG, "OUD: messagBuilder ok");
         boolean result = true;
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);

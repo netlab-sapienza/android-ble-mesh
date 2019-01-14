@@ -30,6 +30,8 @@ public class Constants {
 
     public static final UUID DescriptorUUID = UUID.fromString("2222b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID DescriptorClientOnlineUUID = UUID.fromString("2422b81d-0000-1000-8000-00805f9b34fb");
+    public static final UUID DescriptorClientWithInternetUUID = UUID.fromString("2622b81d-0000-1000-8000-00805f9b34fb");
+
 
 
     public static final UUID RoutingTableCharacteristicUUID = UUID.fromString("1211b1d-0000-1000-8000-00805f9b34fb");

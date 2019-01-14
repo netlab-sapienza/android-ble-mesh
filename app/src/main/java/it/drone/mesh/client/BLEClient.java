@@ -118,24 +118,16 @@ public class BLEClient {
                 final Server newServer = ServerList.getServer(offset);
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
-                connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-                    @Override
-                    public void OnMessageReceived(final String idMitt, final String message) {
-                        Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                    }
-                });
+                connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
                 connectBLE.startClient();
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (connectBLE.hasCorrectId()) {
-                            connectBLETask = connectBLE;
-                            serverDevice = newServer.getBluetoothDevice();
-                            Log.d(TAG, "You're a client and your id is " + connectBLETask.getId());
-                        } else {
-                            Log.d(TAG, "OUD: " + "id non assegnato, passo al prossimo server");
-                            tryConnection(offset + 1);
-                        }
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (connectBLE.hasCorrectId()) {
+                        connectBLETask = connectBLE;
+                        serverDevice = newServer.getBluetoothDevice();
+                        Log.d(TAG, "You're a client and your id is " + connectBLETask.getId());
+                    } else {
+                        Log.d(TAG, "OUD: " + "id non assegnato, passo al prossimo server");
+                        tryConnection(offset + 1);
                     }
                 }, HANDLER_PERIOD);
             }

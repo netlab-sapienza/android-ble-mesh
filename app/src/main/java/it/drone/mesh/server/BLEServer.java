@@ -99,26 +99,16 @@ public class BLEServer {
     private void askIdToNearServer(final int offset) {
         final int size = ServerList.getServerList().size();
         if (offset >= size) {
-            if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER) {
+            if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER && nearDeviceMap.size() == 0) {
                 long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
                 Log.d(TAG, "Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        startScanning();
-                    }
-                }, sleepPeriod);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> startScanning(), sleepPeriod);
                 attemptsUntilServer++;
             } else if (isServiceStarted) {
                 context.startService(new Intent(context, AdvertiserService.class));
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
-                acceptBLETask.addRoutingTableUpdatedListener(new AcceptBLETask.OnRoutingTableUpdatedListener() {
-                    @Override
-                    public void OnRoutingTableUpdated(final String message) {
-                        Log.d(TAG, "OnRoutingTableUpdated: \n" + message);
-                    }
-                });
+                acceptBLETask.addRoutingTableUpdatedListener(message -> Log.d(TAG, "OnRoutingTableUpdated: \n" + message));
                 acceptBLETask.startServer();
             }
         } else {

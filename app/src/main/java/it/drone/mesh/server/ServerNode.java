@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import it.drone.mesh.common.Utility;
 
 public class ServerNode {
-    // TODO: 13/01/19  INTERNET CONNECTION RICHIEDE TEST PER LE FUNZIONI : parseNerServer, parseClientMapTOByte, parseMapToByte,buildRoutingTable,updateRoutingTable
+    // TODO: 13/01/19  INTERNET CONNECTION RICHIEDE TEST PER LE FUNZIONI : parseNewServer, parseClientMapTOByte, parseMapToByte,buildRoutingTable,updateRoutingTable
     public static final int MAX_NUM_SERVER = 16;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
@@ -59,7 +59,7 @@ public class ServerNode {
                         else arrayNode[i].setClientOnline("" + k, clientList[i]);
                 }
 
-                for (int k = 2; k < SERVER_PACKET_SIZE; k++) {
+                for (int k = 2; k < SERVER_PACKET_SIZE - 1; k++) {
                     byte nearServerByte = mapByte[i][k];
                     int[] infoNearServer = Utility.getIdServerByteInfo(nearServerByte);
                     if (infoNearServer[0] != 0) {
@@ -110,6 +110,33 @@ public class ServerNode {
             ServerNode toSend = s.getServerToSend(serverId, this.id, numRequest);
             if (toSend != null) {
                 ServerNode newServer = new ServerNode(serverId);
+                addFarServer(newServer, s);
+                Log.d(TAG, "OUD: " + "Next hop: " + toSend.getId());
+                return s;
+            }
+        }
+        return null; //quindi broadcasta
+    }
+
+    public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
+        if (lastRequest != numRequest) {
+            lastRequest = numRequest;
+        } else return null;
+
+        for (ServerNode s : routingTable) {
+            if (s.hasInternet()) return s;
+        }
+        for (ServerNode s : routingTable) {
+            for (ServerNode t : s.getRoutingTable()) {
+                if (t.hasInternet()) return s;
+            }
+        }
+        for (ServerNode s : routingTable) {
+            if (s.getId().equals(idAsker)) continue;
+            ServerNode toSend = s.getNearestServerWithInternet(numRequest, this.id);
+            if (toSend != null) {
+                ServerNode newServer = new ServerNode(toSend.getId());
+                newServer.setHasInternet(true);
                 addFarServer(newServer, s);
                 Log.d(TAG, "OUD: " + "Next hop: " + toSend.getId());
                 return s;
@@ -286,7 +313,7 @@ public class ServerNode {
                 tempArrayByte[tempIndex] = nearByte;
                 tempIndex++;
             }
-            if (s.getHasInternet())
+            if (s.hasInternet())
                 tempArrayByte[SERVER_PACKET_SIZE - 1] = Utility.setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
             System.arraycopy(tempArrayByte, 0, destArrayByte[index], 0, SERVER_PACKET_SIZE);
             s.parseMapToByte(destArrayByte);
@@ -304,11 +331,12 @@ public class ServerNode {
             if (alreadyDone) continue;
             destArrayByte[index] = s.clientByte;
             destArrayByte[index] = Utility.setBit(destArrayByte[index], 0);
-            if (index < 9)
-                if (s.getHasInternet())
+            if (index < 9) {
+                if (s.hasInternet())
                     destArrayByte[0] = Utility.setBit(destArrayByte[0], index - 1);
-                else if (s.getHasInternet())
-                    destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
+            }
+            else if (s.hasInternet())
+                destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
             s.parseClientMapToByte(destArrayByte);
         }
     }
@@ -384,7 +412,7 @@ public class ServerNode {
         return lastRequest;
     }
 
-    public boolean getHasInternet() {
+    public boolean hasInternet() {
         return hasInternet;
     }
 

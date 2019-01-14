@@ -24,10 +24,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.instacart.library.truetime.TrueTime;
 import com.instacart.library.truetime.TrueTimeRx;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +78,7 @@ public class InitActivity extends Activity {
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
     private Disposable disposable;
+    private boolean hasInternet = false;
 
     @SuppressLint("CheckResult")
     @Override
@@ -88,10 +87,14 @@ public class InitActivity extends Activity {
                 .initializeRx("time.google.com")
                 .subscribeOn(Schedulers.io())
                 .subscribe(date -> {
+                    hasInternet = true;
                     Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
                     Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
-                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"offset: " + (System.currentTimeMillis() - date.getTime()),Toast.LENGTH_SHORT).show());
-                }, Throwable::printStackTrace);
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()),Toast.LENGTH_SHORT).show());
+                }, throwable -> {
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Errore, probabilmente non sei connesso ad internet",Toast.LENGTH_SHORT).show());
+                    throwable.printStackTrace();
+                });
         canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
@@ -258,6 +261,7 @@ public class InitActivity extends Activity {
 
                     }
                 });
+                if(hasInternet) acceptBLETask.setHasInternet(true);
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
                 new Handler(Looper.getMainLooper()).postDelayed(
@@ -277,41 +281,33 @@ public class InitActivity extends Activity {
             final Server newServer = ServerList.getServer(offset);
             Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
             final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
-            connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-                @Override
-                public void OnMessageReceived(final String idMitt, final String message) {
-                    writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            deviceAdapter.notifyDataSetChanged();
-                            // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            connectBLE.addReceivedListener((idMitt, message) -> {
+                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    deviceAdapter.notifyDataSetChanged();
+                    // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                });
 
-                }
             });
+            if(hasInternet) connectBLE.setHasInternet(true);
             connectBLE.startClient();
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    // Log.d(TAG, "OUD: Run ");
-                    if (connectBLE.hasCorrectId()) {
-                        writeDebug("Id trovato: " + connectBLE.getId());
-                        writeDebug("Id assegnato correttamente");
-                        connectBLETask = connectBLE;
-                        writeDebug("You're a client and your id is " + connectBLETask.getId());
-                        deviceAdapter.setConnectBLETask(connectBLETask);
-                        myId.setText(connectBLETask.getId());
-                        whoAmI.setText(R.string.client);
-                    } else {
-                        if (connectBLE.getServerId() != null) {
-                            nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
-                            writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
-                        }
-                        Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                        tryConnection(offset + 1);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                // Log.d(TAG, "OUD: Run ");
+                if (connectBLE.hasCorrectId()) {
+                    writeDebug("Id trovato: " + connectBLE.getId());
+                    writeDebug("Id assegnato correttamente");
+                    connectBLETask = connectBLE;
+                    writeDebug("You're a client and your id is " + connectBLETask.getId());
+                    deviceAdapter.setConnectBLETask(connectBLETask);
+                    myId.setText(connectBLETask.getId());
+                    whoAmI.setText(R.string.client);
+                } else {
+                    if (connectBLE.getServerId() != null) {
+                        nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
+                        writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
                     }
+                    Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
+                    tryConnection(offset + 1);
                 }
             }, HANDLER_PERIOD);
             writeDebug("Assegnazione id tra 5 secondi");
@@ -319,33 +315,25 @@ public class InitActivity extends Activity {
     }
 
     private void cleanDebug() {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                debugger.setText("");
-            }
-        });
+        runOnUiThread(() -> debugger.setText(""));
     }
 
     private void writeDebug(final String message) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                if (debugger.getLineCount() == debugger.getMaxLines())
-                    debugger.setText(String.format("%s\n", message));
-                else
-                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
-            }
+        runOnUiThread(() -> {
+            if (debugger.getLineCount() == debugger.getMaxLines())
+                debugger.setText(String.format("%s\n", message));
+            else
+                debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
         });
         Log.d(TAG, "OUD: " + message);
     }
 
     private void writeErrorDebug(final String message) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                if (debugger.getLineCount() == debugger.getMaxLines())
-                    debugger.setText(String.format("%s\n", message));
-                else
-                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
-            }
+        runOnUiThread(() -> {
+            if (debugger.getLineCount() == debugger.getMaxLines())
+                debugger.setText(String.format("%s\n", message));
+            else
+                debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
         });
         Log.e(TAG, message);
     }

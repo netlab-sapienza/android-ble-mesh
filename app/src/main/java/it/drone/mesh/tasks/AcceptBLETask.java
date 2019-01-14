@@ -42,6 +42,7 @@ public class AcceptBLETask {
     private BluetoothGattCharacteristic mGattCharacteristicClientOnline;
     private BluetoothGattDescriptor mGattClientOnlineConfigurationDescriptor;
     private BluetoothGattDescriptor mGattClientOnlineDescriptor;
+    private BluetoothGattDescriptor mGattClientWithInternetDescriptor;
 
     private BluetoothGattCharacteristic mGattCharacteristicRoutingTable;
     private BluetoothGattDescriptor mGattDescriptorRoutingTable;
@@ -70,6 +71,7 @@ public class AcceptBLETask {
         mGattClientConfigurationDescriptor = new BluetoothGattDescriptor(Constants.Client_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineConfigurationDescriptor = new BluetoothGattDescriptor(Constants.ClientOnline_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattClientWithInternetDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientWithInternetUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
 
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicClientOnline = new BluetoothGattCharacteristic(Constants.ClientOnlineCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -321,7 +323,7 @@ public class AcceptBLETask {
                                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Utility.sendMessage(message, gatt, infoSorg, infoDest, new Listeners.OnMessageSentListener() {
+                                            Utility.sendMessage(message, gatt, infoSorg, infoDest, false,  new Listeners.OnMessageSentListener() {
                                                 @Override
                                                 public void OnMessageSent(String message) {
                                                     Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
@@ -529,9 +531,11 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: Set Value: --> " + new String(mGattCharacteristicNextServerId.getValue()));
                     mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
                     mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
+                    mGattCharacteristic.addDescriptor(mGattClientWithInternetDescriptor);
                     mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
+
                     mGattService.addCharacteristic(mGattCharacteristic);
                     mGattService.addCharacteristic(mGattCharacteristicNextServerId);
                     mGattService.addCharacteristic(mGattCharacteristicRoutingTable);
@@ -590,12 +594,14 @@ public class AcceptBLETask {
             mGattDescriptorRoutingTable.setValue("1".getBytes());
             mGattDescriptor.setValue(id.getBytes());
             mGattCharacteristicClientOnline.setValue(new byte[17]);
-            this.mGattCharacteristic.addDescriptor(mGattDescriptor);
             mGattDescriptorNextId.setValue("1".getBytes());
-            this.mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
-            this.mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
+            mGattCharacteristic.addDescriptor(mGattDescriptor);
+            mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
+            mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
+            mGattCharacteristic.addDescriptor(mGattClientWithInternetDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
+
             this.mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
             this.mGattService.addCharacteristic(mGattCharacteristic);
             this.mGattService.addCharacteristic(mGattCharacteristicNextServerId);

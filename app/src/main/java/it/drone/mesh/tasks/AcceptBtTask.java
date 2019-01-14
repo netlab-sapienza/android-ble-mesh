@@ -11,20 +11,20 @@ import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import it.drone.mesh.models.User;
-import it.drone.mesh.utility.Constants;
+import it.drone.mesh.common.Constants;
+import it.drone.mesh.models.Server;
 
 public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
     private static final String TAG = AcceptBtTask.class.getSimpleName();
 
-    private User user;
+    private Server server;
     private BluetoothAdapter mBluetoothAdapter;
 
 
-    public AcceptBtTask(User user, BluetoothAdapter mBluetoothAdapter) {
+    public AcceptBtTask(Server server, BluetoothAdapter mBluetoothAdapter) {
         // Use a temporary object that is later assigned to mmServerSocket
         // because mmServerSocket is final.
-        this.user = user;
+        this.server = server;
         this.mBluetoothAdapter = mBluetoothAdapter;
     }
 
@@ -35,14 +35,14 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
         //mBluetoothAdapter.cancelDiscovery();
         // Creates the Server Socket
         try {
-            user.setBluetoothServerSocket(mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("HIRO-NET", Constants.Service_UUID.getUuid()));
+            server.setBluetoothServerSocket(mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("HIRO-NET", Constants.ServiceUUID));
         } catch (IOException e) {
             Log.d(TAG, "OUD: " + "Couldn't create a Socket");
         }
 
         while (true) {
             try {
-                socket = user.getBluetoothServerSocket().accept();
+                socket = server.getBluetoothServerSocket().accept();
             } catch (IOException e) {
                 Log.d(TAG, "OUD: " + "Socket's accept() method failed", e);
                 break;
@@ -54,7 +54,7 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
                 Log.d(TAG, "OUD: " + "Socket's accept()");
                 // manageMyConnectedSocket(socket);
                 try {
-                    user.getBluetoothServerSocket().close();
+                    server.getBluetoothServerSocket().close();
                 } catch (IOException e) {
                     Log.d(TAG, "OUD: " + "Socket's accept() method failed", e);
                 }
@@ -69,7 +69,7 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
     protected void onPostExecute(BluetoothSocket result) {
         if (result == null)
             return;
-        user.setBluetoothSocket(result);
+        server.setBluetoothSocket(result);
         processBtAccept(result);
     }
 
@@ -82,7 +82,7 @@ public class AcceptBtTask extends AsyncTask<Void, Void, BluetoothSocket> {
             @Override
             public void run() {
                 try {
-                    tmpIn = user.getBluetoothSocket().getInputStream();
+                    tmpIn = server.getBluetoothSocket().getInputStream();
                 } catch (IOException closeException) {
                     Log.d(TAG, "OUD: " + "Couldn't get an Inputstream", closeException);
                 }

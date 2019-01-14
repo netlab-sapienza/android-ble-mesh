@@ -6,21 +6,22 @@ import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 
-public class User {
+public class Server {
     private BluetoothDevice bluetoothDevice;
     private String userName;
     private BluetoothServerSocket bluetoothServerSocket;
     private BluetoothSocket bluetoothSocket;
     private BluetoothGattServer bluetoothGattServer;
     private BluetoothGatt bluetoothGatt;
+    private String id;
 
-    public User(BluetoothDevice mBluetoothDevice, BluetoothServerSocket mBluetoothServerSocket, BluetoothSocket mBluetoothSocket) {
+    public Server(BluetoothDevice mBluetoothDevice, BluetoothServerSocket mBluetoothServerSocket, BluetoothSocket mBluetoothSocket) {
         this.bluetoothDevice = mBluetoothDevice;
         this.bluetoothServerSocket = mBluetoothServerSocket;
         this.bluetoothSocket = mBluetoothSocket;
     }
 
-    public User(BluetoothDevice mBluetoothDevice) {
+    public Server(BluetoothDevice mBluetoothDevice) {
         this.bluetoothDevice = mBluetoothDevice;
         this.bluetoothServerSocket = null;
         this.bluetoothSocket = null;
@@ -28,7 +29,7 @@ public class User {
         this.bluetoothGatt = null;
     }
 
-    public User(BluetoothDevice mBluetoothDevice, String name) {
+    public Server(BluetoothDevice mBluetoothDevice, String name) {
         this.bluetoothDevice = mBluetoothDevice;
         this.userName = name;
         this.bluetoothServerSocket = null;
@@ -83,5 +84,13 @@ public class User {
 
     public void setBluetoothGattServer(BluetoothGattServer bluetoothGattServer) {
         this.bluetoothGattServer = bluetoothGattServer;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

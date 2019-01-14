@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Activity themes -->
+
+    <style name="Theme.Base" parent="Base.Theme.AppCompat.Light" />
+
+
+    <style name="AppTheme" parent="Theme.Base" />
+
+
+</resources>

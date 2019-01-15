@@ -1,7 +1,6 @@
 package it.drone.mesh.init;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -27,24 +26,17 @@ import android.widget.Toast;
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.instacart.library.truetime.TrueTimeRx;
 
-
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
-import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Utility;
-import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
-import it.drone.mesh.models.Server;
-import it.drone.mesh.models.ServerList;
 import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
-import it.drone.mesh.tasks.ConnectBLETask;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -54,7 +46,6 @@ import twitter4j.conf.ConfigurationBuilder;
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
-import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 public class InitActivity extends Activity {
 
@@ -95,10 +86,6 @@ public class InitActivity extends Activity {
     private Button startServices, sendTweet, sendEmail;
     private Disposable disposable;
 
-    private int attemptsUntilServer = 1;
-    private long randomValueScanPeriod;
-    private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
-    private boolean canIBeServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

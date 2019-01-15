@@ -10,8 +10,9 @@ import it.drone.mesh.common.Utility;
 public class ServerNode {
     // TODO: 13/01/19  INTERNET CONNECTION RICHIEDE TEST PER LE FUNZIONI : parseNewServer, parseClientMapTOByte, parseMapToByte,buildRoutingTable,updateRoutingTable
     public static final int MAX_NUM_SERVER = 16;
-    public static final int CLIENT_LIST_SIZE = 2;
+    public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
+    private static final int MAX_NUM_CLIENT = 2;
     private static String TAG = ServerNode.class.getSimpleName();
     private String id;
     private int lastRequest;

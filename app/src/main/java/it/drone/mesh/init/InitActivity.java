@@ -94,23 +94,22 @@ public class InitActivity extends Activity {
     private final String passwordMail = "password";
     private Button startServices, sendTweet, sendEmail;
     private Disposable disposable;
-    private boolean hasInternet = false;
 
-    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        disposable = TrueTimeRx.build()
-                .initializeRx("time.google.com")
-                .subscribeOn(Schedulers.io())
-                .subscribe(date -> {
-                    hasInternet = true;
-                    Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
-                    Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
-                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()),Toast.LENGTH_SHORT).show());
-                }, throwable -> {
-                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Errore, probabilmente non sei connesso ad internet",Toast.LENGTH_SHORT).show());
-                    throwable.printStackTrace();
-                });
+        if(Utility.isDeviceOnline(this)) {
+            disposable = TrueTimeRx.build()
+                    .initializeRx("time.google.com")
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(date -> {
+                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
+                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
+                    }, throwable -> {
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Errore, probabilmente non sei connesso ad internet", Toast.LENGTH_SHORT).show());
+                        throwable.printStackTrace();
+                    });
+        }
 
         canIBeServer = false;
         super.onCreate(savedInstanceState);
@@ -131,12 +130,9 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
-            @Override
-            public void OnConnectionRejected() {
-                writeErrorDebug("Connection Rejected, stopping service");
-                startServices.performClick();
-            }
+        connectionRejectedListener = () -> {
+            writeErrorDebug("Connection Rejected, stopping service");
+            startServices.performClick();
         };
 
         startServices.setOnClickListener(view -> {
@@ -170,42 +166,42 @@ public class InitActivity extends Activity {
                 isServiceStarted = true;
                 cleanDebug();
                 writeDebug("Service started");
-                if(hasInternet) Log.d(TAG, "OUD: " + "Ho internet");
+                if(Utility.isDeviceOnline(this))
+                    Log.d(TAG, "OUD: " + "Ho internet");
                 if(canIBeServer) {
                     server = BLEServer.getInstance(getApplicationContext());
-                    if(hasInternet) server.setHasInternet(true);
                     server.startServer();
+                    deviceAdapter.setAcceptBLETask(server.getAcceptBLETask());
+
                 }
                 else {
                     client = BLEClient.getInstance(getApplicationContext());
-                    if(hasInternet) client.setHasInternet(true);
                     client.startClient();
+                    client.addOnClientOnlineListener(()->{
+                        deviceAdapter.setConnectBLETask(client.getConnectBLETask());
+                        myId.setText(client.getConnectBLETask().getId());
+                        whoAmI.setText(R.string.client);
+                    });
                 }
             }
         });
 
-        sendTweet.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //if non ho internet send il mex in giro per la rete
-                // else:
-                try {
-                    tweetSomething("cip cip");
-                } catch (TwitterException e) {
-                    e.printStackTrace();
-                }
+        sendTweet.setOnClickListener(view -> {
+            //if non ho internet send il mex in giro per la rete
+            // else:
+            try {
+                tweetSomething("cip cip");
+            } catch (TwitterException e) {
+                e.printStackTrace();
             }
         });
 
-        sendEmail.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //if non ho internet send il mex in giro per la rete
-                //else:
-                if (Utility.isDeviceOnline(getApplicationContext()))
-                    sendAMail("d", "", "");
+        sendEmail.setOnClickListener(view -> {
+            //if non ho internet send il mex in giro per la rete
+            //else:
+            if (Utility.isDeviceOnline(getApplicationContext()))
+                sendAMail("d", "", "");
 
-            }
         });
     }
 

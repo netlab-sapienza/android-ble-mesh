@@ -31,7 +31,6 @@ public class ConnectBLETask {
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
-    private boolean hasInternet;
 
     public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
@@ -101,7 +100,7 @@ public class ConnectBLETask {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
                     routingTable.cleanRoutingTable();
                     byte[] value = characteristic.getValue();
-                    for (int i = 0; i < value.length; i++) { //aggiorno l'upper tier
+                    for (int i = 1; i < value.length-1; i++) { //aggiorno l'upper tier
                         boolean flag = false;
                         for (int j = 0; j < 8; j++) {
                             if (Utility.getBit(value[i], j) == 1) flag = true;
@@ -208,20 +207,22 @@ public class ConnectBLETask {
                     gatt.setCharacteristicNotification(characteristic, true);
                 }
                 else if(descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) {
-                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                    if (service == null) {
-                        Log.d(TAG, "OUD: null");
-                        return;
+                    if (Utility.isDeviceOnline(context)) {
+                        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                        if (service == null) {
+                            Log.d(TAG, "OUD: service null");
+                            return;
+                        }
+                        BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                        if (characteristic == null) {
+                            Log.d(TAG, "OUD: characteristic null");
+                            return;
+                        }
+                        BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorClientWithInternetUUID);
+                        desc.setValue(getId().getBytes());
+                        boolean res = gatt.writeDescriptor(desc);
+                        Log.d(TAG, "OUD: " + "Writing descriptor? " + desc.getUuid() + " ---> " + res);
                     }
-                    BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                    if (characteristic == null) {
-                        Log.d(TAG, "OUD: null");
-                        return;
-                    }
-                    BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorClientWithInternetUUID);
-                    desc.setValue(getId().getBytes());
-                    boolean res = gatt.writeDescriptor(desc);
-                    Log.d(TAG, "OUD: " + "Writing descriptor?" + desc.getUuid() + " --->" + res);
                 }
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
@@ -306,14 +307,6 @@ public class ConnectBLETask {
 
     public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
         this.receivedListeners.remove(onMessageReceivedListener);
-    }
-
-    public boolean hasInternet() {
-        return hasInternet;
-    }
-
-    public void setHasInternet(boolean hasInternet) {
-        this.hasInternet = hasInternet;
     }
 }
 

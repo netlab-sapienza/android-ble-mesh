@@ -122,7 +122,7 @@ public class Utility {
         // Log.d(TAG, "OUD: messageBuilder:Entrata foqr");
         Utility.printByte(firstByte);
         Utility.printByte(destByte);
-        if (internet) destByte = Utility.setBit(destByte,0);
+        if (!internet) destByte = Utility.clearBit(destByte,0); //perchè il bytemssagebuilder setta sempre l'ultimo bit del byte a 1
         for (int i = 0; i < numPackToSend; i++) {
             if (i == numPackToSend - 1) {
                 byte[] pack = new byte[lastLen + 2];
@@ -311,7 +311,7 @@ public class Utility {
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "OUD: onDescriptorRead: " + new String(descriptor.getValue()) + "length: " + descriptor.getValue().length + "routingId: " + routingId);
+                //Log.d(TAG, "OUD: onDescriptorRead: " + new String(descriptor.getValue()) + "length: " + descriptor.getValue().length + "routingId: " + routingId);
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (Integer.parseInt(routingId) > Integer.parseInt(new String(descriptor.getValue()))) {
                         descriptor.setValue(routingId.getBytes());
@@ -451,8 +451,11 @@ public class Utility {
                 if (nearMapDevice.values().contains(result.getDevice())) {
                     Log.d(TAG, "OUD: " + "risultato già presente");
                     return;
-                } else nearMapDevice.put(nuovoId, result.getDevice());
-                listener.OnNewServerDiscovered(result);
+                } else{
+                    nearMapDevice.put(nuovoId, result.getDevice());
+                }
+
+                //listener.OnNewServerDiscovered(result);
                 Log.d(TAG, "OUD: " + "ho aggiunto " + result.getDevice().getName());
             }
         };
@@ -465,8 +468,9 @@ public class Utility {
 
                 // Stop the scan, wipe the callback.
                 mBluetoothScan.stopScan(mScanCallback);
+                listener.OnNewServerDiscovered(nearMapDevice.get(nuovoId));
             }
-        }, 4500);
+        }, 3000);
         //ServerList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }

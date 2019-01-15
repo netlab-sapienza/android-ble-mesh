@@ -11,7 +11,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import java.util.LinkedList;
+
 import it.drone.mesh.common.Utility;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
@@ -34,13 +37,14 @@ public class BLEClient {
     private boolean isScanning = false;
     private BluetoothDevice serverDevice;
     private boolean isServiceStarted = false;
-    private boolean hasInternet = false;
+    private LinkedList<OnClientOnlineListener> listeners;
 
     private BLEClient(Context context) {
         this.context = context;
         mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        listeners = new LinkedList<>();
 
     }
 
@@ -62,17 +66,16 @@ public class BLEClient {
         return connectBLETask;
     }
 
+    public void addOnClientOnlineListener(OnClientOnlineListener list) {
+        this.listeners.add(list);
+    }
+
     private void startScanning() {
         isScanning = true;
         if (mScanCallback == null) {
             ServerList.cleanUserList();
             // Will stop the scanning after a set time.
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    initializeClient();
-                }
-            }, SCAN_PERIOD);
+            new Handler().postDelayed(this::initializeClient, SCAN_PERIOD);
 
             // Kick off a new scan.
             mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
@@ -121,11 +124,13 @@ public class BLEClient {
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
                 connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
-                connectBLE.setHasInternet(hasInternet);
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (connectBLE.hasCorrectId()) {
                         connectBLETask = connectBLE;
+                        for (OnClientOnlineListener l: listeners) {
+                            l.onClientOnline();
+                        }
                         serverDevice = newServer.getBluetoothDevice();
                         Log.d(TAG, "You're a client and your id is " + connectBLETask.getId());
                     } else {
@@ -144,7 +149,7 @@ public class BLEClient {
     }
 
     public void stopClient() {
-        connectBLETask.stopClient();
+        if(connectBLETask != null) connectBLETask.stopClient();
         connectBLETask = null;
         isServiceStarted = false;
 
@@ -158,11 +163,7 @@ public class BLEClient {
         }
     }
 
-    public boolean hasInternet() {
-        return hasInternet;
-    }
-
-    public void setHasInternet(boolean hasInternet) {
-        this.hasInternet = hasInternet;
+    public interface OnClientOnlineListener{
+        void onClientOnline();
     }
 }

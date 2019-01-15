@@ -53,7 +53,6 @@ public class AcceptBLETask {
     private HashMap<String, BluetoothDevice> nearDeviceMap;
     private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
     private ArrayList<OnRoutingTableUpdatedListener> routingTableUpdatedListeners;
-    private boolean hasInternet = false;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
@@ -117,11 +116,8 @@ public class AcceptBLETask {
                         byte flagByte = value[1];
                         if (Utility.getBit(flagByte, 0) == 1) {  //il primo bit del secondo byte indica che è la richiesta di unione alla rete da parte di un nuovo server
                             Log.d(TAG, "OUD: " + "Nuovo server nella rete ");
-                            byte[] correctValue = new byte[16];
-                            for (int i = 0; i < 16; i++) {
-                                correctValue[i] = value[i + 2];
-                            }
-                            boolean isNearToMe = mNode.updateRoutingTable(correctValue);
+
+                            boolean isNearToMe = mNode.updateRoutingTable(value);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
                             mNode.printMapStatus();
                             for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
@@ -152,9 +148,9 @@ public class AcceptBLETask {
                                 String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
                                 Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                     @Override
-                                    public void OnNewServerDiscovered(ScanResult server) {
+                                    public void OnNewServerDiscovered(BluetoothDevice server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
-                                        final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server.getDevice(), new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
+                                        final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                         clientNuovoServ.startClient();
                                     }
                                 });
@@ -629,6 +625,8 @@ public class AcceptBLETask {
                         Log.d(TAG, "OUD: " + "vicini : " + temp);
                         mNode.addNearServer(new ServerNode(temp));
                     }
+                    if(Utility.isDeviceOnline(context))
+                        mNode.setHasInternet(true);
                     mGattDescriptor.setValue(id.getBytes());
                     mGattDescriptorRoutingTable.setValue("0".getBytes());
                     mGattCharacteristic.addDescriptor(mGattDescriptor);
@@ -695,6 +693,8 @@ public class AcceptBLETask {
         } else {
             setId("1");
             mNode = new ServerNode(id);
+            if(Utility.isDeviceOnline(context))
+                mNode.setHasInternet(true);
             mGattCharacteristicNextServerId.setValue("2".getBytes());
             Log.d(TAG, "OUD: startServer: i'm the first");
             mGattDescriptorRoutingTable.setValue("1".getBytes());
@@ -721,9 +721,11 @@ public class AcceptBLETask {
     }
 
     public void stopServer() {
-        this.mGattServer.clearServices();
-        this.mGattServer.close();
-        this.mGattServer = null;
+        if (mGattServer!=null) {
+            this.mGattServer.clearServices();
+            this.mGattServer.close();
+            this.mGattServer = null;
+        }
     }
 
     public void insertMapDevice(HashMap<String, BluetoothDevice> nearDeviceMap) {
@@ -747,14 +749,6 @@ public class AcceptBLETask {
 
     public void removeRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
         this.routingTableUpdatedListeners.remove(routingTableUpdatedListener);
-    }
-
-    public boolean getHasInternet() {
-        return hasInternet;
-    }
-
-    public void setHasInternet(boolean hasInternet) {
-        this.hasInternet = hasInternet;
     }
 
     public interface OnConnectionRejectedListener {

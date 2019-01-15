@@ -1,5 +1,6 @@
 package it.drone.mesh.listeners;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanResult;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class Listeners {
     }
 
     public interface OnNewServerDiscoveredListener {
-        void OnNewServerDiscovered(ScanResult server);
+        void OnNewServerDiscovered(BluetoothDevice server);
     }
 
     public interface OnDebugMessageListener {

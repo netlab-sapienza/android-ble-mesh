@@ -57,7 +57,6 @@ public class BLEServer {
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
-    private boolean hasInternet = false;
     private int attemptsUntilServer = 1;
     private int randomValueScanPeriod;
     //missing Listener For The UpperTier
@@ -110,7 +109,6 @@ public class BLEServer {
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(message -> Log.d(TAG, "OnRoutingTableUpdated: \n" + message));
-                if(hasInternet) acceptBLETask.setHasInternet(true);
                 acceptBLETask.startServer();
             }
         } else {
@@ -208,9 +206,6 @@ public class BLEServer {
         askIdToNearServer(0);
     }
 
-    public boolean getHasInternet() {
-        return hasInternet;
-    }
 
     public void startServer() {
         Log.d(TAG, "startServer: Scan the background,search servers to ask ");
@@ -238,9 +233,5 @@ public class BLEServer {
         } else {
             Log.d(TAG, "stopServer: Service never started. ");
         }
-    }
-
-    public void setHasInternet(boolean hasInternet) {
-        this.hasInternet = hasInternet;
     }
 }

@@ -23,4 +23,10 @@ public class Listeners {
     public interface OnNewServerDiscoveredListener {
         void OnNewServerDiscovered(ScanResult server);
     }
+
+    public interface OnDebugMessageListener {
+        void OnDebugMessage(String message);
+
+        void OnDebugErrorMessage(String message);
+    }
 }

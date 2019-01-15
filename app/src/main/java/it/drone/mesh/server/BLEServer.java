@@ -18,11 +18,13 @@ import android.util.Log;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.Utility;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
@@ -58,8 +60,7 @@ public class BLEServer {
     private boolean isScanning = false;
     private int attemptsUntilServer = 1;
     private int randomValueScanPeriod;
-    //missing Listener For The UpperTier
-
+    private Listeners.OnDebugMessageListener debugMessageListener;
 
     private BLEServer(Context context) {
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
@@ -68,12 +69,9 @@ public class BLEServer {
         this.mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
-        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
-            @Override
-            public void OnConnectionRejected() {
-                Log.d(TAG, "Connection Rejected, stopping service");
-                stopServer();
-            }
+        connectionRejectedListener = () -> {
+            Log.d(TAG, "Connection Rejected, stopping service");
+            stopServer();
         };
     }
 
@@ -100,19 +98,19 @@ public class BLEServer {
         if (offset >= size) {
             if (attemptsUntilServer < MAX_ATTEMPTS_UNTIL_SERVER && nearDeviceMap.size() == 0) {
                 long sleepPeriod = randomValueScanPeriod * attemptsUntilServer;
-                Log.d(TAG, "Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
+                debugMessageListener.OnDebugMessage("Attempt " + attemptsUntilServer + ": Can't find any server, I'll retry after " + sleepPeriod + " milliseconds");
                 new Handler(Looper.getMainLooper()).postDelayed(() -> startScanning(), sleepPeriod);
                 attemptsUntilServer++;
             } else if (isServiceStarted) {
                 context.startService(new Intent(context, AdvertiserService.class));
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
-                acceptBLETask.addRoutingTableUpdatedListener(message -> Log.d(TAG, "OnRoutingTableUpdated: \n" + message));
+                acceptBLETask.addRoutingTableUpdatedListener(message -> debugMessageListener.OnDebugMessage("RoutingTable updated: \n" + message));
                 acceptBLETask.startServer();
             }
         } else {
             final Server newServer = ServerList.getServer(offset);
-            Log.d(TAG, "OUD: " + "Try reading ID of : " + newServer.getUserName());
+            debugMessageListener.OnDebugMessage( "OUD: " + "Try reading ID of : " + newServer.getUserName());
             final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context, new BluetoothGattCallback() {
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -166,6 +164,7 @@ public class BLEServer {
 
     private void startScanning() {
         isScanning = true;
+        debugMessageListener.OnDebugMessage("Start scanning");
         if (mScanCallback == null) {
             ServerList.cleanUserList();
             // Will stop the scanning after a set time.
@@ -180,24 +179,24 @@ public class BLEServer {
             mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
                 @Override
                 public void OnServerFound(String message) {
-                    Log.d(TAG, "OnServerFound: " + message);
+                    debugMessageListener.OnDebugMessage("OnServerFound: " + message);
                 }
 
                 @Override
                 public void OnErrorScan(String message, int errorCodeCallback) {
-                    Log.e(TAG, "OnServerFound: " + message);
+                    debugMessageListener.OnDebugErrorMessage("OnServerFound: " + message);
                 }
             });
 
             mBluetoothLeScanner.startScan(Utility.buildScanFilters(), Utility.buildScanSettings(), mScanCallback);
 
         } else {
-            Log.d(TAG, "startScanning: Scanning already started ");
+            debugMessageListener.OnDebugMessage( "startScanning: Scanning already started ");
         }
     }
 
     private void initializeServer() {
-        Log.d(TAG, "Stopping Scanning");
+        debugMessageListener.OnDebugMessage("Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
@@ -207,7 +206,7 @@ public class BLEServer {
 
 
     public void startServer() {
-        Log.d(TAG, "startServer: Scan the background,search servers to ask ");
+        debugMessageListener.OnDebugMessage( "startServer: Scan the background,search servers to ask ");
         isServiceStarted = true;
         startScanning();
     }
@@ -220,9 +219,9 @@ public class BLEServer {
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask = null;
             }
-            Log.d(TAG, "stopServer: Service stopped");
+            debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {
-                Log.d(TAG, "stopServer: Stopping Scanning");
+                debugMessageListener.OnDebugMessage( "stopServer: Stopping Scanning");
 
                 // Stop the scan, wipe the callback.
                 mBluetoothLeScanner.stopScan(mScanCallback);
@@ -230,7 +229,11 @@ public class BLEServer {
                 isScanning = false;
             }
         } else {
-            Log.d(TAG, "stopServer: Service never started. ");
+            debugMessageListener.OnDebugMessage("stopServer: Service never started. ");
         }
     }
+    public void setOnDebugMessageListener(Listeners.OnDebugMessageListener l) {
+        this.debugMessageListener= l;
+    }
+
 }

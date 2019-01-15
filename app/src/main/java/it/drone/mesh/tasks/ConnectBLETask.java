@@ -30,6 +30,8 @@ public class ConnectBLETask {
     private String serverId;
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
+    private ArrayList<Listeners.OnMessageWithInternetListener> internetListeners;
+
     private RoutingTable routingTable;
 
     public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
@@ -125,16 +127,6 @@ public class ConnectBLETask {
                 byte sorgByte = value[0];
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
-                if (Utility.getBit(destByte, 0) == 0) {
-                    //Internet message
-                    // TODO: 15/01/19 qua lui richiama il listener
-                }
-                if (id.equals("" + infoDest[0] + infoDest[1]))
-                    Log.d(TAG, "OUD: " + "sono il destinatario corretto");
-                else {
-                    Log.d(TAG, "OUD: " + "sono il destinatario sbagliato");
-                    return;
-                }
 
                 System.arraycopy(value, 2, correct_message, 0, value.length - 2);
 
@@ -153,8 +145,17 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
-                    for (Listeners.OnMessageReceivedListener listener : receivedListeners)
-                        listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
+
+                    if (Utility.getBit(destByte, 0) == 0) {
+                        //Internet message
+                        for (Listeners.OnMessageWithInternetListener l: internetListeners) {
+                            l.OnMessageWithInternetListener(senderId,messageMap.get(senderId));
+                        }
+                    }
+                    else {
+                        for (Listeners.OnMessageReceivedListener listener : receivedListeners)
+                            listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
+                    }
                     messageMap.remove(senderId);
                 }
 
@@ -309,6 +310,14 @@ public class ConnectBLETask {
 
     public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
         this.receivedListeners.remove(onMessageReceivedListener);
+    }
+
+    public void addReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
+        this.internetListeners.add(l);
+    }
+
+    public void removeReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
+        this.internetListeners.remove(l);
     }
 }
 

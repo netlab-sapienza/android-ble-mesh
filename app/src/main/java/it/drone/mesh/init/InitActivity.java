@@ -1,9 +1,9 @@
 package it.drone.mesh.init;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
@@ -26,14 +26,11 @@ import android.widget.Toast;
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.instacart.library.truetime.TrueTimeRx;
 
-import java.util.HashMap;
-import java.util.concurrent.ThreadLocalRandom;
-
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Utility;
+import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
@@ -44,8 +41,6 @@ import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
-import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
-import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
 
 public class InitActivity extends Activity {
 
@@ -54,6 +49,10 @@ public class InitActivity extends Activity {
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+
+    private static final String EMAIL_REQUEST = "email";
+    private static final String TWITTER_REQUEST = "twitter";
+
     private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
@@ -68,29 +67,25 @@ public class InitActivity extends Activity {
     //private ConnectBLETask connectBLETask;
     private BLEClient client;
 
-    private HashMap<String, BluetoothDevice> nearDeviceMap = new HashMap<>();
-
     //private AcceptBLETask acceptBLETask;
     private BLEServer server;
 
-    private int attemptsUntilServer = 1;
-    private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
     private final static String CONSUMER_KEY = "";
     private final static String CONSUMER_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN = "";
-    private final String usernameMail = "username@gmail.com";
-    private final String passwordMail = "password";
+    private final static String usernameMail = "blemeshnetwork@gmail.com";
+    private final static String passwordMail = "@password123";
     private Button startServices, sendTweet, sendEmail;
-    private Disposable disposable;
 
 
+    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if(Utility.isDeviceOnline(this)) {
-            disposable = TrueTimeRx.build()
+        if (Utility.isDeviceOnline(this)) {
+            TrueTimeRx.build()
                     .initializeRx("time.google.com")
                     .subscribeOn(Schedulers.io())
                     .subscribe(date -> {
@@ -112,7 +107,9 @@ public class InitActivity extends Activity {
         myId = findViewById(R.id.myid);
         sendTweet = findViewById(R.id.tweetSomething);
         sendEmail = findViewById(R.id.sendMail);
-        randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
+
+        sendEmail.setVisibility(View.GONE);
+        sendTweet.setVisibility(View.GONE);
 
         askPermissions(savedInstanceState);
 
@@ -133,8 +130,7 @@ public class InitActivity extends Activity {
                 if (server != null) {
                     server.stopServer();
                     server = null;
-                }
-                else if (client != null) {
+                } else if (client != null) {
                     client.stopClient();
                     client = null;
                 }
@@ -157,40 +153,85 @@ public class InitActivity extends Activity {
                 isServiceStarted = true;
                 cleanDebug();
                 writeDebug("Service started");
-                if(Utility.isDeviceOnline(this))
+                if (Utility.isDeviceOnline(this))
                     Log.d(TAG, "OUD: " + "Ho internet");
-                if(canIBeServer) {
+                if (canIBeServer) {
                     server = BLEServer.getInstance(getApplicationContext());
                     server.startServer();
+                    server.getAcceptBLETask().addOnMessageReceivedWithInternet((idMitt, message) -> {
+                        Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                        String[] info = message.split(";;");
+                        if (info[0].equals(EMAIL_REQUEST))
+                            sendAMail(info[1], info[2], idMitt);
+                        else if (info[0].equals(TWITTER_REQUEST)) {
+                            try {
+                                tweetSomething(info[1]);
+                            } catch (TwitterException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
                     deviceAdapter.setAcceptBLETask(server.getAcceptBLETask());
 
-                }
-                else {
+                } else {
                     client = BLEClient.getInstance(getApplicationContext());
                     client.startClient();
-                    client.addOnClientOnlineListener(()->{
+                    client.addOnClientOnlineListener(() -> {
                         deviceAdapter.setConnectBLETask(client.getConnectBLETask());
                         myId.setText(client.getConnectBLETask().getId());
                         whoAmI.setText(R.string.client);
+                        sendTweet.setVisibility(View.VISIBLE);
+                        sendEmail.setVisibility(View.VISIBLE);
                     });
                 }
             }
         });
         sendTweet.setOnClickListener(view -> {
-            //if non ho internet send il mex in giro per la rete
-            // else:
-            try {
-                tweetSomething("cip cip");
-            } catch (TwitterException e) {
-                e.printStackTrace();
+            if (Utility.isDeviceOnline(getApplicationContext())) {
+                try {
+                    tweetSomething("cip cip");
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
+                client.getConnectBLETask().sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                    @Override
+                    public void OnMessageSent(String message) {
+                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                    }
+
+                    @Override
+                    public void OnCommunicationError(String error) {
+                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                    }
+                });
             }
+
         });
 
         sendEmail.setOnClickListener(view -> {
-            //if non ho internet send il mex in giro per la rete
-            //else:
+            if (client == null || client.getConnectBLETask() == null) {
+                Toast.makeText(this, "Not connected in the BLE mesh", Toast.LENGTH_LONG).show();
+                return;
+            }
+
             if (Utility.isDeviceOnline(getApplicationContext()))
-                sendAMail("d", "", "");
+                sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getConnectBLETask().getId());
+            else {
+                String message = EMAIL_REQUEST + ";;rastafaninplakeibol@gmail.com;;testobodyyeye";
+                client.getConnectBLETask().sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                    @Override
+                    public void OnMessageSent(String message) {
+                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                    }
+
+                    @Override
+                    public void OnCommunicationError(String error) {
+                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                    }
+                });
+            }
 
         });
 
@@ -250,6 +291,7 @@ public class InitActivity extends Activity {
         }
     }
     */
+
     /**
      * Stop scanning for BLE Servers and start link in the mesh network
      */
@@ -455,7 +497,6 @@ public class InitActivity extends Activity {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
-                    checkBluetoothAvailability();
                     writeDebug("Write storage permissions granted");
                 } else {
                     writeDebug("Write storage permissions denied");
@@ -526,20 +567,22 @@ public class InitActivity extends Activity {
         BackgroundMail.newBuilder(this)
                 .withUsername(usernameMail)
                 .withPassword(passwordMail)
-                .withMailto(destEmail)
+                .withMailTo(destEmail)
                 .withType(BackgroundMail.TYPE_PLAIN)
                 .withSubject("A message from BE-Mesh network")
                 .withBody(body)
-                .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
+                .withOnSuccessCallback(new BackgroundMail.OnSendingCallback() {
                     @Override
                     public void onSuccess() {
-                        Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + " from here by " + idMitt, Toast.LENGTH_LONG).show();
+
                     }
-                })
-                .withOnFailCallback(new BackgroundMail.OnFailCallback() {
+
                     @Override
-                    public void onFail() {
-                        Toast.makeText(getApplicationContext(), "ERROR on send email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                    public void onFail(Exception e) {
+                        Toast.makeText(getApplicationContext(), "ERROR on send email sent to " + destEmail + " from here by " + idMitt, Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "onFail: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 })
                 .send();

@@ -1,7 +1,6 @@
 package it.drone.mesh.listeners;
 
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.le.ScanResult;
 
 import java.util.ArrayList;
 
@@ -13,6 +12,11 @@ public class Listeners {
 
         // TODO: 14/01/2019 fare i cambi necessari ed eliminare questa funzione
         void OnMessageReceived(String idMitt, String message);
+    }
+
+
+    public interface OnMessageWithInternetListener {
+        void OnMessageWithInternetListener(String idMitt, String message);
     }
 
     public interface OnMessageSentListener {

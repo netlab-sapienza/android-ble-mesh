@@ -100,7 +100,7 @@ public class ConnectBLETask {
                 if (characteristic.getUuid().equals(Constants.ClientOnlineCharacteristicUUID)) {
                     routingTable.cleanRoutingTable();
                     byte[] value = characteristic.getValue();
-                    for (int i = 1; i < value.length-1; i++) { //aggiorno l'upper tier
+                    for (int i = 1; i < value.length - 1; i++) { //aggiorno l'upper tier
                         boolean flag = false;
                         for (int j = 0; j < 8; j++) {
                             if (Utility.getBit(value[i], j) == 1) flag = true;
@@ -125,7 +125,10 @@ public class ConnectBLETask {
                 byte sorgByte = value[0];
                 byte destByte = value[1];
                 final int[] infoDest = Utility.getByteInfo(destByte);
-
+                if (Utility.getBit(destByte, 0) == 0) {
+                    //Internet message
+                    // TODO: 15/01/19 qua lui richiama il listener
+                }
                 if (id.equals("" + infoDest[0] + infoDest[1]))
                     Log.d(TAG, "OUD: " + "sono il destinatario corretto");
                 else {
@@ -205,8 +208,7 @@ public class ConnectBLETask {
                     boolean res = gatt.writeDescriptor(desc);
                     Log.d(TAG, "OUD: " + "Writing descriptor?" + desc.getUuid() + " --->" + res);
                     gatt.setCharacteristicNotification(characteristic, true);
-                }
-                else if(descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) {
+                } else if (descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) {
                     if (Utility.isDeviceOnline(context)) {
                         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                         if (service == null) {
@@ -254,8 +256,8 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
-    public boolean sendMessage(String message, String dest,boolean internet, Listeners.OnMessageSentListener listener) {
-        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest),internet, listener);
+    public boolean sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
     }
 
     public void startClient() {

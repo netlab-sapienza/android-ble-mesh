@@ -16,12 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import it.drone.mesh.R;
-import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
-import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -74,36 +72,25 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.id.setText(device.getId());
         deviceViewHolder.input.setText(device.getInput());
         deviceViewHolder.output.setText(device.getOutput());
-        deviceViewHolder.testButton.setOnClickListener(new View.OnClickListener() {
+        deviceViewHolder.testButton.setOnClickListener(view -> sendMessage(device.getId(), System.currentTimeMillis() + ";;1;;" + TEST_MESSAGE, false, new Listeners.OnMessageSentListener() {
+
             @Override
-            public void onClick(View view) {
-                sendMessage(device.getId(), System.currentTimeMillis() + ";;1;;" + TEST_MESSAGE,false, new Listeners.OnMessageSentListener() {
-
-                    @Override
-                    public void OnMessageSent(final String message) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                device.writeInput(message);
-                                deviceViewHolder.input.setText(device.getInput());
-                                notifyDataSetChanged();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void OnCommunicationError(final String error) {
-                        new Handler(Looper.myLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
-                                notifyDataSetChanged();
-                            }
-                        });
-                    }
+            public void OnMessageSent(final String message) {
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    device.writeInput(message);
+                    deviceViewHolder.input.setText(device.getInput());
+                    notifyDataSetChanged();
                 });
             }
-        });
+
+            @Override
+            public void OnCommunicationError(final String error) {
+                new Handler(Looper.myLooper()).post(() -> {
+                    deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
+                    notifyDataSetChanged();
+                });
+            }
+        }));
     }
 
 
@@ -119,8 +106,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
      * @param message       messaggio da inviare
      * @param listener      Listener di risposta
      */
-    private void sendMessage(String destinationId, String message,boolean internet, Listeners.OnMessageSentListener listener) {
-        // INIZIO LOGICA BETA
+    private void sendMessage(String destinationId, String message, boolean internet, Listeners.OnMessageSentListener listener) {
         String myId;
         if (connectBLETask != null)
             myId = connectBLETask.getId();
@@ -137,10 +123,9 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
             e.printStackTrace();
         }
-        // FINE LOGICA BETA
 
         if (connectBLETask != null) {
-            boolean res = connectBLETask.sendMessage(message, destinationId,internet, listener);
+            boolean res = connectBLETask.sendMessage(message, destinationId, internet, listener);
             Log.d(TAG, "OUD: " + "Messaggio inviato: " + res);
         } else if (acceptBLETask != null) {
             // TODO: 14/12/18 logica sendMessageAcceptBLETask
@@ -172,7 +157,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                     }
                 });
 
-                // INIZIO LOGICA BETA
                 String myId = connectBLETask.getId();
                 String[] info = message.split(";;");
                 try {
@@ -181,7 +165,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                     Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                     e.printStackTrace();
                 }
-                // FINE LOGICA BETA
             }
         });
     }

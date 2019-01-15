@@ -11,7 +11,6 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -55,6 +54,7 @@ public class AcceptBLETask {
     private HashMap<String, BluetoothDevice> nearDeviceMap;
     private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
     private ArrayList<OnRoutingTableUpdatedListener> routingTableUpdatedListeners;
+    private ArrayList<Listeners.OnMessageWithInternetListener> messageReceivedWithInternetListeners;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
@@ -62,6 +62,7 @@ public class AcceptBLETask {
         this.context = context;
         connectionRejectedListeners = new ArrayList<>();
         routingTableUpdatedListeners = new ArrayList<>();
+        messageReceivedWithInternetListeners = new ArrayList<>();
         messageMap = new HashMap<>();
         nearDeviceMap = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -72,7 +73,7 @@ public class AcceptBLETask {
         mGattClientOnlineConfigurationDescriptor = new BluetoothGattDescriptor(Constants.ClientOnline_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientWithInternetDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientWithInternetUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-    
+
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicClientOnline = new BluetoothGattCharacteristic(Constants.ClientOnlineCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicRoutingTable = new BluetoothGattCharacteristic(Constants.RoutingTableCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -274,17 +275,14 @@ public class AcceptBLETask {
                         messageMap.remove(senderId);
 
                         Handler mHandler = new Handler(Looper.getMainLooper());
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + ", messaggio: " + messageReceived, Toast.LENGTH_LONG).show();
-                            }
-                        });
+                        mHandler.post(() -> Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + ", messaggio: " + messageReceived, Toast.LENGTH_LONG).show());
                         if (Utility.getBit(destByte, 0) == 1) {
                             //Messaggio con internet
                             if (mNode.hasInternet()) {
-                                //richiamo strato superiore
                                 Log.d(TAG, "Ho io Internet continua");
+                                for (Listeners.OnMessageWithInternetListener listener : messageReceivedWithInternetListeners)
+                                    listener.OnMessageWithInternetListener(senderId, message);
+
                             } else if (!clientInternet.equals("")) {
                                 for (int i = 0; i < 8; i++) {
                                     if (Utility.getBit(mNode.getClientByteInternet(), i) == 1) {
@@ -425,7 +423,7 @@ public class AcceptBLETask {
                                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Utility.sendMessage(message, gatt, infoSorg, infoDest, false,  new Listeners.OnMessageSentListener() {
+                                            Utility.sendMessage(message, gatt, infoSorg, infoDest, false, new Listeners.OnMessageSentListener() {
                                                 @Override
                                                 public void OnMessageSent(String message) {
                                                     Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
@@ -627,7 +625,7 @@ public class AcceptBLETask {
                         Log.d(TAG, "OUD: " + "vicini : " + temp);
                         mNode.addNearServer(new ServerNode(temp));
                     }
-                    if(Utility.isDeviceOnline(context))
+                    if (Utility.isDeviceOnline(context))
                         mNode.setHasInternet(true);
                     mGattDescriptor.setValue(id.getBytes());
                     mGattDescriptorRoutingTable.setValue("0".getBytes());
@@ -695,7 +693,7 @@ public class AcceptBLETask {
         } else {
             setId("1");
             mNode = new ServerNode(id);
-            if(Utility.isDeviceOnline(context))
+            if (Utility.isDeviceOnline(context))
                 mNode.setHasInternet(true);
             mGattCharacteristicNextServerId.setValue("2".getBytes());
             Log.d(TAG, "OUD: startServer: i'm the first");
@@ -723,7 +721,7 @@ public class AcceptBLETask {
     }
 
     public void stopServer() {
-        if (mGattServer!=null) {
+        if (mGattServer != null) {
             this.mGattServer.clearServices();
             this.mGattServer.close();
             this.mGattServer = null;
@@ -751,6 +749,10 @@ public class AcceptBLETask {
 
     public void removeRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
         this.routingTableUpdatedListeners.remove(routingTableUpdatedListener);
+    }
+
+    public void addOnMessageReceivedWithInternet(Listeners.OnMessageWithInternetListener listener) {
+        this.messageReceivedWithInternetListeners.add(listener);
     }
 
     public interface OnConnectionRejectedListener {

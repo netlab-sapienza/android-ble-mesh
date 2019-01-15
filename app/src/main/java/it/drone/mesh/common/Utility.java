@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -106,7 +107,8 @@ public class Utility {
         return b;
     }
 
-    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message) {
+
+    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message,boolean internet) {
         byte[] sInByte = message.getBytes();
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
         byte[][] finalMessage;
@@ -120,6 +122,7 @@ public class Utility {
         // Log.d(TAG, "OUD: messageBuilder:Entrata foqr");
         Utility.printByte(firstByte);
         Utility.printByte(destByte);
+        if (internet) destByte = Utility.setBit(destByte,0);
         for (int i = 0; i < numPackToSend; i++) {
             if (i == numPackToSend - 1) {
                 byte[] pack = new byte[lastLen + 2];
@@ -137,7 +140,6 @@ public class Utility {
             }
         }
         //Log.d(TAG, "OUD: messageBuilder:Fine for");
-
         return finalMessage;
     }
 
@@ -171,8 +173,9 @@ public class Utility {
         return res;
     }
 
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, Listeners.OnMessageSentListener listener) {
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message);
+
+    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest,boolean internet, Listeners.OnMessageSentListener listener) {
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message,internet);
         boolean result = true;
 
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
@@ -206,7 +209,7 @@ public class Utility {
 
     public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
         // Log.d(TAG, "OUD: PRE messagBuilder ok");
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message);
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message,false);
         // Log.d(TAG, "OUD: messagBuilder ok");
         boolean result = true;
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
@@ -335,15 +338,11 @@ public class Utility {
                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest))
+                          if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) {
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
-                            else {
-                                Log.d(TAG, "OUD: " + "Routing non inviata table ");
-                                //Utility.sendRoutingTable(temp,gatt,infoSorg,infoDest);
                             }
                         }
-                    }, 500);
-
+                    }, 300);
                 }
             }
         });
@@ -553,6 +552,4 @@ public class Utility {
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
-
-
 }

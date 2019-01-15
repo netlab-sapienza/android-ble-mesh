@@ -1,6 +1,7 @@
 package it.drone.mesh.init;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -24,11 +25,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
+import com.instacart.library.truetime.TrueTimeRx;
+
 
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
 import it.drone.mesh.common.Utility;
@@ -56,8 +61,7 @@ public class InitActivity extends Activity {
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
-
-    private final static String CONSUMER_KEY = "";
+    private Button startServices;
     private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
@@ -79,15 +83,32 @@ public class InitActivity extends Activity {
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
+    private final static String CONSUMER_KEY = "";  
     private final static String CONSUMER_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN = "";
     private final String usernameMail = "username@gmail.com";
     private final String passwordMail = "password";
     private Button startServices, sendTweet, sendEmail;
+    private Disposable disposable;
+    private boolean hasInternet = false;
 
+    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        disposable = TrueTimeRx.build()
+                .initializeRx("time.google.com")
+                .subscribeOn(Schedulers.io())
+                .subscribe(date -> {
+                    hasInternet = true;
+                    Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
+                    Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()),Toast.LENGTH_SHORT).show());
+                }, throwable -> {
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Errore, probabilmente non sei connesso ad internet",Toast.LENGTH_SHORT).show());
+                    throwable.printStackTrace();
+                });
+
         canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
@@ -106,7 +127,7 @@ public class InitActivity extends Activity {
         deviceAdapter = new DeviceAdapter();
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
-
+      
         connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
             @Override
             public void OnConnectionRejected() {
@@ -288,6 +309,8 @@ public class InitActivity extends Activity {
 
                     }
                 });
+
+                if(hasInternet) acceptBLETask.setHasInternet(true);
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
                 new Handler(Looper.getMainLooper()).postDelayed(
@@ -349,33 +372,25 @@ public class InitActivity extends Activity {
     }
 
     private void cleanDebug() {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                debugger.setText("");
-            }
-        });
+        runOnUiThread(() -> debugger.setText(""));
     }
 
     private void writeDebug(final String message) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                if (debugger.getLineCount() == debugger.getMaxLines())
-                    debugger.setText(String.format("%s\n", message));
-                else
-                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
-            }
+        runOnUiThread(() -> {
+            if (debugger.getLineCount() == debugger.getMaxLines())
+                debugger.setText(String.format("%s\n", message));
+            else
+                debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
         });
         Log.d(TAG, "OUD: " + message);
     }
 
     private void writeErrorDebug(final String message) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                if (debugger.getLineCount() == debugger.getMaxLines())
-                    debugger.setText(String.format("%s\n", message));
-                else
-                    debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
-            }
+        runOnUiThread(() -> {
+            if (debugger.getLineCount() == debugger.getMaxLines())
+                debugger.setText(String.format("%s\n", message));
+            else
+                debugger.setText(String.format("%s%s\n", String.valueOf(debugger.getText()), message));
         });
         Log.e(TAG, message);
     }

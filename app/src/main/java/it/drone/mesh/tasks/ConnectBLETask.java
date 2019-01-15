@@ -31,6 +31,7 @@ public class ConnectBLETask {
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private RoutingTable routingTable;
+    private boolean hasInternet;
 
     public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
@@ -206,6 +207,22 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: " + "Writing descriptor?" + desc.getUuid() + " --->" + res);
                     gatt.setCharacteristicNotification(characteristic, true);
                 }
+                else if(descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) {
+                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                    if (service == null) {
+                        Log.d(TAG, "OUD: null");
+                        return;
+                    }
+                    BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                    if (characteristic == null) {
+                        Log.d(TAG, "OUD: null");
+                        return;
+                    }
+                    BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorClientWithInternetUUID);
+                    desc.setValue(getId().getBytes());
+                    boolean res = gatt.writeDescriptor(desc);
+                    Log.d(TAG, "OUD: " + "Writing descriptor?" + desc.getUuid() + " --->" + res);
+                }
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
 
@@ -236,8 +253,8 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
-    public boolean sendMessage(String message, String dest, Listeners.OnMessageSentListener listener) {
-        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), listener);
+    public boolean sendMessage(String message, String dest,boolean internet, Listeners.OnMessageSentListener listener) {
+        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest),internet, listener);
     }
 
     public void startClient() {
@@ -289,6 +306,14 @@ public class ConnectBLETask {
 
     public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
         this.receivedListeners.remove(onMessageReceivedListener);
+    }
+
+    public boolean hasInternet() {
+        return hasInternet;
+    }
+
+    public void setHasInternet(boolean hasInternet) {
+        this.hasInternet = hasInternet;
     }
 }
 

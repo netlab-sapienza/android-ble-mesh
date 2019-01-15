@@ -12,7 +12,6 @@ import android.os.Looper;
 import android.util.Log;
 
 import it.drone.mesh.common.Utility;
-import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
@@ -63,7 +62,7 @@ public class BLEClient {
         return connectBLETask;
     }
 
-    public void startScanning() {
+    private void startScanning() {
         isScanning = true;
         if (mScanCallback == null) {
             ServerList.cleanUserList();
@@ -71,7 +70,7 @@ public class BLEClient {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    stopScanning();
+                    initializeClient();
                 }
             }, SCAN_PERIOD);
 
@@ -95,7 +94,7 @@ public class BLEClient {
         }
     }
 
-    public void stopScanning() {
+    private void initializeClient() {
         Log.d(TAG, "Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -122,6 +121,7 @@ public class BLEClient {
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
                 connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
+                connectBLE.setHasInternet(hasInternet);
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (connectBLE.hasCorrectId()) {
@@ -137,13 +137,13 @@ public class BLEClient {
         }
     }
 
-    private void startClient() {
+    public void startClient() {
         isServiceStarted = true;
         Log.d(TAG, "startClient: Scan the background,search servers to join");
         startScanning();
     }
 
-    private void stopClient() {
+    public void stopClient() {
         connectBLETask.stopClient();
         connectBLETask = null;
         isServiceStarted = false;
@@ -158,7 +158,7 @@ public class BLEClient {
         }
     }
 
-    public boolean getHasInternet() {
+    public boolean hasInternet() {
         return hasInternet;
     }
 

@@ -36,11 +36,13 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
+import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
+import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 import twitter4j.Status;
@@ -61,7 +63,6 @@ public class InitActivity extends Activity {
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
-    private Button startServices;
     private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
@@ -73,17 +74,19 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
 
-    private ConnectBLETask connectBLETask;
+    //private ConnectBLETask connectBLETask;
+    private BLEClient client;
 
     private HashMap<String, BluetoothDevice> nearDeviceMap = new HashMap<>();
 
-    private AcceptBLETask acceptBLETask;
+    //private AcceptBLETask acceptBLETask;
+    private BLEServer server;
 
     private int attemptsUntilServer = 1;
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
-    private final static String CONSUMER_KEY = "";  
+    private final static String CONSUMER_KEY = "";
     private final static String CONSUMER_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN = "";
@@ -127,7 +130,7 @@ public class InitActivity extends Activity {
         deviceAdapter = new DeviceAdapter();
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
-      
+
         connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
             @Override
             public void OnConnectionRejected() {
@@ -136,40 +139,48 @@ public class InitActivity extends Activity {
             }
         };
 
-        startServices.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (isServiceStarted) {
-                    startServices.setText(R.string.start_service);
-                    isServiceStarted = false;
-                    if (acceptBLETask != null) {
-                        acceptBLETask.stopServer();
-                        acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                        acceptBLETask = null;
-                    } else if (connectBLETask != null) {
-                        connectBLETask.stopClient();
-                        connectBLETask = null;
-                    }
-                    whoAmI.setText(R.string.whoami);
-                    myId.setText(R.string.myid);
-                    writeDebug("Service stopped");
-                    if (isScanning) {
-                        writeDebug("Stopping Scanning");
-                        // Stop the scan, wipe the callback.
-                        mBluetoothLeScanner.stopScan(mScanCallback);
-                        mScanCallback = null;
-                        isScanning = false;
-                    }
-                    attemptsUntilServer = 1;
-                    deviceAdapter.cleanView();
-                } else {
-                    initializeService();
-                    startServices.setText(R.string.stop_service);
-                    isServiceStarted = true;
-                    cleanDebug();
-                    writeDebug("Service started");
+        startServices.setOnClickListener(view -> {
+            if (isServiceStarted) {
+                startServices.setText(R.string.start_service);
+                isServiceStarted = false;
+                if (server != null) {
+                    server.stopServer();
+                    server = null;
                 }
-
+                else if (client != null) {
+                    client.stopClient();
+                    client = null;
+                }
+                whoAmI.setText(R.string.whoami);
+                myId.setText(R.string.myid);
+                writeDebug("Service stopped");
+                /*if (isScanning) {
+                    writeDebug("Stopping Scanning");
+                    // Stop the scan, wipe the callback.
+                    mBluetoothLeScanner.stopScan(mScanCallback);
+                    mScanCallback = null;
+                    isScanning = false;
+                }
+                attemptsUntilServer = 1;
+                */
+                deviceAdapter.cleanView();
+            } else {
+                //initializeService();
+                startServices.setText(R.string.stop_service);
+                isServiceStarted = true;
+                cleanDebug();
+                writeDebug("Service started");
+                if(hasInternet) Log.d(TAG, "OUD: " + "Ho internet");
+                if(canIBeServer) {
+                    server = BLEServer.getInstance(getApplicationContext());
+                    if(hasInternet) server.setHasInternet(true);
+                    server.startServer();
+                }
+                else {
+                    client = BLEClient.getInstance(getApplicationContext());
+                    if(hasInternet) client.setHasInternet(true);
+                    client.startClient();
+                }
             }
         });
 
@@ -202,6 +213,7 @@ public class InitActivity extends Activity {
     /**
      * Controlla che l'app sia eseguibile e inizia lo scanner
      */
+    /*
     private void initializeService() {
         writeDebug("Start initializing server");
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -209,10 +221,12 @@ public class InitActivity extends Activity {
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         startScanning();
     }
+    */
 
     /**
      * Start scanning for BLE Servers
      */
+    /*
     public void startScanning() {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
@@ -248,10 +262,11 @@ public class InitActivity extends Activity {
             writeDebug(getString(R.string.already_scanning));
         }
     }
-
+    */
     /**
      * Stop scanning for BLE Servers and start link in the mesh network
      */
+    /*
     public void stopScanning() {
         writeDebug("Stopping Scanning");
         isScanning = false;
@@ -267,6 +282,7 @@ public class InitActivity extends Activity {
      *
      * @param offset ---> indice nell'ServerList dei vari server, con offset > size si diventa server
      */
+    /*
     public void tryConnection(final int offset) {
         final int size = ServerList.getServerList().size();
         if (connectBLETask != null || acceptBLETask != null) {
@@ -292,7 +308,7 @@ public class InitActivity extends Activity {
                     }
                 }, sleepPeriod);
                 attemptsUntilServer++;
-            } else */
+            } else
             if (canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
@@ -309,7 +325,6 @@ public class InitActivity extends Activity {
 
                     }
                 });
-
                 if(hasInternet) acceptBLETask.setHasInternet(true);
                 acceptBLETask.startServer();
                 deviceAdapter.setAcceptBLETask(acceptBLETask);
@@ -330,47 +345,39 @@ public class InitActivity extends Activity {
             final Server newServer = ServerList.getServer(offset);
             Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
             final ConnectBLETask connectBLE = new ConnectBLETask(newServer, this);
-            connectBLE.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-                @Override
-                public void OnMessageReceived(final String idMitt, final String message) {
-                    writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            deviceAdapter.notifyDataSetChanged();
-                            // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            connectBLE.addReceivedListener((idMitt, message) -> {
+                writeDebug("Messaggio ricevuto dall'utente " + idMitt + ": " + message);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    deviceAdapter.notifyDataSetChanged();
+                    // Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+                });
 
-                }
             });
+            if(hasInternet) connectBLE.setHasInternet(true);
             connectBLE.startClient();
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    // Log.d(TAG, "OUD: Run ");
-                    if (connectBLE.hasCorrectId()) {
-                        writeDebug("Id trovato: " + connectBLE.getId());
-                        writeDebug("Id assegnato correttamente");
-                        connectBLETask = connectBLE;
-                        writeDebug("You're a client and your id is " + connectBLETask.getId());
-                        deviceAdapter.setConnectBLETask(connectBLETask);
-                        myId.setText(connectBLETask.getId());
-                        whoAmI.setText(R.string.client);
-                    } else {
-                        if (connectBLE.getServerId() != null) {
-                            nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
-                            writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
-                        }
-                        Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
-                        tryConnection(offset + 1);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                // Log.d(TAG, "OUD: Run ");
+                if (connectBLE.hasCorrectId()) {
+                    writeDebug("Id trovato: " + connectBLE.getId());
+                    writeDebug("Id assegnato correttamente");
+                    connectBLETask = connectBLE;
+                    writeDebug("You're a client and your id is " + connectBLETask.getId());
+                    deviceAdapter.setConnectBLETask(connectBLETask);
+                    myId.setText(connectBLETask.getId());
+                    whoAmI.setText(R.string.client);
+                } else {
+                    if (connectBLE.getServerId() != null) {
+                        nearDeviceMap.put(connectBLE.getServerId(), newServer.getBluetoothDevice());
+                        writeDebug("Added server n. " + connectBLE.getServerId() + " in the map");
                     }
+                    Log.d(TAG, "OUD: " + "id non assegnato senza eccezione");
+                    tryConnection(offset + 1);
                 }
             }, HANDLER_PERIOD);
             writeDebug("Assegnazione id tra 5 secondi");
         }
     }
-
+    */
     private void cleanDebug() {
         runOnUiThread(() -> debugger.setText(""));
     }
@@ -553,13 +560,13 @@ public class InitActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (isServiceStarted) {
-            if (connectBLETask != null) {
-                connectBLETask.stopClient();
-                connectBLETask = null;
+            if (client != null) {
+                client.stopClient();
+                client = null;
             }
-            if (acceptBLETask != null) {
-                acceptBLETask.stopServer();
-                acceptBLETask = null;
+            if (server != null) {
+                server.stopServer();
+                server = null;
             }
             isServiceStarted = false;
         }

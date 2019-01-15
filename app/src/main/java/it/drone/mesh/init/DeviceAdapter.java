@@ -16,10 +16,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import it.drone.mesh.R;
+import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
+import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 

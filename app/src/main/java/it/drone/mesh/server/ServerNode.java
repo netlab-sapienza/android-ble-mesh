@@ -367,7 +367,7 @@ public class ServerNode {
         return res;
     }
 
-    public boolean updateRoutingTable(byte[] value) 
+    public boolean updateRoutingTable(byte[] value) {
         // TODO: 13/01/19 DA TESTARE PRIMA ERA SBAGLIATA ... CORREZIONI + INTERNET CONNECTION RICHIEDE TEST
         boolean res = false;
         byte idByte = value[0];

@@ -24,7 +24,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.instacart.library.truetime.TrueTimeRx;
+
 
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,13 +36,20 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.advertiser.AdvertiserService;
+import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
+import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 import static it.drone.mesh.common.Constants.SCAN_PERIOD_MAX;
@@ -54,8 +63,6 @@ public class InitActivity extends Activity {
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
-
-    private Button startServices;
     private TextView debugger, whoAmI, myId;
     private DeviceAdapter deviceAdapter;
 
@@ -67,16 +74,25 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
 
-    private ConnectBLETask connectBLETask;
+    //private ConnectBLETask connectBLETask;
+    private BLEClient client;
 
     private HashMap<String, BluetoothDevice> nearDeviceMap = new HashMap<>();
 
-    private AcceptBLETask acceptBLETask;
+    //private AcceptBLETask acceptBLETask;
+    private BLEServer server;
 
     private int attemptsUntilServer = 1;
     private long randomValueScanPeriod;
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private boolean canIBeServer;
+    private final static String CONSUMER_KEY = "";
+    private final static String CONSUMER_SECRET = "";
+    private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
+    private static final String OAUTH_ACCESS_TOKEN = "";
+    private final String usernameMail = "username@gmail.com";
+    private final String passwordMail = "password";
+    private Button startServices, sendTweet, sendEmail;
     private Disposable disposable;
     private boolean hasInternet = false;
 
@@ -95,6 +111,7 @@ public class InitActivity extends Activity {
                     new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(),"Errore, probabilmente non sei connesso ad internet",Toast.LENGTH_SHORT).show());
                     throwable.printStackTrace();
                 });
+
         canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
@@ -102,6 +119,9 @@ public class InitActivity extends Activity {
         debugger = findViewById(R.id.debugger);
         whoAmI = findViewById(R.id.whoami);
         myId = findViewById(R.id.myid);
+        sendTweet = findViewById(R.id.tweetSomething);
+        sendEmail = findViewById(R.id.sendMail);
+
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
@@ -111,27 +131,30 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        connectionRejectedListener = () -> {
-            writeErrorDebug("Connection Rejected, stopping service");
-            startServices.performClick();
+        connectionRejectedListener = new AcceptBLETask.OnConnectionRejectedListener() {
+            @Override
+            public void OnConnectionRejected() {
+                writeErrorDebug("Connection Rejected, stopping service");
+                startServices.performClick();
+            }
         };
 
         startServices.setOnClickListener(view -> {
             if (isServiceStarted) {
                 startServices.setText(R.string.start_service);
                 isServiceStarted = false;
-                if (acceptBLETask != null) {
-                    acceptBLETask.stopServer();
-                    acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                    acceptBLETask = null;
-                } else if (connectBLETask != null) {
-                    connectBLETask.stopClient();
-                    connectBLETask = null;
+                if (server != null) {
+                    server.stopServer();
+                    server = null;
+                }
+                else if (client != null) {
+                    client.stopClient();
+                    client = null;
                 }
                 whoAmI.setText(R.string.whoami);
                 myId.setText(R.string.myid);
                 writeDebug("Service stopped");
-                if (isScanning) {
+                /*if (isScanning) {
                     writeDebug("Stopping Scanning");
                     // Stop the scan, wipe the callback.
                     mBluetoothLeScanner.stopScan(mScanCallback);
@@ -139,21 +162,58 @@ public class InitActivity extends Activity {
                     isScanning = false;
                 }
                 attemptsUntilServer = 1;
+                */
                 deviceAdapter.cleanView();
             } else {
-                initializeService();
+                //initializeService();
                 startServices.setText(R.string.stop_service);
                 isServiceStarted = true;
                 cleanDebug();
                 writeDebug("Service started");
+                if(hasInternet) Log.d(TAG, "OUD: " + "Ho internet");
+                if(canIBeServer) {
+                    server = BLEServer.getInstance(getApplicationContext());
+                    if(hasInternet) server.setHasInternet(true);
+                    server.startServer();
+                }
+                else {
+                    client = BLEClient.getInstance(getApplicationContext());
+                    if(hasInternet) client.setHasInternet(true);
+                    client.startClient();
+                }
             }
+        });
 
+        sendTweet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //if non ho internet send il mex in giro per la rete
+                // else:
+                try {
+                    tweetSomething("cip cip");
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        sendEmail.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //if non ho internet send il mex in giro per la rete
+                //else:
+                if (Utility.isDeviceOnline(getApplicationContext()))
+                    sendAMail("d", "", "");
+
+            }
         });
     }
+
 
     /**
      * Controlla che l'app sia eseguibile e inizia lo scanner
      */
+    /*
     private void initializeService() {
         writeDebug("Start initializing server");
         mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -161,10 +221,12 @@ public class InitActivity extends Activity {
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         startScanning();
     }
+    */
 
     /**
      * Start scanning for BLE Servers
      */
+    /*
     public void startScanning() {
         if (mScanCallback == null) {
             writeDebug("Starting Scanning");
@@ -200,10 +262,11 @@ public class InitActivity extends Activity {
             writeDebug(getString(R.string.already_scanning));
         }
     }
-
+    */
     /**
      * Stop scanning for BLE Servers and start link in the mesh network
      */
+    /*
     public void stopScanning() {
         writeDebug("Stopping Scanning");
         isScanning = false;
@@ -219,6 +282,7 @@ public class InitActivity extends Activity {
      *
      * @param offset ---> indice nell'ServerList dei vari server, con offset > size si diventa server
      */
+    /*
     public void tryConnection(final int offset) {
         final int size = ServerList.getServerList().size();
         if (connectBLETask != null || acceptBLETask != null) {
@@ -244,7 +308,7 @@ public class InitActivity extends Activity {
                     }
                 }, sleepPeriod);
                 attemptsUntilServer++;
-            } else */
+            } else
             if (canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");
@@ -313,7 +377,7 @@ public class InitActivity extends Activity {
             writeDebug("Assegnazione id tra 5 secondi");
         }
     }
-
+    */
     private void cleanDebug() {
         runOnUiThread(() -> debugger.setText(""));
     }
@@ -454,26 +518,55 @@ public class InitActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+
+    private void tweetSomething(String tweetToUpdate) throws TwitterException {
+
+        ConfigurationBuilder cb = new ConfigurationBuilder();
+        cb.setDebugEnabled(true)
+                .setOAuthConsumerKey(CONSUMER_KEY)
+                .setOAuthConsumerSecret(CONSUMER_SECRET)
+                .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
+                .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
+        TwitterFactory tf = new TwitterFactory(cb.build());
+        Twitter twitter = tf.getInstance();
+        Status status = twitter.updateStatus(tweetToUpdate);
+        Toast.makeText(this, "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+
+    private void sendAMail(final String destEmail, String body, final String idMitt) {
+        BackgroundMail.newBuilder(this)
+                .withUsername(usernameMail)
+                .withPassword(passwordMail)
+                .withMailto(destEmail)
+                .withType(BackgroundMail.TYPE_PLAIN)
+                .withSubject("A message from BE-Mesh network")
+                .withBody(body)
+                .withOnSuccessCallback(new BackgroundMail.OnSuccessCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .withOnFailCallback(new BackgroundMail.OnFailCallback() {
+                    @Override
+                    public void onFail() {
+                        Toast.makeText(getApplicationContext(), "ERROR on send email sent to " + destEmail + "from here by " + idMitt, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .send();
     }
 
     @Override
     protected void onDestroy() {
         if (isServiceStarted) {
-            if (connectBLETask != null) {
-                connectBLETask.stopClient();
-                connectBLETask = null;
+            if (client != null) {
+                client.stopClient();
+                client = null;
             }
-            if (acceptBLETask != null) {
-                acceptBLETask.stopServer();
-                acceptBLETask = null;
+            if (server != null) {
+                server.stopServer();
+                server = null;
             }
             isServiceStarted = false;
         }

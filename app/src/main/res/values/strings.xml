@@ -52,5 +52,7 @@
     <string name="myid">ID</string>
     <string name="client">Client</string>
     <string name="server">Server</string>
+    <string name="tweet">Tweet</string>
+    <string name="sendEmail">Send email</string>
 
 </resources>

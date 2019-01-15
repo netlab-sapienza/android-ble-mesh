@@ -1,5 +1,6 @@
 package it.drone.mesh.server;
 
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -109,6 +110,7 @@ public class BLEServer {
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(message -> Log.d(TAG, "OnRoutingTableUpdated: \n" + message));
+                if(hasInternet) acceptBLETask.setHasInternet(true);
                 acceptBLETask.startServer();
             }
         } else {
@@ -165,7 +167,7 @@ public class BLEServer {
         }
     }
 
-    public void startScanning() {
+    private void startScanning() {
         isScanning = true;
         if (mScanCallback == null) {
             ServerList.cleanUserList();
@@ -173,7 +175,7 @@ public class BLEServer {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    stopScanning();
+                    initializeServer();
                 }
             }, SCAN_PERIOD);
 
@@ -197,7 +199,7 @@ public class BLEServer {
         }
     }
 
-    public void stopScanning() {
+    private void initializeServer() {
         Log.d(TAG, "Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -227,6 +229,7 @@ public class BLEServer {
             Log.d(TAG, "stopServer: Service stopped");
             if (isScanning) {
                 Log.d(TAG, "stopServer: Stopping Scanning");
+
                 // Stop the scan, wipe the callback.
                 mBluetoothLeScanner.stopScan(mScanCallback);
                 mScanCallback = null;

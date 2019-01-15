@@ -49,6 +49,35 @@
 
             </RelativeLayout>
 
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/tweetSomething"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_button"
+                    android:padding="12dp"
+                    android:text="@string/tweet"
+                    android:textAllCaps="false"
+                    android:textSize="16sp" />
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/sendMail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/tweetSomething"
+                    android:background="@drawable/rounded_button"
+                    android:padding="12dp"
+                    android:text="@string/sendEmail"
+                    android:textAllCaps="false"
+                    android:textSize="16sp" />
+
+            </RelativeLayout>
+
             <TextView
                 android:id="@+id/debugger"
                 android:layout_width="match_parent"
@@ -59,7 +88,6 @@
                 android:minHeight="100dp"
                 android:minLines="1"
                 android:text="@string/debug_explain" />
-
 
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/recy_scan_results"

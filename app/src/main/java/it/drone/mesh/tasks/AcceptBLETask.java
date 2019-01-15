@@ -43,7 +43,6 @@ public class AcceptBLETask {
     private BluetoothGattDescriptor mGattClientOnlineConfigurationDescriptor;
     private BluetoothGattDescriptor mGattClientOnlineDescriptor;
     private BluetoothGattDescriptor mGattClientWithInternetDescriptor;
-
     private BluetoothGattCharacteristic mGattCharacteristicRoutingTable;
     private BluetoothGattDescriptor mGattDescriptorRoutingTable;
     private BluetoothManager mBluetoothManager;
@@ -72,7 +71,6 @@ public class AcceptBLETask {
         mGattClientOnlineConfigurationDescriptor = new BluetoothGattDescriptor(Constants.ClientOnline_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientWithInternetDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientWithInternetUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicClientOnline = new BluetoothGattCharacteristic(Constants.ClientOnlineCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicRoutingTable = new BluetoothGattCharacteristic(Constants.RoutingTableCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -644,7 +642,6 @@ public class AcceptBLETask {
                     mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
-
                     mGattService.addCharacteristic(mGattCharacteristic);
                     mGattService.addCharacteristic(mGattCharacteristicNextServerId);
                     mGattService.addCharacteristic(mGattCharacteristicRoutingTable);
@@ -710,7 +707,6 @@ public class AcceptBLETask {
             mGattCharacteristic.addDescriptor(mGattClientWithInternetDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
-
             this.mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
             this.mGattService.addCharacteristic(mGattCharacteristic);
             this.mGattService.addCharacteristic(mGattCharacteristicNextServerId);

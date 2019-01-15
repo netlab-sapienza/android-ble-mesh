@@ -15,6 +15,9 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -56,7 +59,6 @@ public class Utility {
         val |= 1 << offset;
         return val;
     }
-
 
     public static byte clearBit(byte val, int offset) {
         val = (byte) (val & ~(1 << offset));
@@ -105,6 +107,7 @@ public class Utility {
         return b;
     }
 
+
     public static byte[][] messageBuilder(byte firstByte, byte destByte, String message,boolean internet) {
         byte[] sInByte = message.getBytes();
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
@@ -137,7 +140,6 @@ public class Utility {
             }
         }
         //Log.d(TAG, "OUD: messageBuilder:Fine for");
-
         return finalMessage;
     }
 
@@ -170,6 +172,7 @@ public class Utility {
         res[1] = (id.length() == 2) ? (Integer.parseInt(id.substring(1, 2))) : (Integer.parseInt(id.substring(2, 3)));
         return res;
     }
+
 
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest,boolean internet, Listeners.OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message,internet);
@@ -335,12 +338,11 @@ public class Utility {
                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) {
+                          if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) {
                                 Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
                             }
                         }
                     }, 300);
-
                 }
             }
         });
@@ -544,5 +546,10 @@ public class Utility {
         });
     }
 
-
+    public static boolean isDeviceOnline(Context context) {
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
 }

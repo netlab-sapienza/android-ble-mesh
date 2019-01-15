@@ -1,6 +1,8 @@
 package it.drone.mesh.client;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -17,6 +19,7 @@ import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.ConnectBLETask;
 
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
+
 
 public class BLEClient {
 

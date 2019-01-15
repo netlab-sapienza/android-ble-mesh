@@ -95,6 +95,11 @@ public class InitActivity extends Activity {
     private Button startServices, sendTweet, sendEmail;
     private Disposable disposable;
 
+    private int attemptsUntilServer = 1;
+    private long randomValueScanPeriod;
+    private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
+    private boolean canIBeServer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if(Utility.isDeviceOnline(this)) {
@@ -120,7 +125,6 @@ public class InitActivity extends Activity {
         myId = findViewById(R.id.myid);
         sendTweet = findViewById(R.id.tweetSomething);
         sendEmail = findViewById(R.id.sendMail);
-
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
 
         askPermissions(savedInstanceState);
@@ -185,7 +189,6 @@ public class InitActivity extends Activity {
                 }
             }
         });
-
         sendTweet.setOnClickListener(view -> {
             //if non ho internet send il mex in giro per la rete
             // else:
@@ -203,6 +206,7 @@ public class InitActivity extends Activity {
                 sendAMail("d", "", "");
 
         });
+
     }
 
 
@@ -305,6 +309,7 @@ public class InitActivity extends Activity {
                 }, sleepPeriod);
                 attemptsUntilServer++;
             } else
+
             if (canIBeServer) {
                 startService(new Intent(this, AdvertiserService.class));
                 writeDebug("Start Server");

@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import it.drone.mesh.common.Utility;
 
 public class ServerNode {
-
     // TODO: 13/01/19  INTERNET CONNECTION RICHIEDE TEST PER LE FUNZIONI : parseNewServer, parseClientMapTOByte, parseMapToByte,buildRoutingTable,updateRoutingTable
     public static final int MAX_NUM_SERVER = 16;
     public static final int CLIENT_LIST_SIZE = 2;
@@ -72,7 +71,6 @@ public class ServerNode {
                         arrayNode[i].addNearServer(arrayNode[infoNearServer[1]]);
                     } else break;
                 }
-
                 if (Utility.getBit(mapByte[i][SERVER_PACKET_SIZE - 1], 0) == 1) //Has Internet Connection
                     arrayNode[i].setHasInternet(true);
                 else
@@ -121,8 +119,7 @@ public class ServerNode {
         }
         return null; //quindi broadcasta
     }
-
-    public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
+public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
         if (lastRequest != numRequest) {
             lastRequest = numRequest;
         } else return null;
@@ -220,6 +217,7 @@ public class ServerNode {
         }
         for (int i = 1; i < CLIENT_LIST_SIZE; i++) {
             if (clientList[i] == null) {
+                if (i > MAX_NUM_CLIENT) return -1;
                 return i;
             }
         }
@@ -416,7 +414,6 @@ public class ServerNode {
     public int getLastRequest() {
         return lastRequest;
     }
-
     public boolean hasInternet() {
         if (hasInternet) return true;
         else {

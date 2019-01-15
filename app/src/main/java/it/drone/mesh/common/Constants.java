@@ -31,8 +31,7 @@ public class Constants {
     public static final UUID DescriptorUUID = UUID.fromString("2222b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID DescriptorClientOnlineUUID = UUID.fromString("2422b81d-0000-1000-8000-00805f9b34fb");
 
-    public static final UUID DescriptorClientWithInternetUUID = UUID.fromString("2622b81d-0000-1000-8000-00805f9b34fb");
-
+    public static final UUID DescriptorClientWithInternetUUID = UUID.fromString("2622b81d-0000-1000-8000-00805f9b34fb")
     public static final UUID RoutingTableCharacteristicUUID = UUID.fromString("1211b1d-0000-1000-8000-00805f9b34fb");
 
     public static final UUID ClientOnlineCharacteristicUUID = UUID.fromString("1212b1d-0000-1000-8000-00805f9b34fb");
@@ -45,9 +44,7 @@ public class Constants {
 
     // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
     public static final int MAX_ATTEMPTS_UNTIL_SERVER = 1;
-
     // periodo minimo e max di attesa in secondi
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
 }
-

@@ -78,6 +78,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             @Override
             public void onClick(View view) {
                 sendMessage(device.getId(), System.currentTimeMillis() + ";;1;;" + TEST_MESSAGE,false, new Listeners.OnMessageSentListener() {
+
                     @Override
                     public void OnMessageSent(final String message) {
                         new Handler(Looper.getMainLooper()).post(new Runnable() {

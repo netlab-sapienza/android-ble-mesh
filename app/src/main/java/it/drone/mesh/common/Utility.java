@@ -107,7 +107,6 @@ public class Utility {
         return b;
     }
 
-
     public static byte[][] messageBuilder(byte firstByte, byte destByte, String message,boolean internet) {
         byte[] sInByte = message.getBytes();
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
@@ -173,8 +172,7 @@ public class Utility {
         return res;
     }
 
-
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest,boolean internet, Listeners.OnMessageSentListener listener) {
+  public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest,boolean internet, Listeners.OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message,internet);
         boolean result = true;
 
@@ -210,7 +208,7 @@ public class Utility {
     public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
         // Log.d(TAG, "OUD: PRE messagBuilder ok");
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message,false);
-        // Log.d(TAG, "OUD: messagBuilder ok");
+      // Log.d(TAG, "OUD: messagBuilder ok");
         boolean result = true;
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
         if (service == null) {

@@ -22,10 +22,10 @@ import it.drone.mesh.tasks.ConnectBLETask;
 
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
-
 public class BLEClient {
 
     private static final String TAG = BLEClient.class.getSimpleName();
+
     private static final long HANDLER_PERIOD = 5000;
     private static BLEClient singleton;
     private Context context;

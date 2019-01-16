@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -31,9 +32,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     private ArrayList<Device> devices;
     private final static String TAG = DeviceAdapter.class.getSimpleName();
 
-    //private ConnectBLETask connectBLETask;
-    //private AcceptBLETask acceptBLETask;
-
     private BLEClient client;
     private BLEServer server;
     private long offset;
@@ -45,22 +43,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         routingTable.subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
             @Override
             public void OnDeviceAdded(Device device) {
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        notifyDataSetChanged();
-                    }
-                });
+                new Handler(Looper.getMainLooper()).post(() -> notifyDataSetChanged());
             }
 
             @Override
             public void OnDeviceRemoved(Device device) {
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        notifyDataSetChanged();
-                    }
-                });
+                new Handler(Looper.getMainLooper()).post(() -> notifyDataSetChanged());
             }
         });
     }
@@ -79,24 +67,31 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         deviceViewHolder.id.setText(device.getId());
         deviceViewHolder.input.setText(device.getInput());
         deviceViewHolder.output.setText(device.getOutput());
-        deviceViewHolder.testButton.setOnClickListener(view -> DeviceAdapter.this.sendMessage(device.getId(), (System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) + ";;1;;" + TEST_MESSAGE, false, new Listeners.OnMessageSentListener() {
-            @Override
-            public void OnMessageSent(final String message) {
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    device.writeInput(message);
-                    deviceViewHolder.input.setText(device.getInput());
-                    notifyDataSetChanged();
-                });
-            }
+        deviceViewHolder.testButton.setOnClickListener(view -> {
+            if (deviceViewHolder.messageToSend.getText().length() > 0) {
+                String messageToSend = deviceViewHolder.messageToSend.getText().toString();
+                deviceViewHolder.messageToSend.setText("");
+                deviceViewHolder.messageToSend.clearFocus();
+                DeviceAdapter.this.sendMessage(device.getId(), (System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) + ";;1;;" + messageToSend, false, new Listeners.OnMessageSentListener() {
+                    @Override
+                    public void OnMessageSent(final String message) {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            device.writeInput(message);
+                            deviceViewHolder.input.setText(device.getInput());
+                            notifyDataSetChanged();
+                        });
+                    }
 
-            @Override
-            public void OnCommunicationError(final String error) {
-                new Handler(Looper.myLooper()).post(() -> {
-                    deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
-                    notifyDataSetChanged();
+                    @Override
+                    public void OnCommunicationError(final String error) {
+                        new Handler(Looper.myLooper()).post(() -> {
+                            deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
+                            notifyDataSetChanged();
+                        });
+                    }
                 });
             }
-        }));
+        });
     }
 
 
@@ -123,7 +118,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
         String[] info = message.split(";;");
         try {
-            // HOP dovrebbe venire sempre 0 ma sulla specifica ci sta scritto che ci deve essere, quindi ¯\_(ツ)_/¯
             Utility.saveData(Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, Arrays.asList(myId, destinationId, info[0], info[1]));
         } catch (IOException e) {
             Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
@@ -160,12 +154,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 }
             }
 
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    notifyDataSetChanged();
-                }
-            });
+            new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
 
             String myId = client.getId();
             String[] info = message.split(";;");
@@ -178,12 +167,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         });
     }
 
-    /*
-    public AcceptBLETask getAcceptBLETask() {
-        return acceptBLETask;
-    }
-    */
-
     void setServer(final Context context) {
         server = BLEServer.getInstance(context);
         server.addOnMessageReceivedListener((idMitt, message) -> {
@@ -195,12 +178,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                     long mittTimeStamp = Long.parseLong(infoMessage[0]);
                     Log.d(TAG, "OUD: " + "dopo il parselong");
                     device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - mittTimeStamp) + ", Message: " + message.split(";;")[2]);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            notifyDataSetChanged();
-                        }
-                    });
+                    new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
                 }
             }
         });
@@ -212,8 +190,13 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         notifyDataSetChanged();
     }
 
-    class DeviceViewHolder extends RecyclerView.ViewHolder {
+    public void setOffset(long offset) {
+        this.offset = offset;
+    }
 
+
+    class DeviceViewHolder extends RecyclerView.ViewHolder {
+        EditText messageToSend;
         TextView id, input, output;
         Button testButton;
 
@@ -223,11 +206,8 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             input = itemView.findViewById(R.id.inputText);
             output = itemView.findViewById(R.id.outputText);
             testButton = itemView.findViewById(R.id.button_test_message);
+            messageToSend = itemView.findViewById(R.id.message_to_send);
         }
-    }
-
-    public void setOffset(long offset) {
-        this.offset = offset;
     }
 
 }

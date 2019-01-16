@@ -204,7 +204,6 @@ public class InitActivity extends Activity {
                         }
                     });
                     deviceAdapter.setServer(getApplicationContext());
-
                 } else {
                     client = BLEClient.getInstance(getApplicationContext());
                     client.startClient();

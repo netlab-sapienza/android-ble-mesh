@@ -169,7 +169,11 @@ public class InitActivity extends Activity {
                         }
                     });
                     server.startServer();
-                    server.getAcceptBLETask().addOnMessageReceivedWithInternet((idMitt, message) -> {
+                    server.addServerInitializedListener(() -> {
+                        myId.setText(server.getId());
+                        whoAmI.setText(R.string.server);
+                    });
+                    server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                         String[] info = message.split(";;");
                         if (info[0].equals(EMAIL_REQUEST))
@@ -182,30 +186,30 @@ public class InitActivity extends Activity {
                             }
                         }
                     });
-                    deviceAdapter.setAcceptBLETask(server.getAcceptBLETask());
+                    deviceAdapter.setServer(getApplicationContext());
 
                 } else {
                     client = BLEClient.getInstance(getApplicationContext());
                     client.startClient();
-                    client.getConnectBLETask().addReceivedWithInternetListener((idMitt, message) -> {
-                        Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
-                        String[] info = message.split(";;");
-                        if (info[0].equals(EMAIL_REQUEST))
-                            sendAMail(info[1], info[2], idMitt);
-                        else if (info[0].equals(TWITTER_REQUEST)) {
-                            try {
-                                tweetSomething(info[1]);
-                            } catch (TwitterException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
                     client.addOnClientOnlineListener(() -> {
-                        deviceAdapter.setConnectBLETask(client.getConnectBLETask());
-                        myId.setText(client.getConnectBLETask().getId());
+                        deviceAdapter.setClient(getApplicationContext());
+                        myId.setText(client.getId());
                         whoAmI.setText(R.string.client);
                         sendTweet.setVisibility(View.VISIBLE);
                         sendEmail.setVisibility(View.VISIBLE);
+                        client.addReceivedWithInternetListener((idMitt, message) -> {
+                            Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                            String[] info = message.split(";;");
+                            if (info[0].equals(EMAIL_REQUEST))
+                                sendAMail(info[1], info[2], idMitt);
+                            else if (info[0].equals(TWITTER_REQUEST)) {
+                                try {
+                                    tweetSomething(info[1]);
+                                } catch (TwitterException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
                     });
                 }
             }
@@ -219,7 +223,7 @@ public class InitActivity extends Activity {
                 }
             } else {
                 String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
-                client.getConnectBLETask().sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(String message) {
                         runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
@@ -241,10 +245,10 @@ public class InitActivity extends Activity {
             }
 
             if (Utility.isDeviceOnline(getApplicationContext()))
-                sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getConnectBLETask().getId());
+                sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getId());
             else {
                 String message = EMAIL_REQUEST + ";;rastafaninplakeibol@gmail.com;;testobodyyeye";
-                client.getConnectBLETask().sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(String message) {
                         runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
@@ -356,6 +360,7 @@ public class InitActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     writeDebug("Write storage permissions granted");
+                    checkBluetoothAvailability();
                 } else {
                     writeDebug("Write storage permissions denied");
                 }
@@ -375,6 +380,7 @@ public class InitActivity extends Activity {
      * @param savedInstanceState se l'app era già attiva non devo reinizializzare tutto
      */
     private void checkBluetoothAvailability(Bundle savedInstanceState) {
+        if(canIBeServer) return;
         if (savedInstanceState == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager != null)

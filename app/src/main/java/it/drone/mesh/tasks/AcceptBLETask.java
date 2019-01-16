@@ -55,6 +55,7 @@ public class AcceptBLETask {
     private ArrayList<OnConnectionRejectedListener> connectionRejectedListeners;
     private ArrayList<OnRoutingTableUpdatedListener> routingTableUpdatedListeners;
     private ArrayList<Listeners.OnMessageWithInternetListener> messageReceivedWithInternetListeners;
+    private ArrayList<Listeners.OnServerInitializedListener> serverInitializedListeners;
 
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
@@ -63,6 +64,7 @@ public class AcceptBLETask {
         connectionRejectedListeners = new ArrayList<>();
         routingTableUpdatedListeners = new ArrayList<>();
         messageReceivedWithInternetListeners = new ArrayList<>();
+        serverInitializedListeners = new ArrayList<>();
         messageMap = new HashMap<>();
         nearDeviceMap = null;
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -648,6 +650,11 @@ public class AcceptBLETask {
                     mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
                     //mGattServer.addService(mGattServiceRoutingTable);
                     mGattServer.addService(mGattService);
+
+                    for (Listeners.OnServerInitializedListener l: serverInitializedListeners) {
+                        l.OnServerInitialized();
+                    }
+
                     characteristic.setValue(("" + (Integer.parseInt(getId()) + 1)).getBytes());
                     gatt.beginReliableWrite();
                     boolean res = gatt.writeCharacteristic(characteristic);
@@ -716,6 +723,10 @@ public class AcceptBLETask {
             this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
             this.mGattServer.addService(this.mGattService);
 
+            for (Listeners.OnServerInitializedListener l: serverInitializedListeners) {
+                l.OnServerInitialized();
+            }
+
             Log.d(TAG, "OUD: " + "startServer: Inizializzato servizi e tutto");
         }
     }
@@ -749,6 +760,14 @@ public class AcceptBLETask {
 
     public void removeRoutingTableUpdatedListener(OnRoutingTableUpdatedListener routingTableUpdatedListener) {
         this.routingTableUpdatedListeners.remove(routingTableUpdatedListener);
+    }
+
+    public void addServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        this.serverInitializedListeners.add(l);
+    }
+
+    public void removeServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        this.serverInitializedListeners.remove(l);
     }
 
     public void addOnMessageReceivedWithInternet(Listeners.OnMessageWithInternetListener listener) {

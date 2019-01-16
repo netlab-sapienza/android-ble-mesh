@@ -217,23 +217,56 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                acceptBLETask = null;
+                //acceptBLETask = null;
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {
                 debugMessageListener.OnDebugMessage( "stopServer: Stopping Scanning");
 
-                // Stop the scan, wipe the callback.
+                // Stop the scan, wipe the callback(or maybe not).
                 mBluetoothLeScanner.stopScan(mScanCallback);
-                mScanCallback = null;
+                //mScanCallback = null;
                 isScanning = false;
             }
         } else {
             debugMessageListener.OnDebugMessage("stopServer: Service never started. ");
         }
     }
+
     public void setOnDebugMessageListener(Listeners.OnDebugMessageListener l) {
         this.debugMessageListener= l;
     }
 
+    public void addConnectionRejectedListener(AcceptBLETask.OnConnectionRejectedListener connectionRejectedListeners) {
+        if(acceptBLETask != null) this.acceptBLETask.addConnectionRejectedListener(connectionRejectedListeners);
+    }
+
+    public void removeConnectionRejectedListener(AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener) {
+        if(acceptBLETask != null) this.acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
+    }
+
+    public void addRoutingTableUpdatedListener(AcceptBLETask.OnRoutingTableUpdatedListener routingTableUpdatedListener) {
+        if(acceptBLETask != null) this.acceptBLETask.addRoutingTableUpdatedListener(routingTableUpdatedListener);
+    }
+
+    public void removeRoutingTableUpdatedListener(AcceptBLETask.OnRoutingTableUpdatedListener routingTableUpdatedListener) {
+        if(acceptBLETask != null) this.acceptBLETask.removeRoutingTableUpdatedListener(routingTableUpdatedListener);
+    }
+
+    public void addOnMessageReceivedWithInternet(Listeners.OnMessageWithInternetListener listener) {
+        if(acceptBLETask != null) this.acceptBLETask.addOnMessageReceivedWithInternet(listener);
+    }
+
+    public void addServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        if(acceptBLETask != null) this.acceptBLETask.addServerInitializedListener(l);
+    }
+
+    public void removeServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        if(acceptBLETask != null) this.acceptBLETask.removeServerInitializedListener(l);
+    }
+
+    public String getId() {
+        if(acceptBLETask != null) return acceptBLETask.getId();
+        else return null;
+    }
 }

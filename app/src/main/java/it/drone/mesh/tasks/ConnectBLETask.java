@@ -41,6 +41,7 @@ public class ConnectBLETask {
         this.mGattCallback = callback;
         this.id = null;
         receivedListeners = new ArrayList<>();
+        internetListeners = new ArrayList<>();
         routingTable = RoutingTable.getInstance();
     }
 
@@ -51,6 +52,7 @@ public class ConnectBLETask {
         this.id = null;
         this.messageMap = new HashMap<>();
         receivedListeners = new ArrayList<>();
+        internetListeners = new ArrayList<>();
         routingTable = RoutingTable.getInstance();
         mGattCallback = new BluetoothGattCallback() {
             @Override
@@ -146,13 +148,15 @@ public class ConnectBLETask {
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
 
-                    if (Utility.getBit(destByte, 0) == 0) {
+                    if (Utility.getBit(destByte, 0) == 1) {
                         //Internet message
+                        Log.d(TAG, "OUD: " + "messaggio con internet");
                         for (Listeners.OnMessageWithInternetListener l: internetListeners) {
                             l.OnMessageWithInternetListener(senderId,messageMap.get(senderId));
                         }
                     }
                     else {
+                        Log.d(TAG, "OUD: " + "messaggio normale");
                         for (Listeners.OnMessageReceivedListener listener : receivedListeners)
                             listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
                     }

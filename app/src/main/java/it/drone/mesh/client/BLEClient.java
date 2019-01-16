@@ -163,6 +163,32 @@ public class BLEClient {
         }
     }
 
+    public void addReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
+        if(connectBLETask != null) this.connectBLETask.addReceivedListener(onMessageReceivedListener);
+    }
+
+    public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
+        if(connectBLETask != null) this.connectBLETask.removeReceivedListener(onMessageReceivedListener);
+    }
+
+    public void addReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
+        if(connectBLETask != null) this.connectBLETask.addReceivedWithInternetListener(l);
+    }
+
+    public void removeReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
+        if(connectBLETask != null) this.connectBLETask.removeReceivedWithInternetListener(l);
+    }
+
+    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener onMessageSentListener) {
+        if(connectBLETask != null) connectBLETask.sendMessage(message,dest,internet,onMessageSentListener);
+        else onMessageSentListener.OnCommunicationError("Client non inizializzato");
+    }
+
+    public String getId() {
+        if(connectBLETask != null) return connectBLETask.getId();
+        else return null;
+    }
+
     public interface OnClientOnlineListener{
         void onClientOnline();
     }

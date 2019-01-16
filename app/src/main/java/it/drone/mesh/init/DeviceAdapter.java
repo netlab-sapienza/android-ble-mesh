@@ -1,5 +1,6 @@
 package it.drone.mesh.init;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -16,10 +17,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import it.drone.mesh.R;
+import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
+import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import it.drone.mesh.tasks.ConnectBLETask;
 
@@ -29,8 +32,11 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     private ArrayList<Device> devices;
     private final static String TAG = DeviceAdapter.class.getSimpleName();
 
-    private ConnectBLETask connectBLETask;
-    private AcceptBLETask acceptBLETask;
+    //private ConnectBLETask connectBLETask;
+    //private AcceptBLETask acceptBLETask;
+
+    private BLEClient client;
+    private BLEServer server;
 
     DeviceAdapter() {
         RoutingTable routingTable = RoutingTable.getInstance();
@@ -108,10 +114,10 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
      */
     private void sendMessage(String destinationId, String message, boolean internet, Listeners.OnMessageSentListener listener) {
         String myId;
-        if (connectBLETask != null)
-            myId = connectBLETask.getId();
-        else if (acceptBLETask != null)
-            myId = acceptBLETask.getId();
+        if (client != null && client.getId() != null)
+            myId = client.getId();
+        else if (server != null && server.getId() != null)
+            myId = server.getId();
         else
             myId = "MY_ID_UNAVAILABLE";
 
@@ -124,57 +130,60 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             e.printStackTrace();
         }
 
-        if (connectBLETask != null) {
-            boolean res = connectBLETask.sendMessage(message, destinationId, internet, listener);
-            Log.d(TAG, "OUD: " + "Messaggio inviato: " + res);
-        } else if (acceptBLETask != null) {
+        if (client != null) {
+            client.sendMessage(message, destinationId, internet, listener);
+            //Log.d(TAG, "OUD: " + "Messaggio inviato: " + res);
+        } else if (server != null) {
             // TODO: 14/12/18 logica sendMessageAcceptBLETask
             //acceptBLETask.sendMessage();
             Log.e(TAG, "sendMessage: missing logic sendMessageAcceptBLETask");
         } else {
-            Log.e(TAG, "sendMessage: connect accept tasks tutti e due null");
+            Log.e(TAG, "sendMessage: client e server tutti e due null");
         }
 
     }
 
-    public ConnectBLETask getConnectBLETask() {
+    /*public ConnectBLETask getConnectBLETask() {
         return connectBLETask;
-    }
+    }*/
 
-    void setConnectBLETask(final ConnectBLETask connectBLETask) {
-        this.connectBLETask = connectBLETask;
-        this.connectBLETask.addReceivedListener(new Listeners.OnMessageReceivedListener() {
-            @Override
-            public void OnMessageReceived(String idMitt, String message) {
-                for (Device device : devices)
-                    if (device.getId().equals(idMitt))
-                        device.writeOutput("Time: " + System.currentTimeMillis() + ", Message: " + message.split(";;")[2]);
-
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        notifyDataSetChanged();
-                    }
-                });
-
-                String myId = connectBLETask.getId();
-                String[] info = message.split(";;");
-                try {
-                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - Long.parseLong(info[0]), info[1]));
-                } catch (IOException e) {
-                    Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
-                    e.printStackTrace();
+    void setClient(final Context context) {
+        client = BLEClient.getInstance(context);
+        client.addReceivedListener((idMitt, message) -> {
+            for (Device device : devices) {
+                Log.d(TAG, "OUD: " + "for device in devices");
+                if (device.getId().equals(idMitt)) {
+                    Log.d(TAG, "OUD: " + "id giusto");
+                    device.writeOutput("Time: " + System.currentTimeMillis() + ", Message: " + message.split(";;")[2]);
                 }
+            }
+
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    notifyDataSetChanged();
+                }
+            });
+
+            String myId = client.getId();
+            String[] info = message.split(";;");
+            try {
+                Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - Long.parseLong(info[0]), info[1]));
+            } catch (IOException e) {
+                Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
+                e.printStackTrace();
             }
         });
     }
 
+    /*
     public AcceptBLETask getAcceptBLETask() {
         return acceptBLETask;
     }
+    */
 
-    void setAcceptBLETask(AcceptBLETask acceptBLETask) {
-        this.acceptBLETask = acceptBLETask;
+    void setServer(final Context context) {
+        server = BLEServer.getInstance(context);
     }
 
     public void cleanView() {

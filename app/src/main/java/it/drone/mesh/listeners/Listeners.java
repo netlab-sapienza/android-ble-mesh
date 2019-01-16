@@ -38,4 +38,8 @@ public class Listeners {
 
         void OnDebugErrorMessage(String message);
     }
+
+    public interface OnServerInitializedListener {
+        void OnServerInitialized();
+    }
 }

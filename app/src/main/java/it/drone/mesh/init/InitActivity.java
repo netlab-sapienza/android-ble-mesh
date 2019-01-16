@@ -20,6 +20,7 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,12 +56,13 @@ public class InitActivity extends Activity {
     private static final String TWITTER_REQUEST = "twitter";
 
     private TextView debugger, whoAmI, myId;
+    private Switch canIBeServerSwitch;
     private DeviceAdapter deviceAdapter;
 
     ServerScanCallback mScanCallback;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothManager mBluetoothManager;
     private BluetoothLeScanner mBluetoothLeScanner;
+    private boolean canIBeServer = false;
 
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
@@ -72,7 +74,6 @@ public class InitActivity extends Activity {
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
-    private boolean canIBeServer;
     private final static String CONSUMER_KEY = "";
     private final static String CONSUMER_SECRET = "";
     private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
@@ -91,13 +92,26 @@ public class InitActivity extends Activity {
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
         debugger = findViewById(R.id.debugger);
-        whoAmI = findViewById(R.id.whoami);
-        myId = findViewById(R.id.myid);
+        whoAmI = findViewById(R.id.whoAmi);
+        myId = findViewById(R.id.myId);
         sendTweet = findViewById(R.id.tweetSomething);
         sendEmail = findViewById(R.id.sendMail);
+        canIBeServerSwitch = findViewById(R.id.canIBeServerSwitch);
 
         sendEmail.setVisibility(View.GONE);
         sendTweet.setVisibility(View.GONE);
+
+        canIBeServerSwitch.setVisibility(View.GONE);
+        canIBeServerSwitch.setChecked(canIBeServer);
+        canIBeServerSwitch.setOnClickListener(view -> {
+            if (canIBeServer) {
+                canIBeServer = false;
+                Toast.makeText(getApplicationContext(), "I cannot be a server anymore", Toast.LENGTH_LONG).show();
+            } else {
+                canIBeServer = true;
+                Toast.makeText(getApplicationContext(), "I can be a server now", Toast.LENGTH_LONG).show();
+            }
+        });
 
         askPermissions(savedInstanceState);
 
@@ -383,9 +397,9 @@ public class InitActivity extends Activity {
      * @param savedInstanceState se l'app era già attiva non devo reinizializzare tutto
      */
     private void checkBluetoothAvailability(Bundle savedInstanceState) {
-        if(canIBeServer) return;
+        if (canIBeServer) return;
         if (savedInstanceState == null) {
-            mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager != null)
                 mBluetoothAdapter = mBluetoothManager.getAdapter();
 
@@ -399,6 +413,8 @@ public class InitActivity extends Activity {
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
                         canIBeServer = true;
+                        canIBeServerSwitch.setVisibility(View.VISIBLE);
+                        canIBeServerSwitch.setChecked(true);
                     } else {
                         writeDebug("Your device does not support multiple advertisement, you can be only client");
                     }

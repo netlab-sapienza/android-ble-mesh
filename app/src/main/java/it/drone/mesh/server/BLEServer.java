@@ -18,7 +18,6 @@ import android.util.Log;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import it.drone.mesh.advertiser.AdvertiserService;
@@ -268,5 +267,15 @@ public class BLEServer {
     public String getId() {
         if(acceptBLETask != null) return acceptBLETask.getId();
         else return null;
+    }
+
+    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        if (acceptBLETask != null)
+            acceptBLETask.sendMessage(message, dest, internet, listener);
+        else listener.OnCommunicationError("Server not initialized");
+    }
+
+    public void addOnMessageReceivedListener(Listeners.OnMessageReceivedListener l) {
+        if (acceptBLETask != null) this.acceptBLETask.addOnMessageReceived(l);
     }
 }

@@ -47,4 +47,5 @@ public class Constants {
     // periodo minimo e max di attesa in secondi
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
+    public static final long NO_OFFSET = Long.MAX_VALUE;
 }

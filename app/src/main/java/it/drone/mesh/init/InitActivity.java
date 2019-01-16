@@ -29,6 +29,7 @@ import com.instacart.library.truetime.TrueTimeRx;
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.client.BLEClient;
+import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
@@ -84,20 +85,7 @@ public class InitActivity extends Activity {
     @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (Utility.isDeviceOnline(this)) {
-            TrueTimeRx.build()
-                    .initializeRx("time.google.com")
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(date -> {
-                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
-                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
-                    }, throwable -> {
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Errore, probabilmente non sei connesso ad internet", Toast.LENGTH_SHORT).show());
-                        throwable.printStackTrace();
-                    });
-        }
-
+        long offset = Constants.NO_OFFSET;
         canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
@@ -117,6 +105,21 @@ public class InitActivity extends Activity {
         deviceAdapter = new DeviceAdapter();
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
+
+        if (Utility.isDeviceOnline(this)) {
+            TrueTimeRx.build()
+                    .initializeRx("time.google.com")
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(date -> {
+                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
+                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
+                        deviceAdapter.setOffset(offset);
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
+                    }, throwable -> {
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Errore, probabilmente non sei connesso ad internet", Toast.LENGTH_SHORT).show());
+                        throwable.printStackTrace();
+                    });
+        }
 
         connectionRejectedListener = () -> {
             writeErrorDebug("Connection Rejected, stopping service");

@@ -5,6 +5,7 @@ import android.util.Log;
 
 import java.util.LinkedList;
 
+import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 
 public class ServerNode {
@@ -36,7 +37,7 @@ public class ServerNode {
         clientInternetByte = 0b00000000;
     }
 
-    public static ServerNode buildRoutingTable(byte[][] mapByte, String id, BluetoothDevice[] clientList) {
+    public static ServerNode buildRoutingTable(byte[][] mapByte, String id, BluetoothDevice[] clientList, RoutingTable routingTable) {
         Log.d(TAG, "OUD: " + "MapByte è una " + mapByte.length + " x " + mapByte[0].length);
         for (int i = 0; i < 16; i++) {
             Log.d(TAG, "buildRoutingTable: I: " + i);
@@ -49,6 +50,7 @@ public class ServerNode {
         for (int i = 1; i < 16; i++) {
             if (Utility.getBit(mapByte[i][0], 0) == 1 || (Utility.getBit(mapByte[i][0], 1)) == 1 || (Utility.getBit(mapByte[i][0], 2)) == 1 || (Utility.getBit(mapByte[i][0], 3)) == 1) {
                 arrayNode[i] = new ServerNode("" + i);
+                routingTable.addDevice(i, 0);
             }
         }
         for (int i = 0; i < 16; i++) {
@@ -57,9 +59,11 @@ public class ServerNode {
                 byte clientByte = mapByte[i][1];
 
                 for (int k = 0; k < 8; k++) {
-                    if (Utility.getBit(clientByte, k) == 1)
+                    if (Utility.getBit(clientByte, k) == 1) {
+                        routingTable.addDevice(i, k);
                         if (!id.equals("" + i)) arrayNode[i].setClientOnline("" + k, null);
                         else arrayNode[i].setClientOnline("" + k, clientList[i]);
+                    }
                 }
 
                 for (int k = 2; k < SERVER_PACKET_SIZE - 1; k++) {
@@ -254,7 +258,7 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
         for (int i = 0; i < clientList.length; i++) {
             if (Utility.getBit(clientByte, i) == 1)
                 s.append(i).append(" has internet? ").append(Utility.getBit(clientInternetByte, i)).append(i == clientList.length - 1 ? "" : ",");
-            else s.append(" null, ");
+            else s.append(" *, ");
         }
         res += "[" + s + "]\n";
         res += "I have " + nearServers.size() + " near servers ";

@@ -216,7 +216,7 @@ public class BLEServer {
 
 
     public void startServer() {
-        debugMessageListener.OnDebugMessage( "startServer: Scan the background,search servers to ask ");
+        debugMessageListener.OnDebugMessage("startServer: Scan the background, search servers to ask ");
         isServiceStarted = true;
         startScanning();
     }

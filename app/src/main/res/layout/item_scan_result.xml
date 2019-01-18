@@ -73,8 +73,8 @@
         android:layout_height="100dp"
         android:layout_below="@+id/inputText_placeholder"
         android:layout_alignStart="@+id/device_id_placeholder"
-        android:background="#4b000000"
         android:layout_margin="5dp"
+        android:background="#4b000000"
         android:text="@string/name" />
 
     <TextView
@@ -92,22 +92,37 @@
         android:layout_height="100dp"
         android:layout_below="@+id/outputText_placeholder"
         android:layout_alignStart="@+id/device_id_placeholder"
-        android:background="#4b000000"
         android:layout_margin="5dp"
+        android:background="#4b000000"
         android:text="@string/name" />
+
+    <EditText
+        android:id="@+id/message_to_send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/outputText"
+        android:layout_alignStart="@id/device_id_placeholder"
+        android:layout_margin="5dp"
+        android:ems="10"
+        android:inputType="text"
+        android:textColor="@color/colorPrimary" />
+
 
     <android.support.v7.widget.AppCompatButton
         android:id="@+id/button_test_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/outputText"
+        android:layout_alignBottom="@id/message_to_send"
         android:layout_centerHorizontal="true"
-        android:gravity="center"
+        android:layout_marginStart="11dp"
+        android:layout_marginTop="0dp"
+        android:layout_toEndOf="@id/message_to_send"
         android:background="@drawable/rounded_button"
+        android:gravity="center"
         android:padding="12dp"
-        android:text="@string/send_test_message"
+        android:text="@string/send_message"
         android:textAllCaps="false"
-        android:textSize="16sp" />
+        android:textSize="14sp" />
 
 
 </RelativeLayout>

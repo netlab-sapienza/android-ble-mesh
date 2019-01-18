@@ -121,7 +121,7 @@ public class BLEClient {
                 final Server newServer = ServerList.getServer(offset);
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
-                connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
+                //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (connectBLE.hasCorrectId()) {
@@ -148,7 +148,7 @@ public class BLEClient {
 
     public void startClient(Server newServer) {
         final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
-        connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
+        //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
         connectBLE.startClient();
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (connectBLE.hasCorrectId()) {

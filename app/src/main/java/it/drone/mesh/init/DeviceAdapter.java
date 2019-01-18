@@ -130,7 +130,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         } else if (server != null) {
             // TODO: 14/12/18 logica sendMessageAcceptBLETask
             server.sendMessage(message, destinationId, internet, listener);
-            Log.e(TAG, "sendMessage: missing logic sendMessageAcceptBLETask");
         } else {
             Log.e(TAG, "sendMessage: client e server tutti e due null");
         }
@@ -143,7 +142,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     void setClient(final Context context) {
         client = BLEClient.getInstance(context);
-        client.addReceivedListener((idMitt, message) -> {
+        client.addReceivedListener((idMitt, message, numHop, sentTimeStamp) -> {
             for (Device device : devices) {
                 Log.d(TAG, "OUD: " + "for device in devices");
                 if (device.getId().equals(idMitt)) {
@@ -169,15 +168,12 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
     void setServer(final Context context) {
         server = BLEServer.getInstance(context);
-        server.addOnMessageReceivedListener((idMitt, message) -> {
+        server.addOnMessageReceivedListener((idMitt, message, hop, sendTimeStamp) -> {
             for (Device device : devices) {
                 Log.d(TAG, "OUD: " + "for device in devices");
                 if (device.getId().equals(idMitt)) {
                     Log.d(TAG, "OUD: " + "id giusto");
-                    String[] infoMessage = message.split(";;");
-                    long mittTimeStamp = Long.parseLong(infoMessage[0]);
-                    Log.d(TAG, "OUD: " + "dopo il parselong");
-                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - mittTimeStamp) + ", Message: " + message.split(";;")[2]);
+                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sendTimeStamp) + ", Message: " + message + ", NumHop: " + hop);
                     new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
                 }
             }

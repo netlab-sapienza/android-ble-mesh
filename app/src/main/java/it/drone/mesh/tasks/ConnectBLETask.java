@@ -156,13 +156,25 @@ public class ConnectBLETask {
                         //Internet message
                         Log.d(TAG, "OUD: " + "messaggio con internet");
                         for (Listeners.OnMessageWithInternetListener l: internetListeners) {
-                            l.OnMessageWithInternetListener(senderId,messageMap.get(senderId));
+                            l.OnMessageWithInternet(senderId, messageMap.get(senderId));
                         }
                     }
                     else {
                         Log.d(TAG, "OUD: " + "messaggio normale");
-                        for (Listeners.OnMessageReceivedListener listener : receivedListeners)
-                            listener.OnMessageReceived("" + senderId, messageMap.get(senderId));
+                        String message = messageMap.get(senderId);
+                        if (message == null) return;
+                        String[] messageSplitted = message.split(";;");
+                        int hop = -1;
+                        long timestamp = -1;
+                        try {
+                            hop = Integer.parseInt(messageSplitted[1]);
+                            timestamp = Long.parseLong(messageSplitted[0]);
+                        } catch (NumberFormatException e) {
+                            Log.e(TAG, "OUD: " + "Ricevuto messaggio malformato");
+                        }
+                        for (Listeners.OnMessageReceivedListener l : receivedListeners) {
+                            l.OnMessageReceived("" + senderId, messageSplitted[2], hop, timestamp);
+                        }
                     }
                     messageMap.remove(senderId);
                 }

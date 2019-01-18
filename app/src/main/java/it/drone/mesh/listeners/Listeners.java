@@ -9,15 +9,16 @@ import it.drone.mesh.models.Server;
 
 public class Listeners {
     public interface OnMessageReceivedListener {
-        // void OnMessageReceived(String idMitt, String message, int hopNumber, long deliveryTime);
+        void OnMessageReceived(String idMitt, String message, int hopNumber, long sendTimeStamp);
+
 
         // TODO: 14/01/2019 fare i cambi necessari ed eliminare questa funzione
-        void OnMessageReceived(String idMitt, String message);
+        //void OnMessageReceived(String idMitt, String message);
     }
 
 
     public interface OnMessageWithInternetListener {
-        void OnMessageWithInternetListener(String idMitt, String message);
+        void OnMessageWithInternet(String idMitt, String message);
     }
 
     public interface OnMessageSentListener {
@@ -36,6 +37,8 @@ public class Listeners {
 
     public interface OnNewServerDiscoveredListener {
         void OnNewServerDiscovered(BluetoothDevice server);
+
+        void OnNewServerNotFound();
     }
 
     public interface OnDebugMessageListener {

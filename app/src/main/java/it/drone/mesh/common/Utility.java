@@ -17,7 +17,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -459,15 +458,13 @@ public class Utility {
         };
 
         Handler mHandler = new Handler(Looper.getMainLooper());
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "OUD: " + "Stopping Scanning");
-
-                // Stop the scan, wipe the callback.
-                mBluetoothScan.stopScan(mScanCallback);
-                listener.OnNewServerDiscovered(nearMapDevice.get(nuovoId));
-            }
+        mHandler.postDelayed(() -> {
+            Log.d(TAG, "OUD: " + "Stopping Scanning");
+            // Stop the scan, wipe the callback.
+            mBluetoothScan.stopScan(mScanCallback);
+            // TODO: 18/01/19 GESTIRE IL CASO IN CUI nearMapDevice.get(nuovoId) È NULL, BISOGNA COMUNICARE AGLI ALTRI SERVER CHE NON LO VEDO
+            listener.OnNewServerNotFound();
+            listener.OnNewServerDiscovered(nearMapDevice.get(nuovoId));
         }, 3000);
         //ServerList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);

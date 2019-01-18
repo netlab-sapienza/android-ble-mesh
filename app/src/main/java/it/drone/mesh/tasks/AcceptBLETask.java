@@ -170,8 +170,12 @@ public class AcceptBLETask {
                                     public void OnNewServerDiscovered(BluetoothDevice server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                         final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
-
                                         clientNuovoServ.startClient();
+                                    }
+
+                                    @Override
+                                    public void OnNewServerNotFound() {
+                                        Log.e(TAG, "OUD: " + "NON IMPLEMENTATO");
                                     }
                                 });
                             }
@@ -284,8 +288,15 @@ public class AcceptBLETask {
                         String messageReceived = previousMsg + valueReceived;
                         if (Utility.getBit(destByte, 0) == 0) {
                             String[] infoMessage = messageReceived.split(";;");
-                            infoMessage[1] = "" + (Integer.parseInt(infoMessage[1]) + 1);
-                            message = infoMessage[0] + ";;" + infoMessage[1] + ";;" + infoMessage[2];
+                            int hop;
+                            try {
+                                hop = Integer.parseInt(infoMessage[1]);
+                                infoMessage[1] = "" + hop + 1;
+                                message = infoMessage[0] + ";;" + hop + ";;" + infoMessage[2];
+                            } catch (NumberFormatException e) {
+                                Log.d(TAG, "OUD: Errore, messaggio malformato, non lo propago. Message: " + messageReceived);
+                                return;
+                            }
                         } else message = messageReceived;
                         Log.d(TAG, "OUD: " + messageReceived);
                         messageMap.remove(senderId);
@@ -297,7 +308,7 @@ public class AcceptBLETask {
                             if (mNode.hasInternet()) {
                                 Log.d(TAG, "Ho io Internet continua");
                                 for (Listeners.OnMessageWithInternetListener listener : messageReceivedWithInternetListeners)
-                                    listener.OnMessageWithInternetListener(senderId, message);
+                                    listener.OnMessageWithInternet(senderId, message);
 
                             } else if (!clientInternet.equals("")) {
                                 for (int i = 0; i < 8; i++) {
@@ -381,8 +392,17 @@ public class AcceptBLETask {
                         } else if ((infoDest[0] + "").equals(getId())) {
                             if (infoDest[1] == 0) {
                                 Log.d(TAG, "OUD: messaggio per me ");
+                                String[] messageSplitted = message.split(";;");
+                                int hop = -1;
+                                long timestamp = -1;
+                                try {
+                                    hop = Integer.parseInt(messageSplitted[1]);
+                                    timestamp = Long.parseLong(messageSplitted[0]);
+                                } catch (NumberFormatException e) {
+                                    Log.e(TAG, "OUD: " + "Messaggio malformato, non propagabile");
+                                }
                                 for (Listeners.OnMessageReceivedListener l : messageReceivedListeners) {
-                                    l.OnMessageReceived(infoSorg[0] + "" + infoSorg[1], message);
+                                    l.OnMessageReceived(infoSorg[0] + "" + infoSorg[1], messageSplitted[2], hop, timestamp);
                                 }
                                 return;
                             }

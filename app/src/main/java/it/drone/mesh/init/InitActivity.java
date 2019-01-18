@@ -87,7 +87,7 @@ public class InitActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long offset = Constants.NO_OFFSET;
-        canIBeServer = false;
+        canIBeServer = true;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
@@ -202,6 +202,32 @@ public class InitActivity extends Activity {
                                 e.printStackTrace();
                             }
                         }
+                    });
+                    server.setEnoughServerListener((newServer) -> {
+                        server.stopServer();
+                        client = BLEClient.getInstance(getApplicationContext());
+                        client.startClient(newServer);
+                        client.addOnClientOnlineListener(() -> {
+                            deviceAdapter.setClient(getApplicationContext());
+                            myId.setText(client.getId());
+                            whoAmI.setText(R.string.client);
+                            sendTweet.setVisibility(View.VISIBLE);
+                            sendEmail.setVisibility(View.VISIBLE);
+                            client.addReceivedWithInternetListener((idMitt, message) -> {
+                                Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                                String[] info = message.split(";;");
+                                if (info[0].equals(EMAIL_REQUEST))
+                                    sendAMail(info[1], info[2], idMitt);
+                                else if (info[0].equals(TWITTER_REQUEST)) {
+                                    try {
+                                        tweetSomething(info[1]);
+                                    } catch (TwitterException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                        });
+
                     });
                     deviceAdapter.setServer(getApplicationContext());
                 } else {

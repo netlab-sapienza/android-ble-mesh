@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import java.util.ArrayList;
 
 import it.drone.mesh.models.Device;
+import it.drone.mesh.models.Server;
 
 public class Listeners {
     public interface OnMessageReceivedListener {
@@ -23,6 +24,10 @@ public class Listeners {
         void OnMessageSent(String message);
 
         void OnCommunicationError(String error);
+    }
+
+    public interface OnEnoughServerListener {
+        void OnEnoughServer(Server server);
     }
 
     public interface OnScanCompletedListener {

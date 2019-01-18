@@ -483,10 +483,6 @@ public class AcceptBLETask {
                         mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_REQUEST_NOT_SUPPORTED, 0, descriptor.getValue());
                     } else {
                         mGattServer.sendResponse(device, requestId, 0, 0, descriptor.getValue());
-                        mNode.setClientOnline("" + current_id, device);
-                        String value = "" + (mNode.nextId(null));
-                        mGattDescriptorNextId.setValue(value.getBytes());
-                        Log.d(TAG, "OUD: " + "NextId: " + value);
                     }
                 } else if (descriptor.getUuid().equals(Constants.RoutingTableDescriptorUUID)) { //richiesta da altri server di leggere la versione della table in modo da decidere se inviarla o meno
                     Log.d(TAG, "OUD: " + "Descr : " + new String(descriptor.getValue()));
@@ -509,15 +505,11 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + res);
                 } else Log.d(TAG, "OUD: " + "response not needed");
                 if (descriptor.getUuid().equals(Constants.ClientOnline_Configuration_UUID)) { //abilitazione di notifiche per ricevere messaggi
-
-                    int currentid = -1;
-                    BluetoothDevice[] clientList = mNode.getClientList();
-                    for (int i = 0; i < clientList.length; i++) {
-                        if (clientList[i] == null) continue;
-                        if (clientList[i].equals(device)) {
-                            currentid = i;
-                        }
-                    }
+                    int currentid = mNode.nextId(device);
+                    mNode.setClientOnline("" + currentid, device);
+                    String nextId = "" + (mNode.nextId(null));
+                    mGattDescriptorNextId.setValue(nextId.getBytes());
+                    Log.d(TAG, "OUD: " + "NextId: " + value);
                     routingTable.addDevice(Integer.parseInt(getId()), currentid);
 
                     byte[] val = mGattCharacteristicClientOnline.getValue();

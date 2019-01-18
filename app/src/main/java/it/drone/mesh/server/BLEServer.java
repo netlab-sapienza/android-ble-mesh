@@ -162,9 +162,9 @@ public class BLEServer {
                                 enoughServerListener.OnEnoughServer(newServer);
                                 return;
                             }
+                            askIdToNearServer(offset + 1);
                         }
                     }
-                    askIdToNearServer(offset + 1);
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
             });

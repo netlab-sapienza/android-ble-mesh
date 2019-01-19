@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
@@ -74,10 +75,10 @@ public class InitActivity extends Activity {
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
-    private final static String CONSUMER_KEY = "";
-    private final static String CONSUMER_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN = "";
+    private final static String CONSUMER_KEY = "Ccf8ZtrOdqrN7r7v8JRbJHQaJ";
+    private final static String CONSUMER_SECRET = "LPvdBdn3R2AHHnVJg9p1soxwHMzJERKKGuZ6vbryU5UFuihyDV";
+    private static final String OAUTH_ACCESS_TOKEN_SECRET = "k5lkd59L67TygzYTBieZyfJns4b5dwyPR8xWf0KcXOkKD";
+    private static final String OAUTH_ACCESS_TOKEN = "1085173661362016256-l8DbvwiyetS3IKJRjkhIjh8isybqGL";
     private final static String usernameMail = "blemeshnetwork@gmail.com";
     private final static String passwordMail = "@password123";
     private Button startServices, sendTweet, sendEmail;
@@ -98,8 +99,8 @@ public class InitActivity extends Activity {
         sendEmail = findViewById(R.id.sendMail);
         canIBeServerSwitch = findViewById(R.id.canIBeServerSwitch);
 
-        sendEmail.setVisibility(View.GONE);
-        sendTweet.setVisibility(View.GONE);
+        // sendEmail.setVisibility(View.GONE);
+        // sendTweet.setVisibility(View.GONE);
 
         canIBeServerSwitch.setVisibility(View.GONE);
         canIBeServerSwitch.setChecked(canIBeServer);
@@ -196,11 +197,7 @@ public class InitActivity extends Activity {
                         if (info[0].equals(EMAIL_REQUEST))
                             sendAMail(info[1], info[2], idMitt);
                         else if (info[0].equals(TWITTER_REQUEST)) {
-                            try {
-                                tweetSomething(info[1]);
-                            } catch (TwitterException e) {
-                                e.printStackTrace();
-                            }
+                            tweetSomething(info[1]);
                         }
                     });
                     server.setEnoughServerListener((newServer) -> {
@@ -219,11 +216,7 @@ public class InitActivity extends Activity {
                                 if (info[0].equals(EMAIL_REQUEST))
                                     sendAMail(info[1], info[2], idMitt);
                                 else if (info[0].equals(TWITTER_REQUEST)) {
-                                    try {
-                                        tweetSomething(info[1]);
-                                    } catch (TwitterException e) {
-                                        e.printStackTrace();
-                                    }
+                                    tweetSomething(info[1]);
                                 }
                             });
                         });
@@ -245,11 +238,7 @@ public class InitActivity extends Activity {
                             if (info[0].equals(EMAIL_REQUEST))
                                 sendAMail(info[1], info[2], idMitt);
                             else if (info[0].equals(TWITTER_REQUEST)) {
-                                try {
-                                    tweetSomething(info[1]);
-                                } catch (TwitterException e) {
-                                    e.printStackTrace();
-                                }
+                                tweetSomething(info[1]);
                             }
                         });
                     });
@@ -258,11 +247,7 @@ public class InitActivity extends Activity {
         });
         sendTweet.setOnClickListener(view -> {
             if (Utility.isDeviceOnline(getApplicationContext())) {
-                try {
-                    tweetSomething("cip cip");
-                } catch (TwitterException e) {
-                    e.printStackTrace();
-                }
+                tweetSomething("cip cip");
             } else {
                 String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
                 client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
@@ -456,18 +441,27 @@ public class InitActivity extends Activity {
     }
 
 
-    private void tweetSomething(String tweetToUpdate) throws TwitterException {
+    private void tweetSomething(String tweetToUpdate) {
+        HandlerThread handlerThread = new HandlerThread("Twitter");
+        handlerThread.start();
+        new Handler(handlerThread.getLooper()).post(() -> {
+            try {
 
-        ConfigurationBuilder cb = new ConfigurationBuilder();
-        cb.setDebugEnabled(true)
-                .setOAuthConsumerKey(CONSUMER_KEY)
-                .setOAuthConsumerSecret(CONSUMER_SECRET)
-                .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
-                .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
-        TwitterFactory tf = new TwitterFactory(cb.build());
-        Twitter twitter = tf.getInstance();
-        Status status = twitter.updateStatus(tweetToUpdate);
-        Toast.makeText(this, "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
+                ConfigurationBuilder cb = new ConfigurationBuilder();
+                cb.setDebugEnabled(true)
+                        .setOAuthConsumerKey(CONSUMER_KEY)
+                        .setOAuthConsumerSecret(CONSUMER_SECRET)
+                        .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
+                        .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
+                TwitterFactory tf = new TwitterFactory(cb.build());
+                Twitter twitter = tf.getInstance();
+                Status status = twitter.updateStatus(tweetToUpdate);
+                Toast.makeText(getApplicationContext(), "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
+
+            } catch (TwitterException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
 

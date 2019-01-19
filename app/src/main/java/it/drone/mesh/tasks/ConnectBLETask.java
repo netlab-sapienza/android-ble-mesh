@@ -31,8 +31,8 @@ public class ConnectBLETask {
     private HashMap<String, String> messageMap;
     private ArrayList<Listeners.OnMessageReceivedListener> receivedListeners;
     private ArrayList<Listeners.OnMessageWithInternetListener> internetListeners;
-
     private RoutingTable routingTable;
+    private Listeners.OnPacketSentListener onPacketSent;
 
     public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
@@ -95,7 +95,11 @@ public class ConnectBLETask {
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                Log.d(TAG, "OUD: " + "I wrote a characteristic");
+                if(status == BluetoothGatt.GATT_SUCCESS) {
+                    Log.d(TAG, "OUD: " + "I wrote a characteristic");
+                    onPacketSent.OnPacketSent(characteristic.getValue());
+                }
+                else onPacketSent.OnPacketError("Errore nell'invio del pacchetto, status: " + status);
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
 
@@ -277,8 +281,46 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
+
+    // TODO: 19/01/19 DA TESTARE 
+    public void sendMessageAlt(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        int[] infoSorg = Utility.getIdArrayByString(getId());
+        int[] infoDest = Utility.getIdArrayByString(dest);
+        byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
+
+        boolean[] resultHolder = new boolean[1];
+        int[] indexHolder = new int[1];
+
+        this.onPacketSent = new Listeners.OnPacketSentListener() {
+            @Override
+            public void OnPacketSent(byte[] packet) {
+                if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                    if(resultHolder[0]) {
+                        listener.OnMessageSent("Messaggio inviato con successo");
+                        onPacketSent = null;
+                    }
+                    else listener.OnCommunicationError("sendRoutingTable: Not every package was sent");
+                }
+                else {
+                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],mGatt, null);
+                    indexHolder[0] += 1;
+                }
+            }
+
+            @Override
+            public void OnPacketError(String error) {
+                listener.OnCommunicationError(error);
+            }
+        };
+
+        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],this.mGatt, onPacketSent);
+        indexHolder[0] += 1;
+        //return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
+    }
+
     public boolean sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
+
     }
 
     public void startClient() {

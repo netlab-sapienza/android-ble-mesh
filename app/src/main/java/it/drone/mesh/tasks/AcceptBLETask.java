@@ -142,13 +142,12 @@ public class AcceptBLETask {
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
                             mNode.parseClientMapToByte(clientRoutingTable);
                             mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
-                            // TODO: 13/01/19 Notifichiamo anche i client della presenza di un nuovo server nella rete ?? @Andrea e @Pierluigi
+
                             for (BluetoothDevice dev : mNode.getClientList()) {
                                 if (dev == null) continue;
                                 boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
                                 Log.d(TAG, "OUD: i've notified new server Online " + res);
                             }
-
 
                             byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
                             mNode.parseMapToByte(tempMap);
@@ -366,22 +365,17 @@ public class AcceptBLETask {
 
                                     @Override
                                     public void onDescriptorRead(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                        new Handler(Looper.getMainLooper()).postDelayed(() -> Utility.sendMessage(messageReceived, gatt, infoSorg, infoDest, true, new Listeners.OnMessageSentListener() {
                                             @Override
-                                            public void run() {
-                                                Utility.sendMessage(messageReceived, gatt, infoSorg, infoDest, true, new Listeners.OnMessageSentListener() {
-                                                    @Override
-                                                    public void OnMessageSent(String message) {
-                                                        Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
-                                                    }
-
-                                                    @Override
-                                                    public void OnCommunicationError(String error) {
-
-                                                    }
-                                                });
+                                            public void OnMessageSent(String messageSent) {
+                                                Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
                                             }
-                                        }, 500);
+
+                                            @Override
+                                            public void OnCommunicationError(String error) {
+
+                                            }
+                                        }), 500);
                                         super.onDescriptorRead(gatt, descriptor, status);
 
                                     }
@@ -466,22 +460,17 @@ public class AcceptBLETask {
 
                                 @Override
                                 public void onDescriptorRead(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                                    new Handler(Looper.getMainLooper()).postDelayed(() -> Utility.sendMessage(message, gatt, infoSorg, infoDest, false, new Listeners.OnMessageSentListener() {
                                         @Override
-                                        public void run() {
-                                            Utility.sendMessage(message, gatt, infoSorg, infoDest, false, new Listeners.OnMessageSentListener() {
-                                                @Override
-                                                public void OnMessageSent(String message) {
-                                                    Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
-                                                }
-
-                                                @Override
-                                                public void OnCommunicationError(String error) {
-
-                                                }
-                                            });
+                                        public void OnMessageSent(String messageSent) {
+                                            Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
                                         }
-                                    }, 500);
+
+                                        @Override
+                                        public void OnCommunicationError(String error) {
+
+                                        }
+                                    }), 500);
                                     super.onDescriptorRead(gatt, descriptor, status);
 
                                 }
@@ -542,7 +531,6 @@ public class AcceptBLETask {
                         boolean res = mGattServer.notifyCharacteristicChanged(dev, characteristic, false);
                         Log.d(TAG, "OUD: i've notified new client Online " + res);
                     }
-
 
                     for (String idTemp : nearDeviceMap.keySet()) { // mando nella rete il nuovo client
                         BluetoothDevice dev = nearDeviceMap.get(idTemp);
@@ -691,7 +679,7 @@ public class AcceptBLETask {
                     //mGattServer.addService(mGattServiceRoutingTable);
                     mGattServer.addService(mGattService);
 
-                    for (Listeners.OnServerInitializedListener l: serverInitializedListeners) {
+                    for (Listeners.OnServerInitializedListener l : serverInitializedListeners) {
                         l.OnServerInitialized();
                     }
 
@@ -766,7 +754,7 @@ public class AcceptBLETask {
             this.mGattServer = mBluetoothManager.openGattServer(context, mGattServerCallback);
             this.mGattServer.addService(this.mGattService);
 
-            for (Listeners.OnServerInitializedListener l: serverInitializedListeners) {
+            for (Listeners.OnServerInitializedListener l : serverInitializedListeners) {
                 l.OnServerInitialized();
             }
 
@@ -789,10 +777,104 @@ public class AcceptBLETask {
         this.nearDeviceMap = nearDeviceMap;
     }
 
+    // TODO: 19/01/19 DA TESTARE
+    public void sendMessageAlt(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        int infoSorg[] = new int[2];
+        infoSorg[0] = Integer.parseInt(getId());
+        //infoSorg[1] = 0;
+        int infoDest[] = Utility.getIdArrayByString(dest);
+        if (infoDest[0] == Integer.parseInt(getId())) {
+            if (infoDest[1] == 0) {
+                Log.e(TAG, "OUD: sendMessage: Messaggio per me stessso?!?!");
+                listener.OnCommunicationError("You cannot send message to yourself!!");
+                return;
+            }
+            //messaggio al mio client devo notificarlo
+            byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
+            for (int i = 0; i < finalMessage.length; i++) {
+                BluetoothDevice dev = mNode.getClient("" + infoDest[1]);
+                mGattCharacteristic.setValue(finalMessage[i]);
+                boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
+                Log.d(TAG, "OUD: i've notified new server Online " + res);
+            }
+            listener.OnMessageSent(message);
+        } else {
+            //non sono io il destinatario
+            final ServerNode nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
+            if (nodeDest == null) {
+                Log.e(TAG, "next hop null");
+                return;
+            }
+            Log.d(TAG, "OUD: next-hop : " + nodeDest.getId());
+            final BluetoothDevice near = nearDeviceMap.get(nodeDest.getId());
+            if (near == null) {
+                Log.e(TAG, "near server null");
+                return;
+            }
+            Log.d(TAG, "OUD: next-hop : " + near.getName());
+            final Server server = new Server(near, (near.getName() == null ? "Unknown" : near.getName()));
+
+            byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
+
+            final int[] indexHolder = new int[1]; //si inizializza automaticamente a 0 il primo elemento
+            final boolean[] resultHolder = new boolean[1];
+
+            final ConnectBLETask connectBLETask = new ConnectBLETask(server, context, new BluetoothGattCallback() {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                        gatt.discoverServices();
+                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                    }
+                    super.onConnectionStateChange(gatt, status, newState);
+                }
+
+                @Override
+                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                    Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
+                    BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                    if (service == null) return;
+                    BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                    if (characteristic == null) return;
+                    BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorUUID);
+                    boolean res = gatt.readDescriptor(descriptor);
+                    Log.d(TAG, "OUD: " + "Read Server id: " + res);
+                    super.onServicesDiscovered(gatt, status);
+                }
+
+                @Override
+                public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                            if (resultHolder[0]) {
+                                listener.OnMessageSent("Messaggio inviato con successo");
+                            } else listener.OnCommunicationError("Not every package is sent");
+                        } else {
+                            resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], gatt, null);
+                            indexHolder[0] += 1;
+                        }
+                    }
+                    super.onCharacteristicWrite(gatt, characteristic, status);
+                }
+
+                @Override
+                public void onDescriptorRead(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], gatt, null);
+                    indexHolder[0] += 1;
+                    super.onDescriptorRead(gatt, descriptor, status);
+                }
+
+            });
+            connectBLETask.startClient();
+        }
+    }
+
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         int infoSorg[] = new int[2];
         infoSorg[0] = Integer.parseInt(getId());
-        infoSorg[1] = 0;
+        //infoSorg[1] = 0;
         int infoDest[] = Utility.getIdArrayByString(dest);
         if (infoDest[0] == Integer.parseInt(getId())) {
             if (infoDest[1] == 0) {
@@ -855,23 +937,18 @@ public class AcceptBLETask {
 
                 @Override
                 public void onDescriptorRead(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> Utility.sendMessage(message, gatt, infoSorg, infoDest, false, new Listeners.OnMessageSentListener() {
                         @Override
-                        public void run() {
-                            Utility.sendMessage(message, gatt, infoSorg, infoDest, false, new Listeners.OnMessageSentListener() {
-                                @Override
-                                public void OnMessageSent(String message) {
-                                    Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
-                                    listener.OnMessageSent(message);
-                                }
-
-                                @Override
-                                public void OnCommunicationError(String error) {
-
-                                }
-                            });
+                        public void OnMessageSent(String messageSent) {
+                            Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
+                            listener.OnMessageSent(messageSent);
                         }
-                    }, 500);
+
+                        @Override
+                        public void OnCommunicationError(String error) {
+
+                        }
+                    }), 500);
                     super.onDescriptorRead(gatt, descriptor, status);
 
                 }

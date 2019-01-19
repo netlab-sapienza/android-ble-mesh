@@ -50,4 +50,10 @@ public class Listeners {
     public interface OnServerInitializedListener {
         void OnServerInitialized();
     }
+
+    public interface OnPacketSentListener {
+        void OnPacketSent(byte[] packet);
+
+        void OnPacketError(String error);
+    }
 }

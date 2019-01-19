@@ -105,7 +105,8 @@
         android:layout_margin="5dp"
         android:ems="10"
         android:inputType="text"
-        android:textColor="@color/colorPrimary" />
+        android:textColor="@color/colorPrimary"
+        />
 
 
     <android.support.v7.widget.AppCompatButton

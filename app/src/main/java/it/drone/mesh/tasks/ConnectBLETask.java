@@ -283,7 +283,7 @@ public class ConnectBLETask {
      */
 
     // TODO: 19/01/19 DA TESTARE 
-    public void sendMessageAlt(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         int[] infoSorg = Utility.getIdArrayByString(getId());
         int[] infoDest = Utility.getIdArrayByString(dest);
         byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
@@ -318,10 +318,11 @@ public class ConnectBLETask {
         //return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
     }
 
-    public boolean sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+    /*
+    public boolean sendMessageOld(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
 
-    }
+    }*/
 
     public void startClient() {
         this.mGatt = server.getBluetoothDevice().connectGatt(context, false, mGattCallback);

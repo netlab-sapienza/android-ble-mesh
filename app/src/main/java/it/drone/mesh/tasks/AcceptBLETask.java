@@ -327,6 +327,18 @@ public class AcceptBLETask {
                                 }
                             } else {
                                 //non sono io che ho internet
+                                sendMessage(message, infoDest[0] + "" + infoDest[1], true, new Listeners.OnMessageSentListener() {
+                                    @Override
+                                    public void OnMessageSent(String messageSent) {
+                                        Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
+                                    }
+
+                                    @Override
+                                    public void OnCommunicationError(String error) {
+                                        Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
+                                    }
+                                });
+                                /*
                                 Log.d(TAG, "OUD: Non sono il destinatario");
                                 final ServerNode dest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
                                 Log.d(TAG, "OUD: next-hop : " + dest.getId());
@@ -382,6 +394,7 @@ public class AcceptBLETask {
 
                                 });
                                 connectBLETask.startClient();
+                                */
                             }
                         } else if ((infoDest[0] + "").equals(getId())) {
                             if (infoDest[1] == 0) {
@@ -415,6 +428,18 @@ public class AcceptBLETask {
                             return;
                         } else {
                             Log.d(TAG, "OUD: Non sono il destinatario");
+                            sendMessage(message, infoDest[0] + "" + infoDest[1], false, new Listeners.OnMessageSentListener() {
+                                @Override
+                                public void OnMessageSent(String message) {
+                                    Log.d(TAG, "OUD: messaggio \"" + message + "\"rigirato con successo");
+                                }
+
+                                @Override
+                                public void OnCommunicationError(String error) {
+                                    Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
+                                }
+                            });
+                            /*
                             final ServerNode dest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
                             if (dest == null) {
                                 Log.e(TAG, "next hop null");
@@ -477,6 +502,7 @@ public class AcceptBLETask {
 
                             });
                             connectBLETask.startClient();
+                            */
                         }
                     }
                 }
@@ -778,7 +804,7 @@ public class AcceptBLETask {
     }
 
     // TODO: 19/01/19 DA TESTARE
-    public void sendMessageAlt(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         int infoSorg[] = new int[2];
         infoSorg[0] = Integer.parseInt(getId());
         //infoSorg[1] = 0;
@@ -870,8 +896,8 @@ public class AcceptBLETask {
             connectBLETask.startClient();
         }
     }
-
-    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+    /*
+    public void sendMessageOld(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         int infoSorg[] = new int[2];
         infoSorg[0] = Integer.parseInt(getId());
         //infoSorg[1] = 0;
@@ -957,7 +983,7 @@ public class AcceptBLETask {
             connectBLETask.startClient();
         }
     }
-
+    */
 
     public void addConnectionRejectedListener(OnConnectionRejectedListener connectionRejectedListeners) {
         this.connectionRejectedListeners.add(connectionRejectedListeners);

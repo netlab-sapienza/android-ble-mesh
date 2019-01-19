@@ -293,7 +293,7 @@ public class Utility {
     }
 
     // TODO: 19/01/19 DA TESTARE
-    public static ConnectBLETask createBroadcastRoutingTableClientAlt(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
+    public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         boolean[] resultHolder = new boolean[1];
         int[] indexHolder = new int[1];
 
@@ -371,7 +371,7 @@ public class Utility {
         });
     }
 
-    public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
+    public static ConnectBLETask createBroadcastRoutingTableClientOld(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {

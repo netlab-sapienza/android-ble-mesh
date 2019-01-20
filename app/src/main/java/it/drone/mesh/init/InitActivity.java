@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
@@ -27,6 +28,10 @@ import android.widget.Toast;
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.instacart.library.truetime.TrueTimeRx;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.client.BLEClient;
@@ -40,7 +45,6 @@ import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
-import twitter4j.conf.ConfigurationBuilder;
 
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 
@@ -74,12 +78,6 @@ public class InitActivity extends Activity {
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
-    private final static String CONSUMER_KEY = "";
-    private final static String CONSUMER_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN = "";
-    private final static String usernameMail = "blemeshnetwork@gmail.com";
-    private final static String passwordMail = "@password123";
     private Button startServices, sendTweet, sendEmail;
 
 
@@ -98,8 +96,8 @@ public class InitActivity extends Activity {
         sendEmail = findViewById(R.id.sendMail);
         canIBeServerSwitch = findViewById(R.id.canIBeServerSwitch);
 
-        sendEmail.setVisibility(View.GONE);
-        sendTweet.setVisibility(View.GONE);
+        // sendEmail.setVisibility(View.GONE);
+        // sendTweet.setVisibility(View.GONE);
 
         canIBeServerSwitch.setVisibility(View.GONE);
         canIBeServerSwitch.setChecked(canIBeServer);
@@ -193,14 +191,14 @@ public class InitActivity extends Activity {
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                         String[] info = message.split(";;");
-                        if (info[0].equals(EMAIL_REQUEST))
-                            sendAMail(info[1], info[2], idMitt);
-                        else if (info[0].equals(TWITTER_REQUEST)) {
+                        if (info[0].equals(EMAIL_REQUEST)) {
                             try {
-                                tweetSomething(info[1]);
-                            } catch (TwitterException e) {
+                                sendAMail(info[1], info[2], idMitt);
+                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
+                        } else if (info[0].equals(TWITTER_REQUEST)) {
+                            tweetSomething(info[1]);
                         }
                     });
                     server.setEnoughServerListener((newServer) -> {
@@ -216,14 +214,14 @@ public class InitActivity extends Activity {
                             client.addReceivedWithInternetListener((idMitt, message) -> {
                                 Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                                 String[] info = message.split(";;");
-                                if (info[0].equals(EMAIL_REQUEST))
-                                    sendAMail(info[1], info[2], idMitt);
-                                else if (info[0].equals(TWITTER_REQUEST)) {
+                                if (info[0].equals(EMAIL_REQUEST)) {
                                     try {
-                                        tweetSomething(info[1]);
-                                    } catch (TwitterException e) {
+                                        sendAMail(info[1], info[2], idMitt);
+                                    } catch (IOException e) {
                                         e.printStackTrace();
                                     }
+                                } else if (info[0].equals(TWITTER_REQUEST)) {
+                                    tweetSomething(info[1]);
                                 }
                             });
                         });
@@ -242,14 +240,14 @@ public class InitActivity extends Activity {
                         client.addReceivedWithInternetListener((idMitt, message) -> {
                             Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                             String[] info = message.split(";;");
-                            if (info[0].equals(EMAIL_REQUEST))
-                                sendAMail(info[1], info[2], idMitt);
-                            else if (info[0].equals(TWITTER_REQUEST)) {
+                            if (info[0].equals(EMAIL_REQUEST)) {
                                 try {
-                                    tweetSomething(info[1]);
-                                } catch (TwitterException e) {
+                                    sendAMail(info[1], info[2], idMitt);
+                                } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+                            } else if (info[0].equals(TWITTER_REQUEST)) {
+                                tweetSomething(info[1]);
                             }
                         });
                     });
@@ -258,11 +256,7 @@ public class InitActivity extends Activity {
         });
         sendTweet.setOnClickListener(view -> {
             if (Utility.isDeviceOnline(getApplicationContext())) {
-                try {
-                    tweetSomething("cip cip");
-                } catch (TwitterException e) {
-                    e.printStackTrace();
-                }
+                tweetSomething("cip cip");
             } else {
                 String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
                 client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
@@ -286,9 +280,13 @@ public class InitActivity extends Activity {
                 return;
             }
 
-            if (Utility.isDeviceOnline(getApplicationContext()))
-                sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getId());
-            else {
+            if (Utility.isDeviceOnline(getApplicationContext())) {
+                try {
+                    sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getId());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
                 String message = EMAIL_REQUEST + ";;rastafaninplakeibol@gmail.com;;testobodyyeye";
                 client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
                     @Override
@@ -456,25 +454,31 @@ public class InitActivity extends Activity {
     }
 
 
-    private void tweetSomething(String tweetToUpdate) throws TwitterException {
-
-        ConfigurationBuilder cb = new ConfigurationBuilder();
-        cb.setDebugEnabled(true)
-                .setOAuthConsumerKey(CONSUMER_KEY)
-                .setOAuthConsumerSecret(CONSUMER_SECRET)
-                .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
-                .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
-        TwitterFactory tf = new TwitterFactory(cb.build());
-        Twitter twitter = tf.getInstance();
-        Status status = twitter.updateStatus(tweetToUpdate);
-        Toast.makeText(this, "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
+    private void tweetSomething(String tweetToUpdate) {
+        HandlerThread handlerThread = new HandlerThread("Twitter");
+        handlerThread.start();
+        new Handler(handlerThread.getLooper()).post(() -> {
+            try {
+                Twitter twitter = TwitterFactory.getSingleton();
+                Status status = twitter.updateStatus(tweetToUpdate);
+                Toast.makeText(getApplicationContext(), "Successfully updated the status to \"" + status.getText() + "\".", Toast.LENGTH_LONG).show();
+            } catch (TwitterException e) {
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Twitter error: " + e.getErrorMessage(), Toast.LENGTH_LONG).show());
+                e.printStackTrace();
+            }
+        });
     }
 
 
-    private void sendAMail(final String destEmail, String body, final String idMitt) {
+    private void sendAMail(final String destEmail, String body, final String idMitt) throws IOException {
+
+        Properties properties = new Properties();
+        InputStream inputStream =
+                this.getClass().getClassLoader().getResourceAsStream("email.properties");
+        properties.load(inputStream);
         BackgroundMail.newBuilder(this)
-                .withUsername(usernameMail)
-                .withPassword(passwordMail)
+                .withUsername(properties.getProperty("email.username"))
+                .withPassword(properties.getProperty("email.password"))
                 .withMailTo(destEmail)
                 .withType(BackgroundMail.TYPE_PLAIN)
                 .withSubject("A message from BE-Mesh network")
@@ -483,7 +487,6 @@ public class InitActivity extends Activity {
                     @Override
                     public void onSuccess() {
                         Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + " from here by " + idMitt, Toast.LENGTH_LONG).show();
-
                     }
 
                     @Override

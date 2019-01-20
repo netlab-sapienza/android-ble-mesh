@@ -190,6 +190,24 @@ public class Utility {
         return res;
     }
 
+    public static boolean sendRoutingTablePacket(byte[] packet, BluetoothGatt gatt, Listeners.OnPacketSentListener onPacketSent) {
+        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+        if (service == null) return false;
+        BluetoothGattCharacteristic chars = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
+        if (chars == null) return false;
+        chars.setValue(packet);
+        gatt.beginReliableWrite();
+        boolean res = gatt.writeCharacteristic(chars);
+        gatt.executeReliableWrite();
+        Log.d(TAG, "OUD: " + new String(packet));
+        Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+        if(onPacketSent != null) {
+            if(res) onPacketSent.OnPacketSent(packet);
+            else onPacketSent.OnPacketError("Error sending packet");
+        }
+        return res;
+    }
+
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, boolean internet, Listeners.OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
         boolean result = true;
@@ -298,10 +316,9 @@ public class Utility {
         int[] indexHolder = new int[1];
 
         final int[] infoSorg = new int[2];
-        final int[] infoDest = new int[2];
         infoSorg[0] = Integer.parseInt(id);
 
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), new String(value), false);
+        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(0, 0), new String(value), false);
 
         return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
@@ -335,10 +352,10 @@ public class Utility {
                         if(resultHolder[0]) {
                             Log.d(TAG, "OUD: sendRoutingTable: Messaggio inviato con successo");
                         }
-                        else Log.d(TAG, "OUD: sendRoutingTable: Not every package was sent");
+                        else Log.d(TAG, "OUD: sendRoutingTable: Error sending packet " + indexHolder[0]);
                     }
                     else {
-                        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],gatt, null);
+                        resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]],gatt, null);
                         indexHolder[0] += 1;
                     }
                 }
@@ -364,13 +381,14 @@ public class Utility {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
                     if (characteristic1 == null) return;
-                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],gatt, null);
+                    resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]],gatt, null);
                     indexHolder[0] += 1;
                 }
             }
         });
     }
 
+    /*
     public static ConnectBLETask createBroadcastRoutingTableClientOld(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
@@ -440,7 +458,7 @@ public class Utility {
             }
         });
     }
-
+    */
 
     public static byte[][] buildMapFromString(String mapString) {
         byte[][] res = new byte[ServerNode.MAX_NUM_SERVER][ServerNode.SERVER_PACKET_SIZE];

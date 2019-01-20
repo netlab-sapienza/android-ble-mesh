@@ -43,7 +43,6 @@ public class BLEClient {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         listeners = new LinkedList<>();
-
     }
 
     public static synchronized BLEClient getInstance(Context context) {

@@ -296,10 +296,12 @@ public class ConnectBLETask {
             public void OnPacketSent(byte[] packet) {
                 if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                     if(resultHolder[0]) {
-                        listener.OnMessageSent("Messaggio inviato con successo");
+                        if(listener != null) listener.OnMessageSent("Messaggio inviato con successo");
                         onPacketSent = null;
                     }
-                    else listener.OnCommunicationError("sendRoutingTable: Not every package was sent");
+                    else {
+                        if(listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                    }
                 }
                 else {
                     resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],mGatt, null);
@@ -315,14 +317,7 @@ public class ConnectBLETask {
 
         resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],this.mGatt, onPacketSent);
         indexHolder[0] += 1;
-        //return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
     }
-
-    /*
-    public boolean sendMessageOld(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
-        return Utility.sendMessage(message, this.mGatt, Utility.getIdArrayByString(getId()), Utility.getIdArrayByString(dest), internet, listener);
-
-    }*/
 
     public void startClient() {
         this.mGatt = server.getBluetoothDevice().connectGatt(context, false, mGattCallback);

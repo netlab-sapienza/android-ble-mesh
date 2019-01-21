@@ -11,7 +11,7 @@ Pre-requisites
 Getting Started
 ---------------
 
-You must set a folder in 'app/src/main/resources' two files with the following attributes:
+You must set a folder in *app/src/main/resources* two files with the following attributes:
 
    **email.properties:**
 

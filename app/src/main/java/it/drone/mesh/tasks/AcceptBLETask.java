@@ -458,7 +458,7 @@ public class AcceptBLETask {
                         client.startClient();
                     }
                     for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
-                        l.OnRoutingTableUpdated("Aggiunto mio nuovo client con id " + currentid);
+                        l.OnRoutingTableUpdated("Added client with id : " + currentid);
                     }
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientOnlineUUID)) { //Un altro server mi scrive un nuovo client nella rete
                     byte[] val = mGattCharacteristicClientOnline.getValue();
@@ -482,7 +482,7 @@ public class AcceptBLETask {
                         mNode.getServer("" + infoNewCLient[0]).setClientOnline("" + infoNewCLient[1], null);
                         Log.d(TAG, "OUD: new client online with id " + infoNewCLient[0] + infoNewCLient[1]);
                         for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
-                            l.OnRoutingTableUpdated("È entrato nella rete il nuovo client " + infoNewCLient[0] + "" + infoNewCLient[1]);
+                            l.OnRoutingTableUpdated("Join the network new client with id " + infoNewCLient[0] + "" + infoNewCLient[1]);
                         }
                     }
 

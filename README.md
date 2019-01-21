@@ -7,9 +7,13 @@ Pre-requisites
 --------------
 - The phone candidate to be server must support multipleAdvertisement
 - Android SDK >= 21
-- You must set a folder in app/src/main/resources two files with the following attributes:
 
-    **email.properties:**
+Getting Started
+---------------
+
+You must set a folder in app/src/main/resources two files with the following attributes:
+
+   **email.properties:**
 
 
 ```
@@ -18,7 +22,7 @@ email.password=
 
 ```    
     
- **twitter4j.properties:**
+   **twitter4j.properties:**
 
 ```
 debug=true
@@ -27,9 +31,3 @@ oauth.consumerSecret=
 oauth.accessToken=
 oauth.accessTokenSecret=
 ```
-
-
-Getting Started
----------------
-
-TBA

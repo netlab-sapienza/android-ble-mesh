@@ -300,7 +300,7 @@ public class InitActivity extends Activity {
 
                         @Override
                         public void OnCommunicationError(String error) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Network communtication error: " + error, Toast.LENGTH_LONG).show());
                         }
                     });
                 }
@@ -370,7 +370,7 @@ public class InitActivity extends Activity {
 
                         @Override
                         public void OnCommunicationError(String error) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Network communtication error: " + error, Toast.LENGTH_LONG).show());
                         }
                     });
                 }

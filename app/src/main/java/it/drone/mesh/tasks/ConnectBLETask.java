@@ -150,7 +150,7 @@ public class ConnectBLETask {
                 if (previousMsg == null) previousMsg = "";
                 messageMap.put(senderId, previousMsg + valueReceived);
 
-                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " + valueReceived);
+                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " +previousMsg+ valueReceived);
                 if (Utility.getBit(sorgByte, 0) != 0) {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
@@ -284,16 +284,19 @@ public class ConnectBLETask {
 
     // TODO: 19/01/19 DA TESTARE 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        Log.d(TAG, "OUD: Send Message : " + message);
         int[] infoSorg = Utility.getIdArrayByString(getId());
         int[] infoDest = Utility.getIdArrayByString(dest);
         byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
 
         boolean[] resultHolder = new boolean[1];
+        //resultHolder[0] = false;
         int[] indexHolder = new int[1];
 
         this.onPacketSent = new Listeners.OnPacketSentListener() {
             @Override
             public void OnPacketSent(byte[] packet) {
+                Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
                 if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                     if(resultHolder[0]) {
                         if(listener != null) listener.OnMessageSent(message);
@@ -304,6 +307,7 @@ public class ConnectBLETask {
                     }
                 }
                 else {
+                    Log.d(TAG, "OUD: nPacketSent: " + new String(finalMessage[indexHolder[0]]));
                     resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],mGatt, null);
                     indexHolder[0] += 1;
                 }

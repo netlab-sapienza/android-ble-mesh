@@ -59,7 +59,7 @@ public class AcceptBLETask {
     private ArrayList<Listeners.OnServerInitializedListener> serverInitializedListeners;
     private ArrayList<Listeners.OnMessageReceivedListener> messageReceivedListeners;
     private RoutingTable routingTable;
-
+    private HashMap<BluetoothDevice,Listeners.OnPacketSentListener> listenerHashMap;
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
@@ -70,6 +70,7 @@ public class AcceptBLETask {
         serverInitializedListeners = new ArrayList<>();
         messageReceivedListeners = new ArrayList<>();
         messageMap = new HashMap<>();
+        listenerHashMap = new HashMap<>();
         nearDeviceMap = null;
         routingTable = RoutingTable.getInstance();
         mGattService = new BluetoothGattService(Constants.ServiceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -174,7 +175,21 @@ public class AcceptBLETask {
 
                                     @Override
                                     public void OnNewServerNotFound() {
-                                        Log.e(TAG, "OUD: " + "NON IMPLEMENTATO");
+                                        Log.e(TAG, "OUD: " + "Server non trovato");
+                                        Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
+                                            @Override
+                                            public void OnNewServerDiscovered(BluetoothDevice server) {
+                                                Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
+                                                final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
+                                                clientNuovoServ.startClient();
+                                            }
+
+                                            @Override
+                                            public void OnNewServerNotFound() {
+                                                Log.e(TAG, "OUD: " + "Server non trovato");
+
+                                            }
+                                        });
                                     }
                                 });
                             }
@@ -267,7 +282,7 @@ public class AcceptBLETask {
                             }
                         }
 
-                        if (Utility.getBit(sorgByte, 0) != 0) {
+                        /*if (Utility.getBit(sorgByte, 0) != 0) {
                             Log.d(TAG, "OUD: " + "NOT last message");
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
                             try {
@@ -282,7 +297,10 @@ public class AcceptBLETask {
                                 }
                             } catch (IllegalArgumentException e) {
                                 e.printStackTrace();
-                            }
+                            }*/
+                        if (Utility.getBit(sorgByte, 0) != 0) {
+                            Log.d(TAG, "OUD: " + "NOT last message");
+                            mGattServer.sendResponse(device, requestId, 0, 0, null);
                             return;
                         }
                         mGattServer.sendResponse(device, requestId, 0, 0, null);
@@ -292,11 +310,11 @@ public class AcceptBLETask {
                             String[] infoMessage = messageReceived.split(";;");
                             int hop;
                             try {
-                                hop = Integer.parseInt(infoMessage[1]);
-                                infoMessage[1] = "" + hop + 1;
+                                hop = Integer.parseInt(infoMessage[1]) + 1;
                                 message = infoMessage[0] + ";;" + hop + ";;" + infoMessage[2];
                             } catch (NumberFormatException e) {
                                 Log.d(TAG, "OUD: Errore, messaggio malformato, non lo propago. Message: " + messageReceived);
+                                messageMap.remove(senderId);
                                 return;
                             }
                         } else message = messageReceived;
@@ -307,6 +325,8 @@ public class AcceptBLETask {
                         mHandler.post(() -> Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + " per " + Utility.getStringId(destByte) + ", messaggio: " + messageReceived, Toast.LENGTH_LONG).show());
                         if (Utility.getBit(destByte, 0) == 1) {
                             //Messaggio con internet
+                            Log.d(TAG, "OUD: onCharacteristicWriteRequest: msg internet");
+
                             if (mNode.hasInternet()) {
                                 Log.d(TAG, "Ho io Internet continua");
                                 for (Listeners.OnMessageWithInternetListener listener : messageReceivedWithInternetListeners)
@@ -316,15 +336,17 @@ public class AcceptBLETask {
                                 for (int i = 0; i < 8; i++) {
                                     if (Utility.getBit(mNode.getClientByteInternet(), i) == 1) {
                                         //il mio client ha internet devo notificarlo
-                                        BluetoothDevice dest = mNode.getClient(clientInternet);
-                                        if (dest == null) return;
-                                        try {
-                                            characteristic.setValue(value);
-                                            boolean res = mGattServer.notifyCharacteristicChanged(dest, characteristic, false);
-                                            Log.d(TAG, "OUD: " + "Notification sent? --> " + res);
-                                        } catch (IllegalArgumentException e) {
-                                            Log.d(TAG, "OUD: " + e.getMessage());
-                                        }
+                                        sendMessage(message,getId(),getId()+i,true,new Listeners.OnMessageSentListener() {
+                                            @Override
+                                            public void OnMessageSent(String messageSent) {
+                                                Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
+                                            }
+
+                                            @Override
+                                            public void OnCommunicationError(String error) {
+                                                Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
+                                            }
+                                        });
                                         break;
                                     }
                                 }
@@ -342,8 +364,9 @@ public class AcceptBLETask {
                                     }
                                 });
                             }
-                        } else if ((infoDest[0] + "").equals(getId())) { //messaggio senza internet
-                            if (infoDest[1] == 0) {
+                        } else { //messaggio senza internet
+                            Log.d(TAG, "OUD: onCharacteristicWriteRequest: msg no internet");
+                            if (infoDest[1] == 0 && (infoDest[0]+"").equals(getId())) {
                                 Log.d(TAG, "OUD: messaggio per me ");
                                 String[] messageSplitted = message.split(";;");
                                 int hop = -1;
@@ -359,33 +382,21 @@ public class AcceptBLETask {
                                 }
                                 return;
                             }
-                            BluetoothDevice dest = mNode.getClient("" + infoDest[1]);
-                            if (dest == null) {
-                                Log.d(TAG, "OUD: " + "null, exiting");
-                                return;
-                            }
-                            try {
-                                characteristic.setValue(value);
-                                boolean res = mGattServer.notifyCharacteristicChanged(dest, characteristic, false);
-                                Log.d(TAG, "OUD: " + "Notification sent? --> " + res);
-                            } catch (IllegalArgumentException e) {
-                                Log.d(TAG, "OUD: " + e.getMessage());
-                            }
-                            return;
-                        } else {
-                            Log.d(TAG, "OUD: Non sono il destinatario");
-                            sendMessage(message,infoSorg[0] + "" + infoSorg[1], infoDest[0] + "" + infoDest[1], false, new Listeners.OnMessageSentListener() {
-                                @Override
-                                public void OnMessageSent(String message) {
-                                    Log.d(TAG, "OUD: messaggio \"" + message + "\"rigirato con successo");
+                            else {
+                                Log.d(TAG, "OUD: Non sono io il destinatario");
+                                sendMessage(message,infoSorg[0] + "" + infoSorg[1], infoDest[0] + "" + infoDest[1], false, new Listeners.OnMessageSentListener() {
+                                    @Override
+                                    public void OnMessageSent(String message) {
+                                        Log.d(TAG, "OUD: messaggio \"" + message + "\"rigirato con successo");
 
-                                }
+                                    }
 
-                                @Override
-                                public void OnCommunicationError(String error) {
-                                    Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
-                                }
-                            });
+                                    @Override
+                                    public void OnCommunicationError(String error) {
+                                        Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
+                                    }
+                                });
+                            }
                         }
                     }
                 }
@@ -493,6 +504,8 @@ public class AcceptBLETask {
             @Override
             public void onNotificationSent(BluetoothDevice device, int status) {
                 Log.d(TAG, "OUD: " + "I've notified " + device.getName());
+                Listeners.OnPacketSentListener list = listenerHashMap.get(device);
+                if (list != null) list.OnPacketSent(null);
                 super.onNotificationSent(device, status);
             }
         };
@@ -688,9 +701,9 @@ public class AcceptBLETask {
 
     // TODO: 19/01/19 DA TESTARE
     public void sendMessage(String message,String mitt, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
-        int infoSorg[] = new int[2];
-        infoSorg[0] = Integer.parseInt(getId());
+        int infoSorg[] = Utility.getIdArrayByString(mitt);
         int infoDest[] = Utility.getIdArrayByString(dest);
+        Log.d(TAG, "OUD: message: " + message);
         if (infoDest[0] == Integer.parseInt(getId())) {
             if (infoDest[1] == 0) {
                 Log.e(TAG, "OUD: sendMessage: Messaggio per me stessso");
@@ -699,13 +712,46 @@ public class AcceptBLETask {
             }
             //messaggio al mio client devo notificarlo
             byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
-            for (int i = 0; i < finalMessage.length; i++) {
+            /*for (int i = 0; i < finalMessage.length; i++) {
                 BluetoothDevice dev = mNode.getClient("" + infoDest[1]);
                 mGattCharacteristic.setValue(finalMessage[i]);
                 boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
                 Log.d(TAG, "OUD: i've notified new server Online " + res);
             }
-            listener.OnMessageSent(message);
+            listener.OnMessageSent(message);*/
+            boolean[] resultHolder = new boolean[1];
+            int[] indexHolder = new int[1];
+
+            BluetoothDevice dev = mNode.getClient(""+ infoDest[1]);
+            Listeners.OnPacketSentListener onPacketSent = new Listeners.OnPacketSentListener() {
+                @Override
+                public void OnPacketSent(byte[] packet) {
+                    Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
+                    if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                        if(resultHolder[0]) {
+                            if(listener != null) listener.OnMessageSent(message);
+                            listenerHashMap.remove(dev);
+                        }
+                        else {
+                            if(listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                        }
+                    }
+                    else {
+                        mGattCharacteristic.setValue(finalMessage[indexHolder[0]]);
+                        resultHolder[0] = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
+                        indexHolder[0] += 1;
+                    }
+                }
+
+                @Override
+                public void OnPacketError(String error) {
+                    listener.OnCommunicationError(error);
+                }
+            };
+            listenerHashMap.put(dev,onPacketSent);
+            mGattCharacteristic.setValue(finalMessage[indexHolder[0]]);
+            resultHolder[0] = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
+            indexHolder[0] += 1;
         } else {
             //non sono io il destinatario
             final ServerNode nodeDest;

@@ -192,6 +192,8 @@ public class InitActivity extends Activity {
                         new Handler(Looper.getMainLooper()).post(() -> {
                             myId.setText(server.getId());
                             whoAmI.setText(R.string.server);
+                            sendEmail.setVisibility(View.VISIBLE);
+                            sendTweet.setVisibility(View.VISIBLE);
                         });
                     });
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
@@ -292,17 +294,31 @@ public class InitActivity extends Activity {
                     tweetSomething(tweetInput.getText().toString());
                 } else {
                     String message = TWITTER_REQUEST + ";;" + tweetInput.getText();
-                    client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                        @Override
-                        public void OnMessageSent(String message) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                        }
+                    if (client != null) {
+                        client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
 
-                        @Override
-                        public void OnCommunicationError(String error) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
-                        }
-                    });
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    } else {
+                        server.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    }
                 }
 
             });
@@ -312,7 +328,7 @@ public class InitActivity extends Activity {
         });
 
         sendEmail.setOnClickListener(view -> {
-            if (client == null || client.getConnectBLETask() == null) {
+            if ((client == null || client.getConnectBLETask() == null) && (server == null ||server.getAcceptBLETask() == null)) {
                 Toast.makeText(this, "Not connected in the BLE mesh", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -354,25 +370,43 @@ public class InitActivity extends Activity {
 
             builder.setPositiveButton("OK", (dialog, which) -> {
 
+                String id;
+                if (client == null) id = server.getId();
+                else id = client.getId();
+
                 if (Utility.isDeviceOnline(getApplicationContext())) {
                     try {
-                        sendAMail(destEmail.getText().toString(), bodyEmail.getText().toString(), client.getId());
+                        sendAMail(destEmail.getText().toString(), bodyEmail.getText().toString(), id);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
                     String message = EMAIL_REQUEST + ";;" + destEmail.getText() + ";;" + bodyEmail.getText();
-                    client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                        @Override
-                        public void OnMessageSent(String message) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                        }
+                    if (client != null) {
+                        client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
 
-                        @Override
-                        public void OnCommunicationError(String error) {
-                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
-                        }
-                    });
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    } else {
+                        server.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    }
                 }
 
             });

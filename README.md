@@ -5,8 +5,25 @@ drone-ble-mesh
 
 Pre-requisites
 --------------
-- The phone must support multipleAdvertisment
+- The phone candidate to be server must support multipleAdvertisement
 - Android SDK >= 21
+- You must set a folder in app/src/main/resources two files with the following attributes:
+
+    1. email.properties
+```
+email.username=
+email.password=
+
+```
+2. twitter4j.properties
+```
+debug=true
+oauth.consumerKey=
+oauth.consumerSecret=
+oauth.accessToken=
+oauth.accessTokenSecret=
+```
+
 
 Getting Started
 ---------------

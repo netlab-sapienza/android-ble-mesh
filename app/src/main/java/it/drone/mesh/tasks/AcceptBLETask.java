@@ -59,7 +59,7 @@ public class AcceptBLETask {
     private ArrayList<Listeners.OnServerInitializedListener> serverInitializedListeners;
     private ArrayList<Listeners.OnMessageReceivedListener> messageReceivedListeners;
     private RoutingTable routingTable;
-    private HashMap<BluetoothDevice,Listeners.OnPacketSentListener> listenerHashMap;
+    private HashMap<BluetoothDevice, Listeners.OnPacketSentListener> listenerHashMap;
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
@@ -210,7 +210,7 @@ public class AcceptBLETask {
                             }
                             Log.d(TAG, "OUD: " + "LAST MESSAGE");
                             String stringMap = messageMap.get(senderId);
-                            if(stringMap == null) return;
+                            if (stringMap == null) return;
                             byte[][] map = Utility.buildMapFromString(stringMap);
 
                             mNode.printMapStatus();
@@ -269,7 +269,7 @@ public class AcceptBLETask {
                         String clientInternet = "";
                         if (Utility.getBit(destByte, 0) == 1) {
                             //Messaggio con internet
-                            if (mNode.hasInternet()) {
+                            if (Utility.isDeviceOnline(context)) {
                                 Log.d(TAG, "Ho io Internet continua");
                             } else {
                                 for (int i = 0; i < 8; i++) {
@@ -322,12 +322,12 @@ public class AcceptBLETask {
                         messageMap.remove(senderId);
 
                         Handler mHandler = new Handler(Looper.getMainLooper());
-                        mHandler.post(() -> Toast.makeText(context, "Messaggio ricevuto dall'utente " + senderId + " per " + Utility.getStringId(destByte) + ", messaggio: " + messageReceived, Toast.LENGTH_LONG).show());
+                        mHandler.post(() -> Toast.makeText(context, "Message received from user " + senderId + " to user " + Utility.getStringId(destByte) + ", message content: " + messageReceived, Toast.LENGTH_LONG).show());
                         if (Utility.getBit(destByte, 0) == 1) {
                             //Messaggio con internet
                             Log.d(TAG, "OUD: onCharacteristicWriteRequest: msg internet");
 
-                            if (mNode.hasInternet()) {
+                            if (Utility.isDeviceOnline(context)) {
                                 Log.d(TAG, "Ho io Internet continua");
                                 for (Listeners.OnMessageWithInternetListener listener : messageReceivedWithInternetListeners)
                                     listener.OnMessageWithInternet(senderId, message);
@@ -336,7 +336,7 @@ public class AcceptBLETask {
                                 for (int i = 0; i < 8; i++) {
                                     if (Utility.getBit(mNode.getClientByteInternet(), i) == 1) {
                                         //il mio client ha internet devo notificarlo
-                                        sendMessage(message,getId(),getId()+i,true,new Listeners.OnMessageSentListener() {
+                                        sendMessage(message, getId(), getId() + i, true, new Listeners.OnMessageSentListener() {
                                             @Override
                                             public void OnMessageSent(String messageSent) {
                                                 Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
@@ -352,7 +352,7 @@ public class AcceptBLETask {
                                 }
                             } else {
                                 //non sono io che ho internet
-                                sendMessage(message, infoSorg[0] + "" + infoSorg[1],infoDest[0] + "" + infoDest[1], true, new Listeners.OnMessageSentListener() {
+                                sendMessage(message, infoSorg[0] + "" + infoSorg[1], infoDest[0] + "" + infoDest[1], true, new Listeners.OnMessageSentListener() {
                                     @Override
                                     public void OnMessageSent(String messageSent) {
                                         Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
@@ -366,7 +366,7 @@ public class AcceptBLETask {
                             }
                         } else { //messaggio senza internet
                             Log.d(TAG, "OUD: onCharacteristicWriteRequest: msg no internet");
-                            if (infoDest[1] == 0 && (infoDest[0]+"").equals(getId())) {
+                            if (infoDest[1] == 0 && (infoDest[0] + "").equals(getId())) {
                                 Log.d(TAG, "OUD: messaggio per me ");
                                 String[] messageSplitted = message.split(";;");
                                 int hop = -1;
@@ -381,10 +381,9 @@ public class AcceptBLETask {
                                     l.OnMessageReceived(infoSorg[0] + "" + infoSorg[1], messageSplitted[2], hop, timestamp);
                                 }
                                 return;
-                            }
-                            else {
+                            } else {
                                 Log.d(TAG, "OUD: Non sono io il destinatario");
-                                sendMessage(message,infoSorg[0] + "" + infoSorg[1], infoDest[0] + "" + infoDest[1], false, new Listeners.OnMessageSentListener() {
+                                sendMessage(message, infoSorg[0] + "" + infoSorg[1], infoDest[0] + "" + infoDest[1], false, new Listeners.OnMessageSentListener() {
                                     @Override
                                     public void OnMessageSent(String message) {
                                         Log.d(TAG, "OUD: messaggio \"" + message + "\"rigirato con successo");
@@ -488,8 +487,8 @@ public class AcceptBLETask {
 
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientWithInternetUUID)) { //il client ha internet
                     String clientId = new String(value);
-                    mNode.setClientInternet(Integer.parseInt(clientId.substring(0, 1)));
-                    // TODO: 14/01/19 Propagare la notizia che si ha internet 
+                    mNode.setClientInternet(Integer.parseInt(clientId.substring(1, 2)));
+                    // TODO: 14/01/19 Propagare la notizia che si ha internet, fare meglio il parsing dell'id alla riga sopra
                 }
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
@@ -699,15 +698,15 @@ public class AcceptBLETask {
         this.nearDeviceMap = nearDeviceMap;
     }
 
-    // TODO: 19/01/19 DA TESTARE
-    public void sendMessage(String message,String mitt, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+
+    public void sendMessage(String message, String mitt, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         int infoSorg[] = Utility.getIdArrayByString(mitt);
         int infoDest[] = Utility.getIdArrayByString(dest);
         Log.d(TAG, "OUD: message: " + message);
         if (infoDest[0] == Integer.parseInt(getId())) {
             if (infoDest[1] == 0) {
                 Log.e(TAG, "OUD: sendMessage: Messaggio per me stessso");
-                listener.OnCommunicationError("You cannot send message to yourself!!");
+                listener.OnCommunicationError("You cannot send message to yourself.");
                 return;
             }
             //messaggio al mio client devo notificarlo
@@ -722,21 +721,20 @@ public class AcceptBLETask {
             boolean[] resultHolder = new boolean[1];
             int[] indexHolder = new int[1];
 
-            BluetoothDevice dev = mNode.getClient(""+ infoDest[1]);
+            BluetoothDevice dev = mNode.getClient("" + infoDest[1]);
             Listeners.OnPacketSentListener onPacketSent = new Listeners.OnPacketSentListener() {
                 @Override
                 public void OnPacketSent(byte[] packet) {
                     Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
-                    if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
-                        if(resultHolder[0]) {
-                            if(listener != null) listener.OnMessageSent(message);
+                    if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                        if (resultHolder[0]) {
+                            if (listener != null) listener.OnMessageSent(message);
                             listenerHashMap.remove(dev);
+                        } else {
+                            if (listener != null)
+                                listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
                         }
-                        else {
-                            if(listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
-                        }
-                    }
-                    else {
+                    } else {
                         mGattCharacteristic.setValue(finalMessage[indexHolder[0]]);
                         resultHolder[0] = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
                         indexHolder[0] += 1;
@@ -748,7 +746,7 @@ public class AcceptBLETask {
                     listener.OnCommunicationError(error);
                 }
             };
-            listenerHashMap.put(dev,onPacketSent);
+            listenerHashMap.put(dev, onPacketSent);
             mGattCharacteristic.setValue(finalMessage[indexHolder[0]]);
             resultHolder[0] = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
             indexHolder[0] += 1;
@@ -756,8 +754,10 @@ public class AcceptBLETask {
             //non sono io il destinatario
             final ServerNode nodeDest;
 
-            if(internet) nodeDest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
-            else nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
+            if (internet)
+                nodeDest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
+            else
+                nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
 
             if (nodeDest == null) {
                 Log.e(TAG, "next hop null");
@@ -808,7 +808,8 @@ public class AcceptBLETask {
                         if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                             if (resultHolder[0]) {
                                 listener.OnMessageSent(message);
-                            } else listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                            } else
+                                listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
                         } else {
                             resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], gatt, null);
                             indexHolder[0] += 1;

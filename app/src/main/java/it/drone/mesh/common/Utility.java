@@ -187,8 +187,8 @@ public class Utility {
         gatt.executeReliableWrite();
         Log.d(TAG, "OUD: " + new String(packet));
         Log.d(TAG, "OUD: " + "sent? -> " + res);
-        if(onPacketSent != null) {
-            if(res) onPacketSent.OnPacketSent(packet);
+        if (onPacketSent != null) {
+            if (res) onPacketSent.OnPacketSent(packet);
             else onPacketSent.OnPacketError("Error sending packet");
         }
         return res;
@@ -203,12 +203,12 @@ public class Utility {
         gatt.beginReliableWrite();
         boolean res = gatt.writeCharacteristic(chars);
         gatt.executeReliableWrite();
-        for (int i = 0; i <packet.length ; i++) {
+        for (int i = 0; i < packet.length; i++) {
             Utility.printByte(packet[i]);
         }
         Log.d(TAG, "OUD: " + "sent? -> " + res);
-        if(onPacketSent != null) {
-            if(res) onPacketSent.OnPacketSent(packet);
+        if (onPacketSent != null) {
+            if (res) onPacketSent.OnPacketSent(packet);
             else onPacketSent.OnPacketError("Error sending packet");
         }
         return res;
@@ -248,7 +248,6 @@ public class Utility {
         return builder.build();
     }
 
-    // TODO: 19/01/19 DA TESTARE
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         boolean[] resultHolder = new boolean[1];
         int[] indexHolder = new int[1];
@@ -286,14 +285,13 @@ public class Utility {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d(TAG, "OUD: " + "i wrote a characteristic !");
-                    if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
-                        if(resultHolder[0]) {
+                    if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                        if (resultHolder[0]) {
                             Log.d(TAG, "OUD: sendRoutingTable: Messaggio inviato con successo");
-                        }
-                        else Log.d(TAG, "OUD: sendRoutingTable: Error sending packet " + indexHolder[0]);
-                    }
-                    else {
-                        resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]],gatt, null);
+                        } else
+                            Log.d(TAG, "OUD: sendRoutingTable: Error sending packet " + indexHolder[0]);
+                    } else {
+                        resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]], gatt, null);
                         indexHolder[0] += 1;
                     }
                 }
@@ -319,7 +317,7 @@ public class Utility {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
                     if (characteristic1 == null) return;
-                    resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]],gatt, null);
+                    resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]], gatt, null);
                     indexHolder[0] += 1;
                 }
             }

@@ -7,7 +7,10 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -95,11 +98,11 @@ public class ConnectBLETask {
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                if(status == BluetoothGatt.GATT_SUCCESS) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d(TAG, "OUD: " + "I wrote a characteristic");
                     onPacketSent.OnPacketSent(characteristic.getValue());
-                }
-                else onPacketSent.OnPacketError("Errore nell'invio del pacchetto, status: " + status);
+                } else
+                    onPacketSent.OnPacketError("Errore nell'invio del pacchetto, status: " + status);
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
 
@@ -150,7 +153,9 @@ public class ConnectBLETask {
                 if (previousMsg == null) previousMsg = "";
                 messageMap.put(senderId, previousMsg + valueReceived);
 
-                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " +previousMsg+ valueReceived);
+                Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " + previousMsg + valueReceived);
+                Handler mHandler = new Handler(Looper.getMainLooper());
+                mHandler.post(() -> Toast.makeText(context, "Message received from user " + senderId + " to me ", Toast.LENGTH_LONG).show());
                 if (Utility.getBit(sorgByte, 0) != 0) {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
@@ -159,11 +164,10 @@ public class ConnectBLETask {
                     if (Utility.getBit(destByte, 0) == 1) {
                         //Internet message
                         Log.d(TAG, "OUD: " + "messaggio con internet");
-                        for (Listeners.OnMessageWithInternetListener l: internetListeners) {
+                        for (Listeners.OnMessageWithInternetListener l : internetListeners) {
                             l.OnMessageWithInternet(senderId, messageMap.get(senderId));
                         }
-                    }
-                    else {
+                    } else {
                         Log.d(TAG, "OUD: " + "messaggio normale");
                         String message = messageMap.get(senderId);
                         if (message == null) return;
@@ -281,8 +285,6 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
-
-    // TODO: 19/01/19 DA TESTARE 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         Log.d(TAG, "OUD: Send Message : " + message);
         int[] infoSorg = Utility.getIdArrayByString(getId());
@@ -297,18 +299,17 @@ public class ConnectBLETask {
             @Override
             public void OnPacketSent(byte[] packet) {
                 Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
-                if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
-                    if(resultHolder[0]) {
-                        if(listener != null) listener.OnMessageSent(message);
+                if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                    if (resultHolder[0]) {
+                        if (listener != null) listener.OnMessageSent(message);
                         onPacketSent = null;
+                    } else {
+                        if (listener != null)
+                            listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
                     }
-                    else {
-                        if(listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
-                    }
-                }
-                else {
+                } else {
                     Log.d(TAG, "OUD: nPacketSent: " + new String(finalMessage[indexHolder[0]]));
-                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],mGatt, null);
+                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], mGatt, null);
                     indexHolder[0] += 1;
                 }
             }
@@ -319,7 +320,7 @@ public class ConnectBLETask {
             }
         };
 
-        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]],this.mGatt, onPacketSent);
+        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], this.mGatt, onPacketSent);
         indexHolder[0] += 1;
     }
 

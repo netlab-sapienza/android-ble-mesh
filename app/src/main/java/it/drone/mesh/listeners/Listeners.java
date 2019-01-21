@@ -10,10 +10,6 @@ import it.drone.mesh.models.Server;
 public class Listeners {
     public interface OnMessageReceivedListener {
         void OnMessageReceived(String idMitt, String message, int hopNumber, long sendTimeStamp);
-
-
-        // TODO: 14/01/2019 fare i cambi necessari ed eliminare questa funzione
-        //void OnMessageReceived(String idMitt, String message);
     }
 
 

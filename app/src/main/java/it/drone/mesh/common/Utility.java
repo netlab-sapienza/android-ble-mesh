@@ -167,6 +167,10 @@ public class Utility {
     public static int[] getIdArrayByString(String id) {
         int[] res = new int[2];
         Log.d(TAG, "getIdArrayByString: id: " + id);
+        if (id.length() == 1) {
+            res[0] = Integer.parseInt(id);
+            return res;
+        }
         res[0] = (id.length() == 2) ? (Integer.parseInt(id.substring(0, 1))) : (Integer.parseInt(id.substring(0, 2)));
         res[1] = (id.length() == 2) ? (Integer.parseInt(id.substring(1, 2))) : (Integer.parseInt(id.substring(2, 3)));
         return res;
@@ -209,75 +213,6 @@ public class Utility {
         }
         return res;
     }
-
-    /*
-    public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, boolean internet, Listeners.OnMessageSentListener listener) {
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
-        boolean result = true;
-
-        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-        if (service == null) return false;
-        BluetoothGattCharacteristic chars = service.getCharacteristic(Constants.CharacteristicUUID);
-        if (chars == null) return false;
-
-        Log.d(TAG, "OUD:" + "Char: " + chars.toString());
-        for (byte[] messagePart : finalMessage) {
-            chars.setValue(messagePart);
-            gatt.beginReliableWrite();
-            boolean res = gatt.writeCharacteristic(chars);
-            result = res && result;
-            gatt.executeReliableWrite();
-            Log.d(TAG, "OUD: " + new String(messagePart));
-            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
-            try {
-                Thread.sleep(400);
-            } catch (Exception e) {
-                Log.e(TAG, "OUD: " + "Andata male la wait");
-            }
-        }
-        Log.d(TAG, "OUD: " + "sendMessage: end ");
-        if (result && listener != null) {
-            listener.OnMessageSent(message);
-        } else if (listener != null) {
-            listener.OnCommunicationError("Error");
-        }
-        return result;
-    }
-
-    public static boolean sendRoutingTable(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest) {
-
-        byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(infoDest[0], infoDest[1]), message, false);
-
-        boolean result = true;
-        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-        if (service == null) {
-            Log.d(TAG, "OUD: " + "il service era NULL");
-            return false;
-        }
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-        if (characteristic == null) {
-            Log.d(TAG, "OUD: " + "la caratteristica era NULL");
-            return false;
-        }
-
-        for (int i = 0; i < finalMessage.length; i++) {
-            characteristic.setValue(finalMessage[i]);
-            gatt.beginReliableWrite();
-            boolean res = gatt.writeCharacteristic(characteristic);
-            result = res && result;
-            gatt.executeReliableWrite();
-            Log.d(TAG, "OUD: " + "Inviato? -> " + res);
-            try {
-                Thread.sleep(400);
-            } catch (Exception e) {
-                Log.d(TAG, "OUD: " + "Andata male la wait");
-            }
-            if (i == finalMessage.length - 1) return result;
-        }
-        Log.d(TAG, "OUD: " + "sendMessage: end ");
-        return false;
-    }
-    */
 
     /**
      * Use this check to determine whether BLE is supported on the device. Then

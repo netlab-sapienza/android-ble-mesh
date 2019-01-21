@@ -80,7 +80,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 String messageToSend = deviceViewHolder.messageToSend.getText().toString();
                 deviceViewHolder.messageToSend.setText("");
                 deviceViewHolder.messageToSend.clearFocus();
-                DeviceAdapter.this.sendMessage(device.getId(), (System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) + ";;1;;" + messageToSend, false, new Listeners.OnMessageSentListener() {
+                DeviceAdapter.this.sendMessage(device.getId(), (System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) + ";;0;;" + messageToSend, false, new Listeners.OnMessageSentListener() {
                     @Override
                     public void OnMessageSent(final String message) {
                         new Handler(Looper.getMainLooper()).post(() -> {
@@ -92,7 +92,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
 
                     @Override
                     public void OnCommunicationError(final String error) {
-                        new Handler(Looper.myLooper()).post(() -> {
+                        new Handler(Looper.getMainLooper()).post(() -> {
                             deviceViewHolder.input.setText(String.format("%s%s", deviceViewHolder.input.getText(), error));
                             notifyDataSetChanged();
                         });
@@ -151,9 +151,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         client = BLEClient.getInstance(context);
         client.addReceivedListener((idMitt, message, numHop, sentTimeStamp) -> {
             for (Device device : devices) {
-                Log.d(TAG, "OUD: " + "for device in devices");
                 if (device.getId().equals(idMitt)) {
-                    Log.d(TAG, "OUD: " + "id giusto");
                     device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sentTimeStamp) + ", Message: " + message + ", Hop: " + numHop);
                 }
             }
@@ -174,9 +172,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         server = BLEServer.getInstance(context);
         server.addOnMessageReceivedListener((idMitt, message, hop, sendTimeStamp) -> {
             for (Device device : devices) {
-                Log.d(TAG, "OUD: " + "for device in devices");
                 if (device.getId().equals(idMitt)) {
-                    Log.d(TAG, "OUD: " + "id giusto");
                     device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sendTimeStamp) + ", Message: " + message + ", NumHop: " + hop);
                     new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
                 }

@@ -29,6 +29,8 @@ public class Device {
     }
 
     public void writeInput(String input) {
+        // comment if you want full input
+        this.input.setLength(0);
         this.input.append(input).append("\n");
     }
 
@@ -37,7 +39,10 @@ public class Device {
     }
 
     public void writeOutput(String output) {
+        // comment if you want full output
+        this.output.setLength(0);
         this.output.append(output).append("\n");
+
     }
 
     @Override

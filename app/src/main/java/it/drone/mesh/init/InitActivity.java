@@ -130,9 +130,9 @@ public class InitActivity extends Activity {
                         Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
                         Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
                         deviceAdapter.setOffset(offset);
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
                     }, throwable -> {
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Errore, probabilmente non sei connesso ad internet", Toast.LENGTH_SHORT).show());
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
                         throwable.printStackTrace();
                     });
         }
@@ -303,7 +303,7 @@ public class InitActivity extends Activity {
 
                             @Override
                             public void OnCommunicationError(String error) {
-                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
                             }
                         });
                     } else {
@@ -315,7 +315,7 @@ public class InitActivity extends Activity {
 
                             @Override
                             public void OnCommunicationError(String error) {
-                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
                             }
                         });
                     }

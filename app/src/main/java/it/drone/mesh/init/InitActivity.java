@@ -30,6 +30,7 @@ import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
@@ -85,7 +86,7 @@ public class InitActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long offset = Constants.NO_OFFSET;
-        canIBeServer = true;
+        canIBeServer = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
@@ -96,8 +97,8 @@ public class InitActivity extends Activity {
         sendEmail = findViewById(R.id.sendMail);
         canIBeServerSwitch = findViewById(R.id.canIBeServerSwitch);
 
-        // sendEmail.setVisibility(View.GONE);
-        // sendTweet.setVisibility(View.GONE);
+        sendEmail.setVisibility(View.GONE);
+        sendTweet.setVisibility(View.GONE);
 
         canIBeServerSwitch.setVisibility(View.GONE);
         canIBeServerSwitch.setChecked(canIBeServer);
@@ -185,8 +186,7 @@ public class InitActivity extends Activity {
                     });
                     server.startServer();
                     server.addServerInitializedListener(() -> {
-                        myId.setText(server.getId());
-                        whoAmI.setText(R.string.server);
+                        new Handler(Looper.getMainLooper()).post(() -> {myId.setText(server.getId()); whoAmI.setText(R.string.server);});
                     });
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
@@ -202,6 +202,7 @@ public class InitActivity extends Activity {
                         }
                     });
                     server.setEnoughServerListener((newServer) -> {
+                        Log.d(TAG, "OUD: Stop server");
                         server.stopServer();
                         client = BLEClient.getInstance(getApplicationContext());
                         client.startClient(newServer);
@@ -337,8 +338,7 @@ public class InitActivity extends Activity {
 
     private void askPermissions(Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
                 askPermissionsStorage();
             } else {
@@ -431,7 +431,6 @@ public class InitActivity extends Activity {
 
                 // Is Bluetooth turned on?
                 if (mBluetoothAdapter.isEnabled()) {
-
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
@@ -453,6 +452,15 @@ public class InitActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == REQUEST_ENABLE_BT) {
+            if(resultCode == RESULT_OK) {
+                checkBluetoothAvailability();
+            }
+            else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+        }
+    }
 
     private void tweetSomething(String tweetToUpdate) {
         HandlerThread handlerThread = new HandlerThread("Twitter");

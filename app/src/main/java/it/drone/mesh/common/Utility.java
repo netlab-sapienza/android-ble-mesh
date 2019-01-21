@@ -182,10 +182,10 @@ public class Utility {
         boolean res = gatt.writeCharacteristic(chars);
         gatt.executeReliableWrite();
         Log.d(TAG, "OUD: " + new String(packet));
-        Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+        Log.d(TAG, "OUD: " + "sent? -> " + res);
         if(onPacketSent != null) {
             if(res) onPacketSent.OnPacketSent(packet);
-            else onPacketSent.OnPacketError("Errore nell'invio del pacchetto");
+            else onPacketSent.OnPacketError("Error sending packet");
         }
         return res;
     }
@@ -199,8 +199,10 @@ public class Utility {
         gatt.beginReliableWrite();
         boolean res = gatt.writeCharacteristic(chars);
         gatt.executeReliableWrite();
-        Log.d(TAG, "OUD: " + new String(packet));
-        Log.d(TAG, "OUD: " + "Inviato? -> " + res);
+        for (int i = 0; i <packet.length ; i++) {
+            Utility.printByte(packet[i]);
+        }
+        Log.d(TAG, "OUD: " + "sent? -> " + res);
         if(onPacketSent != null) {
             if(res) onPacketSent.OnPacketSent(packet);
             else onPacketSent.OnPacketError("Error sending packet");
@@ -208,6 +210,7 @@ public class Utility {
         return res;
     }
 
+    /*
     public static boolean sendMessage(String message, BluetoothGatt gatt, int[] infoSorg, int[] infoDest, boolean internet, Listeners.OnMessageSentListener listener) {
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
         boolean result = true;
@@ -274,7 +277,7 @@ public class Utility {
         Log.d(TAG, "OUD: " + "sendMessage: end ");
         return false;
     }
-
+    */
 
     /**
      * Use this check to determine whether BLE is supported on the device. Then
@@ -387,78 +390,6 @@ public class Utility {
             }
         });
     }
-
-    /*
-    public static ConnectBLETask createBroadcastRoutingTableClientOld(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
-        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
-            @Override
-            public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
-                    gatt.discoverServices();
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
-                }
-                super.onConnectionStateChange(gatt, status, newState);
-            }
-
-            @Override
-            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                if (service == null) return;
-                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-                if (characteristic == null) return;
-                BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.RoutingTableDescriptorUUID);
-                boolean res = gatt.readDescriptor(desc);
-                Log.d(TAG, "OUD: " + "Read desc routing: " + res);
-                super.onServicesDiscovered(gatt, status);
-            }
-
-            @Override
-            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Log.d(TAG, "OUD: " + "i wrote a characteristic !");
-
-                }
-                super.onCharacteristicWrite(gatt, characteristic, status);
-            }
-
-            @Override
-            public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                //Log.d(TAG, "OUD: onDescriptorRead: " + new String(descriptor.getValue()) + "length: " + descriptor.getValue().length + "routingId: " + routingId);
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    if (Integer.parseInt(routingId) > Integer.parseInt(new String(descriptor.getValue()))) {
-                        descriptor.setValue(routingId.getBytes());
-                        gatt.writeDescriptor(descriptor);
-                    } else return;
-                }
-                super.onDescriptorRead(gatt, descriptor, status);
-            }
-
-            @Override
-            public void onDescriptorWrite(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                super.onDescriptorWrite(gatt, descriptor, status);
-                Log.d(TAG, "OUD: onDescriptorWrite: status :" + status);
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    final String temp = new String(value);
-                    BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
-                    if (characteristic1 == null) return;
-                    final int[] infoSorg = new int[2];
-                    final int[] infoDest = new int[2];
-                    infoSorg[0] = Integer.parseInt(id);
-                    //infoSorg[1] = 0;
-                    //infoDest[0] = 0; --> valori di default dell'inizializzazione
-                    //infoDest[1] = 0;
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        if (Utility.sendRoutingTable(temp, gatt, infoSorg, infoDest)) {
-                            Log.d(TAG, "OUD: " + "Routing table inviata con successo!");
-                        }
-                    }, 300);
-                }
-            }
-        });
-    }
-    */
 
     public static byte[][] buildMapFromString(String mapString) {
         byte[][] res = new byte[ServerNode.MAX_NUM_SERVER][ServerNode.SERVER_PACKET_SIZE];
@@ -580,7 +511,7 @@ public class Utility {
             // TODO: 18/01/19 GESTIRE IL CASO IN CUI nearMapDevice.get(nuovoId) È NULL, BISOGNA COMUNICARE AGLI ALTRI SERVER CHE NON LO VEDO
             if (nearMapDevice.get(nuovoId) == null) listener.OnNewServerNotFound();
             else listener.OnNewServerDiscovered(nearMapDevice.get(nuovoId));
-        }, 3000);
+        }, 4000);
         //ServerList.cleanUserList();
         mBluetoothScan.startScan(buildScanFilters(), buildScanSettings(), mScanCallback);
     }

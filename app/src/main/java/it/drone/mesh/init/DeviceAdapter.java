@@ -63,7 +63,6 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
     @Override
     public void onBindViewHolder(@NonNull final DeviceViewHolder deviceViewHolder, int i) {
         final Device device = devices.get(i);
-
         deviceViewHolder.id.setText(device.getId());
         deviceViewHolder.input.setText(device.getInput());
         deviceViewHolder.output.setText(device.getOutput());
@@ -147,18 +146,15 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 Log.d(TAG, "OUD: " + "for device in devices");
                 if (device.getId().equals(idMitt)) {
                     Log.d(TAG, "OUD: " + "id giusto");
-                    String[] infoMessage = message.split(";;");
-                    long mittTimeStamp = Long.parseLong(infoMessage[0]);
-                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - mittTimeStamp) + ", Message: " + message.split(";;")[2]);
+                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sentTimeStamp) + ", Message: " + message + ", Hop: " + numHop);
                 }
             }
 
             new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
 
             String myId = client.getId();
-            String[] info = message.split(";;");
             try {
-                Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - Long.parseLong(info[0]), info[1]));
+                Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - sentTimeStamp, numHop));
             } catch (IOException e) {
                 Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
                 e.printStackTrace();

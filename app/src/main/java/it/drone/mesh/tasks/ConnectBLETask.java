@@ -296,7 +296,7 @@ public class ConnectBLETask {
             public void OnPacketSent(byte[] packet) {
                 if(indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                     if(resultHolder[0]) {
-                        if(listener != null) listener.OnMessageSent("Messaggio inviato con successo");
+                        if(listener != null) listener.OnMessageSent(message);
                         onPacketSent = null;
                     }
                     else {

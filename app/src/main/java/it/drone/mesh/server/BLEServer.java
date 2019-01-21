@@ -165,6 +165,7 @@ public class BLEServer {
                             askIdToNearServer(offset + 1);
                         }
                     }
+                    else askIdToNearServer(offset + 1);
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
             });
@@ -282,7 +283,7 @@ public class BLEServer {
 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         if (acceptBLETask != null)
-            acceptBLETask.sendMessage(message, dest, internet, listener);
+            acceptBLETask.sendMessage(message,getId(), dest, internet, listener);
         else listener.OnCommunicationError("Server not initialized");
     }
 

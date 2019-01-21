@@ -3,12 +3,15 @@ package it.drone.mesh.init;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,9 +21,13 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputFilter;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,7 +37,6 @@ import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
@@ -72,10 +78,7 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
 
-    //private ConnectBLETask connectBLETask;
     private BLEClient client;
-
-    //private AcceptBLETask acceptBLETask;
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
@@ -186,7 +189,10 @@ public class InitActivity extends Activity {
                     });
                     server.startServer();
                     server.addServerInitializedListener(() -> {
-                        new Handler(Looper.getMainLooper()).post(() -> {myId.setText(server.getId()); whoAmI.setText(R.string.server);});
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            myId.setText(server.getId());
+                            whoAmI.setText(R.string.server);
+                        });
                     });
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
@@ -256,22 +262,52 @@ public class InitActivity extends Activity {
             }
         });
         sendTweet.setOnClickListener(view -> {
-            if (Utility.isDeviceOnline(getApplicationContext())) {
-                tweetSomething("cip cip");
-            } else {
-                String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
-                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                    @Override
-                    public void OnMessageSent(String message) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                    }
 
-                    @Override
-                    public void OnCommunicationError(String error) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
-                    }
-                });
-            }
+            TextView titleView = new TextView(this);
+            titleView.setText(R.string.tweet_something);
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setPadding(20, 20, 20, 20);
+            titleView.setTextSize(20F);
+            titleView.setTypeface(Typeface.DEFAULT_BOLD);
+            titleView.setBackgroundColor(Color.WHITE);
+            titleView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppTheme);
+            builder.setCustomTitle(titleView);
+
+            final EditText tweetInput = new EditText(this);
+            tweetInput.setTextColor(Color.BLACK);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            tweetInput.setLayoutParams(lp);
+            tweetInput.setHint("Tweet");
+            tweetInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(140)});
+            builder.setView(tweetInput);
+
+            builder.setPositiveButton("OK", (dialog, which) -> {
+
+                if (Utility.isDeviceOnline(getApplicationContext())) {
+                    tweetSomething(tweetInput.getText().toString());
+                } else {
+                    String message = TWITTER_REQUEST + ";;" + tweetInput.getText();
+                    client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                        @Override
+                        public void OnMessageSent(String message) {
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                        }
+
+                        @Override
+                        public void OnCommunicationError(String error) {
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                        }
+                    });
+                }
+
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+            builder.create().show();
 
         });
 
@@ -281,27 +317,67 @@ public class InitActivity extends Activity {
                 return;
             }
 
-            if (Utility.isDeviceOnline(getApplicationContext())) {
-                try {
-                    sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getId());
-                } catch (IOException e) {
-                    e.printStackTrace();
+            TextView titleView = new TextView(this);
+            titleView.setText(R.string.compose_email);
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setPadding(20, 20, 20, 20);
+            titleView.setTextSize(20F);
+            titleView.setTypeface(Typeface.DEFAULT_BOLD);
+            titleView.setBackgroundColor(Color.WHITE);
+            titleView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppTheme);
+            builder.setCustomTitle(titleView);
+
+            final EditText destEmail = new EditText(this);
+            destEmail.setTextColor(Color.BLACK);
+
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT);
+            destEmail.setLayoutParams(lp);
+            destEmail.setHint("Email");
+
+            layout.addView(destEmail);
+
+            final EditText bodyEmail = new EditText(this);
+            bodyEmail.setTextColor(Color.BLACK);
+            bodyEmail.setLayoutParams(lp);
+            bodyEmail.setHint("Body");
+
+            layout.addView(bodyEmail);
+            builder.setView(layout);
+
+
+            builder.setPositiveButton("OK", (dialog, which) -> {
+
+                if (Utility.isDeviceOnline(getApplicationContext())) {
+                    try {
+                        sendAMail(destEmail.getText().toString(), bodyEmail.getText().toString(), client.getId());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    String message = EMAIL_REQUEST + ";;" + destEmail.getText() + ";;" + bodyEmail.getText();
+                    client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                        @Override
+                        public void OnMessageSent(String message) {
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                        }
+
+                        @Override
+                        public void OnCommunicationError(String error) {
+                            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                        }
+                    });
                 }
-            } else {
-                String message = EMAIL_REQUEST + ";;rastafaninplakeibol@gmail.com;;testobodyyeye";
-                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                    @Override
-                    public void OnMessageSent(String message) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                    }
 
-                    @Override
-                    public void OnCommunicationError(String error) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
-                    }
-                });
-            }
-
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+            builder.create().show();
         });
 
     }
@@ -454,11 +530,10 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == REQUEST_ENABLE_BT) {
-            if(resultCode == RESULT_OK) {
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == RESULT_OK) {
                 checkBluetoothAvailability();
-            }
-            else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+            } else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
         }
     }
 

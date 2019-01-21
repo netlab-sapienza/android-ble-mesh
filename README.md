@@ -9,13 +9,17 @@ Pre-requisites
 - Android SDK >= 21
 - You must set a folder in app/src/main/resources two files with the following attributes:
 
-    1. email.properties
+    **email.properties:**
+
+
 ```
 email.username=
 email.password=
 
-```
-2. twitter4j.properties
+```    
+    
+ **twitter4j.properties:**
+
 ```
 debug=true
 oauth.consumerKey=

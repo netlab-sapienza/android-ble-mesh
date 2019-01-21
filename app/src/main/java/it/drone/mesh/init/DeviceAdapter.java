@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -199,6 +200,8 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             output = itemView.findViewById(R.id.outputText);
             testButton = itemView.findViewById(R.id.button_test_message);
             messageToSend = itemView.findViewById(R.id.message_to_send);
+            input.setMovementMethod(new ScrollingMovementMethod());
+            output.setMovementMethod(new ScrollingMovementMethod());
         }
     }
 

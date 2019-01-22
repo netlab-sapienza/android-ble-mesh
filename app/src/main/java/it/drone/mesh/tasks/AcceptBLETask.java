@@ -487,7 +487,32 @@ public class AcceptBLETask {
 
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientWithInternetUUID)) { //il client ha internet
                     String clientId = new String(value);
-                    mNode.setClientInternet(Integer.parseInt(clientId.substring(1, 2)));
+                    int[] infoClient = Utility.getIdArrayByString(clientId);
+                    if (infoClient[0] == Integer.parseInt(getId())) {
+                        //è un mio client
+                        if (Utility.getBit(mNode.getClientByteInternet(), infoClient[1]) == 1) {
+                            Log.d(TAG, "Internet gia settato");
+                            return;
+                        }
+                        mNode.setClientInternet(infoClient[1]);
+                        if (!mNode.hasInternet()) mNode.setHasInternet(true);
+                    } else {
+                        ServerNode server = mNode.getServer("" + infoClient[0]);
+                        if (Utility.getBit(server.getClientByteInternet(), infoClient[1]) == 1) {
+                            Log.d(TAG, "Internet gia settato");
+                            return;
+                        }
+                        server.setClientInternet(infoClient[1]);
+                        if (!server.hasInternet()) server.setHasInternet(true);
+                    }
+                    for (String id : nearDeviceMap.keySet()) {
+                        BluetoothDevice dev = nearDeviceMap.get(id);
+                        if (dev != null) {
+                            ConnectBLETask client = Utility.createBroadcastClientWithInternet(dev, clientId, context);
+                            client.startClient();
+                        }
+                    }
+
                     // TODO: 14/01/19 Propagare la notizia che si ha internet, fare meglio il parsing dell'id alla riga sopra
                 }
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
@@ -711,13 +736,7 @@ public class AcceptBLETask {
             }
             //messaggio al mio client devo notificarlo
             byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
-            /*for (int i = 0; i < finalMessage.length; i++) {
-                BluetoothDevice dev = mNode.getClient("" + infoDest[1]);
-                mGattCharacteristic.setValue(finalMessage[i]);
-                boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
-                Log.d(TAG, "OUD: i've notified new server Online " + res);
-            }
-            listener.OnMessageSent(message);*/
+
             boolean[] resultHolder = new boolean[1];
             int[] indexHolder = new int[1];
 

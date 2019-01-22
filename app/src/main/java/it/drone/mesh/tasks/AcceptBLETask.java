@@ -773,8 +773,27 @@ public class AcceptBLETask {
             //non sono io il destinatario
             final ServerNode nodeDest;
 
-            if (internet)
+            if (internet) {
+                if(mitt.equals(getId())) {
+                    for (int i = 0; i < 8; i++) {
+                        if(Utility.getBit(mNode.getClientByteInternet(),i) == 1) {
+                            sendMessage(message, getId(), getId() + i, true, new Listeners.OnMessageSentListener() {
+                                @Override
+                                public void OnMessageSent(String messageSent) {
+                                    Log.d(TAG, "OUD: OnMessageSent: messaggio inviato");
+                                }
+
+                                @Override
+                                public void OnCommunicationError(String error) {
+                                    Log.d(TAG, "OUD: Errore nel rigirare il messaggio, " + error);
+                                }
+                            });
+                            return;
+                        }
+                    }
+                }
                 nodeDest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
+            }
             else
                 nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
 

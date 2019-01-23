@@ -35,7 +35,7 @@ public class ServerScanCallback extends ScanCallback {
                 return;
         }
         ServerList.addServer(new Server(result.getDevice(), result.getDevice().getName()));
-        listener.OnServerFound("Ho trovato un nuovo server");
+        listener.OnServerFound("New server found");
     }
 
     @Override

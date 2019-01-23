@@ -60,6 +60,7 @@ public class BLEServer {
     private int attemptsUntilServer = 1;
     private int randomValueScanPeriod;
     private Listeners.OnDebugMessageListener debugMessageListener;
+    private Listeners.OnEnoughServerListener enoughServerListener;
 
     private BLEServer(Context context) {
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
@@ -150,10 +151,21 @@ public class BLEServer {
                         Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
                         if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
                             nearDeviceMap.put(new String(descriptor.getValue(), Charset.defaultCharset()), newServer.getBluetoothDevice());
-                            Log.d(TAG, "Server inserito correttamente nella mappa");
+                            Log.d(TAG, "OUD: Server inserito correttamente nella mappa");
+                            BluetoothGattDescriptor nextId = descriptor.getCharacteristic().getDescriptor(Constants.NEXT_ID_UUID);
+                            boolean res = gatt.readDescriptor(nextId);
+                            Log.d(TAG, "OUD: Descrittore letto ");
+                        } else if (descriptor.getUuid().equals(Constants.NEXT_ID_UUID)) {
+                            int nextId = Integer.parseInt(new String(descriptor.getValue()));
+                            if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
+                            if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
+                                enoughServerListener.OnEnoughServer(newServer);
+                                return;
+                            }
+                            askIdToNearServer(offset + 1);
                         }
                     }
-                    askIdToNearServer(offset + 1);
+                    else askIdToNearServer(offset + 1);
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
             });
@@ -271,11 +283,15 @@ public class BLEServer {
 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         if (acceptBLETask != null)
-            acceptBLETask.sendMessage(message, dest, internet, listener);
+            acceptBLETask.sendMessage(message,getId(), dest, internet, listener);
         else listener.OnCommunicationError("Server not initialized");
     }
 
     public void addOnMessageReceivedListener(Listeners.OnMessageReceivedListener l) {
         if (acceptBLETask != null) this.acceptBLETask.addOnMessageReceived(l);
+    }
+
+    public void setEnoughServerListener(Listeners.OnEnoughServerListener enoughServerListener) {
+        this.enoughServerListener = enoughServerListener;
     }
 }

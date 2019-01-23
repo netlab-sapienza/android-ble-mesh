@@ -75,6 +75,7 @@
         android:layout_alignStart="@+id/device_id_placeholder"
         android:layout_margin="5dp"
         android:background="#4b000000"
+        android:scrollbars="vertical"
         android:text="@string/name" />
 
     <TextView
@@ -94,6 +95,7 @@
         android:layout_alignStart="@+id/device_id_placeholder"
         android:layout_margin="5dp"
         android:background="#4b000000"
+        android:scrollbars="vertical"
         android:text="@string/name" />
 
     <EditText

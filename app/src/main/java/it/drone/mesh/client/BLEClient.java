@@ -1,8 +1,6 @@
 package it.drone.mesh.client;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -45,7 +43,6 @@ public class BLEClient {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         listeners = new LinkedList<>();
-
     }
 
     public static synchronized BLEClient getInstance(Context context) {
@@ -123,7 +120,7 @@ public class BLEClient {
                 final Server newServer = ServerList.getServer(offset);
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
-                connectBLE.addReceivedListener((idMitt, message) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
+                //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (connectBLE.hasCorrectId()) {
@@ -146,6 +143,25 @@ public class BLEClient {
         isServiceStarted = true;
         Log.d(TAG, "startClient: Scan the background,search servers to join");
         startScanning();
+    }
+
+    public void startClient(Server newServer) {
+        final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
+        //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
+        connectBLE.startClient();
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (connectBLE.hasCorrectId()) {
+                connectBLETask = connectBLE;
+                for (OnClientOnlineListener l : listeners) {
+                    l.onClientOnline();
+                }
+                serverDevice = newServer.getBluetoothDevice();
+                Log.d(TAG, "You're a client and your id is " + connectBLETask.getId());
+            } else {
+                Log.d(TAG, "OUD: " + "È andata male, proviamo col metodo classico");
+                startScanning();
+            }
+        }, HANDLER_PERIOD);
     }
 
     public void stopClient() {

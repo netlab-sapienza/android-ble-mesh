@@ -21,6 +21,13 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
+                <Switch
+                    android:id="@+id/canIBeServerSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/whoAmi"
+                    android:padding="5dp" />
+
                 <TextView
                     android:id="@+id/myId"
                     android:layout_width="wrap_content"
@@ -46,13 +53,6 @@
                     android:layout_toEndOf="@id/startServices"
                     android:padding="5dp"
                     android:text="@string/whoami" />
-
-                <Switch
-                    android:id="@+id/canIBeServerSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_toEndOf="@id/whoAmi"
-                    android:padding="5dp" />
 
             </RelativeLayout>
 

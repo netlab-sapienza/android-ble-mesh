@@ -54,5 +54,8 @@
     <string name="server">Server</string>
     <string name="tweet">Tweet</string>
     <string name="sendEmail">Send email</string>
+    <string name="send_message">Send Message</string>
+    <string name="tweet_something">Tweet something!</string>
+    <string name="compose_email">Compose Email</string>
 
 </resources>

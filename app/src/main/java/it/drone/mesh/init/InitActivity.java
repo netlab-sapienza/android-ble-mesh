@@ -3,29 +3,41 @@ package it.drone.mesh.init;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputFilter;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.instacart.library.truetime.TrueTimeRx;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
@@ -40,7 +52,6 @@ import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
-import twitter4j.conf.ConfigurationBuilder;
 
 import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 
@@ -67,19 +78,10 @@ public class InitActivity extends Activity {
     private boolean isServiceStarted = false;
     private boolean isScanning = false;
 
-    //private ConnectBLETask connectBLETask;
     private BLEClient client;
-
-    //private AcceptBLETask acceptBLETask;
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
-    private final static String CONSUMER_KEY = "";
-    private final static String CONSUMER_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN_SECRET = "";
-    private static final String OAUTH_ACCESS_TOKEN = "";
-    private final static String usernameMail = "blemeshnetwork@gmail.com";
-    private final static String passwordMail = "@password123";
     private Button startServices, sendTweet, sendEmail;
 
 
@@ -128,9 +130,9 @@ public class InitActivity extends Activity {
                         Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
                         Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
                         deviceAdapter.setOffset(offset);
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Hai internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
                     }, throwable -> {
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Errore, probabilmente non sei connesso ad internet", Toast.LENGTH_SHORT).show());
+                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
                         throwable.printStackTrace();
                     });
         }
@@ -187,24 +189,54 @@ public class InitActivity extends Activity {
                     });
                     server.startServer();
                     server.addServerInitializedListener(() -> {
-                        myId.setText(server.getId());
-                        whoAmI.setText(R.string.server);
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            myId.setText(server.getId());
+                            whoAmI.setText(R.string.server);
+                            sendEmail.setVisibility(View.VISIBLE);
+                            sendTweet.setVisibility(View.VISIBLE);
+                        });
                     });
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                         String[] info = message.split(";;");
-                        if (info[0].equals(EMAIL_REQUEST))
-                            sendAMail(info[1], info[2], idMitt);
-                        else if (info[0].equals(TWITTER_REQUEST)) {
+                        if (info[0].equals(EMAIL_REQUEST)) {
                             try {
-                                tweetSomething(info[1]);
-                            } catch (TwitterException e) {
+                                sendAMail(info[1], info[2], idMitt);
+                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
+                        } else if (info[0].equals(TWITTER_REQUEST)) {
+                            tweetSomething(info[1]);
                         }
                     });
-                    deviceAdapter.setServer(getApplicationContext());
+                    server.setEnoughServerListener((newServer) -> {
+                        Log.d(TAG, "OUD: Stop server");
+                        server.stopServer();
+                        client = BLEClient.getInstance(getApplicationContext());
+                        client.startClient(newServer);
+                        client.addOnClientOnlineListener(() -> {
+                            deviceAdapter.setClient(getApplicationContext());
+                            myId.setText(client.getId());
+                            whoAmI.setText(R.string.client);
+                            sendTweet.setVisibility(View.VISIBLE);
+                            sendEmail.setVisibility(View.VISIBLE);
+                            client.addReceivedWithInternetListener((idMitt, message) -> {
+                                Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                                String[] info = message.split(";;");
+                                if (info[0].equals(EMAIL_REQUEST)) {
+                                    try {
+                                        sendAMail(info[1], info[2], idMitt);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                } else if (info[0].equals(TWITTER_REQUEST)) {
+                                    tweetSomething(info[1]);
+                                }
+                            });
+                        });
 
+                    });
+                    deviceAdapter.setServer(getApplicationContext());
                 } else {
                     client = BLEClient.getInstance(getApplicationContext());
                     client.startClient();
@@ -217,14 +249,14 @@ public class InitActivity extends Activity {
                         client.addReceivedWithInternetListener((idMitt, message) -> {
                             Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                             String[] info = message.split(";;");
-                            if (info[0].equals(EMAIL_REQUEST))
-                                sendAMail(info[1], info[2], idMitt);
-                            else if (info[0].equals(TWITTER_REQUEST)) {
+                            if (info[0].equals(EMAIL_REQUEST)) {
                                 try {
-                                    tweetSomething(info[1]);
-                                } catch (TwitterException e) {
+                                    sendAMail(info[1], info[2], idMitt);
+                                } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+                            } else if (info[0].equals(TWITTER_REQUEST)) {
+                                tweetSomething(info[1]);
                             }
                         });
                     });
@@ -232,52 +264,154 @@ public class InitActivity extends Activity {
             }
         });
         sendTweet.setOnClickListener(view -> {
-            if (Utility.isDeviceOnline(getApplicationContext())) {
-                try {
-                    tweetSomething("cip cip");
-                } catch (TwitterException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                String message = TWITTER_REQUEST + ";;@thecave3 cip cip";
-                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                    @Override
-                    public void OnMessageSent(String message) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                    }
 
-                    @Override
-                    public void OnCommunicationError(String error) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+            TextView titleView = new TextView(this);
+            titleView.setText(R.string.tweet_something);
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setPadding(20, 20, 20, 20);
+            titleView.setTextSize(20F);
+            titleView.setTypeface(Typeface.DEFAULT_BOLD);
+            titleView.setBackgroundColor(Color.WHITE);
+            titleView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppTheme);
+            builder.setCustomTitle(titleView);
+
+            final EditText tweetInput = new EditText(this);
+            tweetInput.setTextColor(Color.BLACK);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            tweetInput.setLayoutParams(lp);
+            tweetInput.setHint("Tweet");
+            tweetInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(140)});
+            builder.setView(tweetInput);
+
+            builder.setPositiveButton("OK", (dialog, which) -> {
+
+                if (Utility.isDeviceOnline(getApplicationContext())) {
+                    tweetSomething(tweetInput.getText().toString());
+                } else {
+                    String message = TWITTER_REQUEST + ";;" + tweetInput.getText();
+                    if (client != null) {
+                        client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    } else {
+                        server.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
                     }
-                });
-            }
+                }
+
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+            builder.create().show();
 
         });
 
         sendEmail.setOnClickListener(view -> {
-            if (client == null || client.getConnectBLETask() == null) {
+            if ((client == null || client.getConnectBLETask() == null) && (server == null ||server.getAcceptBLETask() == null)) {
                 Toast.makeText(this, "Not connected in the BLE mesh", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            if (Utility.isDeviceOnline(getApplicationContext()))
-                sendAMail("rastafaninplakeibol@gmail.com", "testobodyyeye", client.getId());
-            else {
-                String message = EMAIL_REQUEST + ";;rastafaninplakeibol@gmail.com;;testobodyyeye";
-                client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
-                    @Override
-                    public void OnMessageSent(String message) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
-                    }
+            TextView titleView = new TextView(this);
+            titleView.setText(R.string.compose_email);
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setPadding(20, 20, 20, 20);
+            titleView.setTextSize(20F);
+            titleView.setTypeface(Typeface.DEFAULT_BOLD);
+            titleView.setBackgroundColor(Color.WHITE);
+            titleView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
 
-                    @Override
-                    public void OnCommunicationError(String error) {
-                        runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
-                    }
-                });
-            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppTheme);
+            builder.setCustomTitle(titleView);
 
+            final EditText destEmail = new EditText(this);
+            destEmail.setTextColor(Color.BLACK);
+
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT);
+            destEmail.setLayoutParams(lp);
+            destEmail.setHint("Email");
+
+            layout.addView(destEmail);
+
+            final EditText bodyEmail = new EditText(this);
+            bodyEmail.setTextColor(Color.BLACK);
+            bodyEmail.setLayoutParams(lp);
+            bodyEmail.setHint("Body");
+
+            layout.addView(bodyEmail);
+            builder.setView(layout);
+
+
+            builder.setPositiveButton("OK", (dialog, which) -> {
+
+                String id;
+                if (client == null) id = server.getId();
+                else id = client.getId();
+
+                if (Utility.isDeviceOnline(getApplicationContext())) {
+                    try {
+                        sendAMail(destEmail.getText().toString(), bodyEmail.getText().toString(), id);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    String message = EMAIL_REQUEST + ";;" + destEmail.getText() + ";;" + bodyEmail.getText();
+                    if (client != null) {
+                        client.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    } else {
+                        server.sendMessage(message, "00", true, new Listeners.OnMessageSentListener() {
+                            @Override
+                            public void OnMessageSent(String message) {
+                                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "The message will be delivered by the network", Toast.LENGTH_LONG).show());
+                            }
+
+                            @Override
+                            public void OnCommunicationError(String error) {
+                                //runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Errore comunicazione rete: " + error, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    }
+                }
+
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+            builder.create().show();
         });
 
     }
@@ -314,8 +448,7 @@ public class InitActivity extends Activity {
 
     private void askPermissions(Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
                 askPermissionsStorage();
             } else {
@@ -408,7 +541,6 @@ public class InitActivity extends Activity {
 
                 // Is Bluetooth turned on?
                 if (mBluetoothAdapter.isEnabled()) {
-
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
@@ -430,26 +562,40 @@ public class InitActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == RESULT_OK) {
+                checkBluetoothAvailability();
+            } else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+        }
+    }
 
-    private void tweetSomething(String tweetToUpdate) throws TwitterException {
-
-        ConfigurationBuilder cb = new ConfigurationBuilder();
-        cb.setDebugEnabled(true)
-                .setOAuthConsumerKey(CONSUMER_KEY)
-                .setOAuthConsumerSecret(CONSUMER_SECRET)
-                .setOAuthAccessToken(OAUTH_ACCESS_TOKEN)
-                .setOAuthAccessTokenSecret(OAUTH_ACCESS_TOKEN_SECRET);
-        TwitterFactory tf = new TwitterFactory(cb.build());
-        Twitter twitter = tf.getInstance();
-        Status status = twitter.updateStatus(tweetToUpdate);
-        Toast.makeText(this, "Successfully updated the status to [" + status.getText() + "].", Toast.LENGTH_LONG).show();
+    private void tweetSomething(String tweetToUpdate) {
+        HandlerThread handlerThread = new HandlerThread("Twitter");
+        handlerThread.start();
+        new Handler(handlerThread.getLooper()).post(() -> {
+            try {
+                Twitter twitter = TwitterFactory.getSingleton();
+                Status status = twitter.updateStatus(tweetToUpdate);
+                Toast.makeText(getApplicationContext(), "Successfully updated the status to \"" + status.getText() + "\".", Toast.LENGTH_LONG).show();
+            } catch (TwitterException e) {
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Twitter error: " + e.getErrorMessage(), Toast.LENGTH_LONG).show());
+                e.printStackTrace();
+            }
+        });
     }
 
 
-    private void sendAMail(final String destEmail, String body, final String idMitt) {
+    private void sendAMail(final String destEmail, String body, final String idMitt) throws IOException {
+
+        Properties properties = new Properties();
+        InputStream inputStream =
+                this.getClass().getClassLoader().getResourceAsStream("email.properties");
+        properties.load(inputStream);
         BackgroundMail.newBuilder(this)
-                .withUsername(usernameMail)
-                .withPassword(passwordMail)
+                .withUsername(properties.getProperty("email.username"))
+                .withPassword(properties.getProperty("email.password"))
                 .withMailTo(destEmail)
                 .withType(BackgroundMail.TYPE_PLAIN)
                 .withSubject("A message from BE-Mesh network")
@@ -458,7 +604,6 @@ public class InitActivity extends Activity {
                     @Override
                     public void onSuccess() {
                         Toast.makeText(getApplicationContext(), "Email sent to " + destEmail + " from here by " + idMitt, Toast.LENGTH_LONG).show();
-
                     }
 
                     @Override

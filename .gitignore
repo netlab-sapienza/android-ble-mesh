@@ -68,3 +68,6 @@ fastlane/test_output
 fastlane/readme.md
 app/.idea/workspace.xml
 app/.idea/misc.xml
+
+# something you shall not know
+app/src/main/resources/

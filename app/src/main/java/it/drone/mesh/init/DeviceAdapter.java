@@ -53,6 +53,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 new Handler(Looper.getMainLooper()).post(() -> notifyDataSetChanged());
             }
         });
+
     }
 
 

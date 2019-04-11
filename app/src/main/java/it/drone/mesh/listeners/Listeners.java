@@ -27,6 +27,10 @@ public class Listeners {
         void OnEnoughServer(Server server);
     }
 
+    public interface OnDisconnectedServerListener {
+        void OnDisconnectedServer(String serverId, boolean suspected); //suspected false -> morto sicuro
+    }
+
     public interface OnScanCompletedListener {
         void OnScanCompleted(ArrayList<Device> devicesFound);
     }

@@ -61,6 +61,7 @@ public class BLEServer {
     private int randomValueScanPeriod;
     private Listeners.OnDebugMessageListener debugMessageListener;
     private Listeners.OnEnoughServerListener enoughServerListener;
+    private byte[] lastServerIdFound = new byte[2];
 
     private BLEServer(Context context) {
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
@@ -93,6 +94,10 @@ public class BLEServer {
         return mBluetoothManager;
     }
 
+    public void setLastServerIdFound(byte[] lastServerIdFound) {
+        this.lastServerIdFound = lastServerIdFound;
+    }
+
     private void askIdToNearServer(final int offset) {
         final int size = ServerList.getServerList().size();
         if (offset >= size) {
@@ -106,6 +111,7 @@ public class BLEServer {
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(message -> debugMessageListener.OnDebugMessage("RoutingTable updated: \n" + message));
+                acceptBLETask.setLastServerIdFound(lastServerIdFound);
                 acceptBLETask.startServer();
             }
         } else {

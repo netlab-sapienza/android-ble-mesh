@@ -98,6 +98,58 @@ public class ServerNode {
         return null;
     }
 
+    public boolean removeServer(String suspectedServerId) {
+        ServerNode toBeRemoved = null;
+        for (ServerNode s : routingTable) {
+            if (s.getId().equals(suspectedServerId)) {
+                toBeRemoved = s;
+                break;
+            }
+        }
+        if(toBeRemoved != null) {
+            Log.d(TAG, "OUD: removeServer: rimosso " + suspectedServerId);
+            routingTable.remove(toBeRemoved);
+        }
+
+        toBeRemoved = null;
+        for (ServerNode s : routingTable) {
+            LinkedList<ServerNode> temp = s.getRoutingTable();
+            for (ServerNode n : temp) {
+                if (n.getId().equals(suspectedServerId)) {
+                    Log.d(TAG, "OUD: removeServer: rimosso " + suspectedServerId);
+                    toBeRemoved = n;
+                    break;
+                }
+            }
+            if(toBeRemoved != null) temp.remove(toBeRemoved);
+            toBeRemoved = null;
+        }
+
+        for (ServerNode s : nearServers) {
+            if (s.getId().equals(suspectedServerId)) {
+                Log.d(TAG, "OUD: removeServer: rimosso " + suspectedServerId);
+                toBeRemoved = s;
+                break;
+            }
+        }
+        if(toBeRemoved != null) nearServers.remove(toBeRemoved);
+
+        toBeRemoved = null;
+        for (ServerNode s : nearServers) {
+            LinkedList<ServerNode> temp = s.getNearServerList();
+            for (ServerNode n : temp) {
+                if (n.getId().equals(suspectedServerId)) {
+                    Log.d(TAG, "OUD: removeServer: rimosso " + suspectedServerId);
+                    toBeRemoved = n;
+                    break;
+                }
+            }
+            if(toBeRemoved != null) temp.remove(toBeRemoved);
+            toBeRemoved = null;
+        }
+        return false;
+    }
+
     public ServerNode getServerToSend(String serverId, String idAsker, int numRequest) {
         if (lastRequest != numRequest) {
             lastRequest = numRequest;
@@ -328,8 +380,18 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
     }
 
     public void parseClientMapToByte(byte[] destArrayByte) {
+        int index = Integer.parseInt(getId());
+        destArrayByte[index] = this.clientByte;
+        destArrayByte[index] = Utility.setBit(destArrayByte[index], 0);
+        if (index < 9) {
+            if (this.hasInternet())
+                destArrayByte[0] = Utility.setBit(destArrayByte[0], index - 1);
+        }
+        else if (this.hasInternet())
+            destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
+
         for (ServerNode s : nearServers) {
-            int index = Integer.parseInt(s.getId());
+            index = Integer.parseInt(s.getId());
             boolean alreadyDone = false;
             for (int i = 0; i < 8; i++) {
                 if (Utility.getBit(destArrayByte[index], i) != 0)
@@ -341,7 +403,8 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
             if (index < 9) {
                 if (s.hasInternet())
                     destArrayByte[0] = Utility.setBit(destArrayByte[0], index - 1);
-            } else if (s.hasInternet())
+            }
+            else if (s.hasInternet())
                 destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
             s.parseClientMapToByte(destArrayByte);
         }
@@ -440,5 +503,12 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
 
     public byte getClientByteInternet() {
         return clientInternetByte;
+    }
+
+    public boolean isNearTo(String suspectedServerId) {
+        for (ServerNode s : routingTable) {
+            if (s.getId().equals(suspectedServerId)) return true;
+        }
+        return false;
     }
 }

@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.util.LinkedList;
+import java.util.Objects;
 
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
@@ -36,6 +37,7 @@ public class BLEClient {
     private BluetoothDevice serverDevice;
     private boolean isServiceStarted = false;
     private LinkedList<OnClientOnlineListener> listeners;
+    private byte[] lastServerIdFound = new byte[2];
 
     private BLEClient(Context context) {
         this.context = context;
@@ -65,6 +67,12 @@ public class BLEClient {
 
     public void addOnClientOnlineListener(OnClientOnlineListener list) {
         this.listeners.add(list);
+    }
+
+    public void setLastServerIdFound(byte[] lastServerIdFound) {
+        if(lastServerIdFound == null) Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
+        else Log.d(TAG, "OUD: " + "setLastServerIdFound: 1: " + (int) lastServerIdFound[0] + ", 2:" + (int) lastServerIdFound[1]);
+        this.lastServerIdFound = lastServerIdFound;
     }
 
     private void startScanning() {
@@ -120,6 +128,9 @@ public class BLEClient {
                 final Server newServer = ServerList.getServer(offset);
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
+
+                if(lastServerIdFound == null) Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
+                if (lastServerIdFound[0] != (byte) 0) connectBLE.setLastServerIdFound(lastServerIdFound);
                 //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -189,6 +200,9 @@ public class BLEClient {
 
     public void addReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
         if(connectBLETask != null) this.connectBLETask.addReceivedWithInternetListener(l);
+    }
+    public void addDisconnectedServerListener(Listeners.OnDisconnectedServerListener l) {
+        if(connectBLETask != null) this.connectBLETask.addDisconnectedServerListener(l);
     }
 
     public void removeReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {

@@ -37,6 +37,7 @@ import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
@@ -83,6 +84,7 @@ public class InitActivity extends Activity {
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private Button startServices, sendTweet, sendEmail;
+    private byte[] lastServerIdFound = new byte[2];
 
 
     @SuppressLint("CheckResult")
@@ -187,6 +189,9 @@ public class InitActivity extends Activity {
                             writeErrorDebug(message);
                         }
                     });
+                    if (lastServerIdFound[0] != (byte) 0) {
+                        server.setLastServerIdFound(lastServerIdFound);
+                    }
                     server.startServer();
                     server.addServerInitializedListener(() -> {
                         new Handler(Looper.getMainLooper()).post(() -> {
@@ -213,6 +218,9 @@ public class InitActivity extends Activity {
                         Log.d(TAG, "OUD: Stop server");
                         server.stopServer();
                         client = BLEClient.getInstance(getApplicationContext());
+                        if (lastServerIdFound[0] != (byte) 0) {
+                            client.setLastServerIdFound(lastServerIdFound);
+                        }
                         client.startClient(newServer);
                         client.addOnClientOnlineListener(() -> {
                             deviceAdapter.setClient(getApplicationContext());
@@ -233,12 +241,25 @@ public class InitActivity extends Activity {
                                     tweetSomething(info[1]);
                                 }
                             });
+                            client.addDisconnectedServerListener((serverId,suspected)-> {
+                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0); //c'è solo id server nei primi 4 bit
+                                lastServerIdFound[1] = suspected ?  (byte) 1 : (byte) 0;
+                                startServices.performClick();
+                                new Handler(getMainLooper()).postDelayed(()->{
+                                    Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                    startServices.performClick();
+                                },5000);
+
+                            });
                         });
 
                     });
                     deviceAdapter.setServer(getApplicationContext());
                 } else {
                     client = BLEClient.getInstance(getApplicationContext());
+                    if (lastServerIdFound[0] != (byte) 0) {
+                        client.setLastServerIdFound(lastServerIdFound);
+                    }
                     client.startClient();
                     client.addOnClientOnlineListener(() -> {
                         deviceAdapter.setClient(getApplicationContext());
@@ -258,6 +279,18 @@ public class InitActivity extends Activity {
                             } else if (info[0].equals(TWITTER_REQUEST)) {
                                 tweetSomething(info[1]);
                             }
+                        });
+                        client.addDisconnectedServerListener((serverId,suspected)-> {
+                            lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0);
+                            lastServerIdFound[1] = suspected ?  (byte) 1 : (byte) 0;
+
+                            new Handler(getMainLooper()).post(() -> {
+                                startServices.performClick();
+                            });
+                            new Handler(getMainLooper()).postDelayed(()->{
+                                Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                startServices.performClick();
+                            },5000);
                         });
                     });
                 }
@@ -618,6 +651,7 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG, "OUD: " + "onDestroy: Stommorendo");
         if (isServiceStarted) {
             if (client != null) {
                 client.stopClient();

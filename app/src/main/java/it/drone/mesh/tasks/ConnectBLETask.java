@@ -15,7 +15,6 @@ import android.widget.Toast;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
 
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
@@ -65,7 +64,8 @@ public class ConnectBLETask {
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
-                    gatt.discoverServices();
+                    boolean res = gatt.discoverServices();
+                    Log.d(TAG, "onConnectionStateChange: discover services :" + res);
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
                     /*boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.DescriptorUUID));
@@ -154,7 +154,8 @@ public class ConnectBLETask {
                 byte sorgByte = value[0];
                 byte destByte = value[1];
                 if(sorgByte == (byte) 255 && destByte == (byte) 255 && value[2] == (byte) 255) {
-                    onDisconnectedServerListener.OnDisconnectedServer(serverId,false);
+                    if (onDisconnectedServerListener != null)
+                        onDisconnectedServerListener.OnDisconnectedServer(serverId, Constants.FLAG_DEAD);
                     return;
                 }
                 final int[] infoDest = Utility.getByteInfo(destByte);
@@ -310,8 +311,9 @@ public class ConnectBLETask {
      * @param dest     Id del Client Destinatario in formato stringa o se ti è piu comodo un altro formato si può cambiare
      * @param listener listener con callback specifica quando il messaggio è stato inviato
      */
-    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
-        Log.d(TAG, "OUD: Send Message : " + message);
+
+    public void sendMessage(byte[] message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        Log.d(TAG, "OUD: Send Message : " + new String(message));
         int[] infoSorg = Utility.getIdArrayByString(getId());
         int[] infoDest = Utility.getIdArrayByString(dest);
         byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
@@ -326,7 +328,7 @@ public class ConnectBLETask {
                 Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
                 if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                     if (resultHolder[0]) {
-                        if (listener != null) listener.OnMessageSent(message);
+                        if (listener != null) listener.OnMessageSent(new String(message));
                         onPacketSent = null;
                     } else {
                         if (listener != null)
@@ -349,6 +351,10 @@ public class ConnectBLETask {
         indexHolder[0] += 1;
     }
 
+    public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
+        sendMessage(message.getBytes(), dest, internet, listener);
+    }
+
     public void startClient() {
         this.mGatt = server.getBluetoothDevice().connectGatt(context, false, mGattCallback);
         server.setBluetoothGatt(this.mGatt);
@@ -361,6 +367,27 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
+        byte[] msg = new byte[3];
+        msg[0] = (byte) 255;
+        msg[1] = (byte) 255;
+        msg[2] = (byte) 255;
+        String strMsg = new String(msg);
+        byte[] temp = strMsg.getBytes();
+        Log.d(TAG, "stopClient: LEN " + temp.length);
+        for (byte b : temp) {
+            Utility.printByte(b);
+        }
+        sendMessage(msg, serverId, false, new Listeners.OnMessageSentListener() {
+            @Override
+            public void OnMessageSent(String message) {
+                Log.d(TAG, "OUD: messaggio quit ok");
+            }
+
+            @Override
+            public void OnCommunicationError(String error) {
+                Log.d(TAG, "OUD: OnCommunicationError: ");
+            }
+        });
         if (this.mGatt != null) {
             this.mGatt.disconnect();
             this.mGatt.close();

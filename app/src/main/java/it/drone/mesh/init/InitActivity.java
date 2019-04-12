@@ -37,7 +37,6 @@ import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
@@ -134,6 +133,7 @@ public class InitActivity extends Activity {
                         deviceAdapter.setOffset(offset);
                         new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
                     }, throwable -> {
+                        // TODO: 22/01/19 vedere se rilancia un eccezione ogni volta che muore internet 
                         new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
                         throwable.printStackTrace();
                     });
@@ -241,9 +241,9 @@ public class InitActivity extends Activity {
                                     tweetSomething(info[1]);
                                 }
                             });
-                            client.addDisconnectedServerListener((serverId,suspected)-> {
+                            client.addDisconnectedServerListener((serverId, flags) -> {
                                 lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0); //c'è solo id server nei primi 4 bit
-                                lastServerIdFound[1] = suspected ?  (byte) 1 : (byte) 0;
+                                lastServerIdFound[1] = flags;
                                 startServices.performClick();
                                 new Handler(getMainLooper()).postDelayed(()->{
                                     Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
@@ -280,9 +280,9 @@ public class InitActivity extends Activity {
                                 tweetSomething(info[1]);
                             }
                         });
-                        client.addDisconnectedServerListener((serverId,suspected)-> {
+                        client.addDisconnectedServerListener((serverId, flags) -> {
                             lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0);
-                            lastServerIdFound[1] = suspected ?  (byte) 1 : (byte) 0;
+                            lastServerIdFound[1] = flags;
 
                             new Handler(getMainLooper()).post(() -> {
                                 startServices.performClick();

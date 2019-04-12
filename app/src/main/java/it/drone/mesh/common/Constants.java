@@ -49,4 +49,8 @@ public class Constants {
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
     public static final long NO_OFFSET = Long.MAX_VALUE;
+
+    public static final byte FLAG_SUSPECTED_DEAD = (byte) 0;
+    public static final byte FLAG_DEAD = (byte) 1;
+
 }

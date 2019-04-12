@@ -19,12 +19,14 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Set;
 
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
+import it.drone.mesh.models.Device;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.server.ServerNode;
 
@@ -97,6 +99,7 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "I'm the server, I've connected to " + device.getName());
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "OUD: " + "onConnectionStateChange: DISCONNECTED from" + device.getName());
+
                 }
                 super.onConnectionStateChange(device, status, newState);
             }
@@ -247,6 +250,27 @@ public class AcceptBLETask {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
+                    for (byte b : value) Utility.printByte(b);
+                    if (value[2] == (byte) 255 && value[3] == (byte) 255 && value[4] == (byte) 255) { //messaggio di disconnessione di un client
+                        for (int i = 0; i < ServerNode.MAX_NUM_CLIENT; i++) {
+                            if (mNode.getClientList()[i] != null && mNode.getClientList()[i].equals(device)) {
+                                String clientid = getId() + i;
+                                mNode.setClientOffline("" + i);
+                                byte[] msg = new byte[2];
+                                msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
+                                msg[1] = Constants.FLAG_DEAD;
+                                for (String idTemp : nearDeviceMap.keySet()) {
+                                    BluetoothDevice dev = nearDeviceMap.get(idTemp);
+                                    ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, msg, context);
+                                    client.startClient();
+                                }
+                                routingTable.removeDevice(new Device(clientid));
+                                mGattDescriptorNextId.setValue(("" + mNode.nextId(null)).getBytes());
+                                return;
+                            }
+                        }
+                        return;
+                    }
                     final String valueReceived;
                     Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "  address:  " + device.getAddress());
                     Log.d(TAG, "OUD: " + "Device address: " + device.getAddress());
@@ -520,43 +544,54 @@ public class AcceptBLETask {
 
                 }
                 else if (descriptor.getUuid().equals(Constants.DescriptorCheckAliveUUID)) {
-                    String suspectedServerId = Utility.getStringId(value[0]);
-                    suspectedServerId = (suspectedServerId.length() == 2) ? suspectedServerId.substring(0, 1) : suspectedServerId.substring(0, 2);
+                    String suspectedId = Utility.getStringId(value[0]);
+                    String suspectedServerId = (suspectedId.length() == 2) ? suspectedId.substring(0, 1) : suspectedId.substring(0, 2);
+                    String suspectedClientId = (suspectedId.length() == 2) ? suspectedId.substring(1, 2) : suspectedId.substring(2, 3);
 
-                    boolean suspected = (value[1] == 1);
-                    Log.d(TAG, "OUD: " + "onDescriptorWriteRequest: suspectedServerId: " + suspectedServerId + ", suspected: " + suspected);
-                    if (mNode.getServer(suspectedServerId) != null && !suspected) {
-                        if(mNode.isNearTo(suspectedServerId)){
-                            nearDeviceMap.remove(suspectedServerId);
-                        }
-                        mNode.removeServer(suspectedServerId);
-
-
-                        byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
-                        mNode.parseClientMapToByte(clientRoutingTable);
-                        Utility.printByte(clientRoutingTable[0]);
-                        Utility.printByte(clientRoutingTable[1]);
-                        Utility.printByte(clientRoutingTable[2]);
-                        Utility.printByte(clientRoutingTable[3]);
-                        Utility.printByte(clientRoutingTable[4]);
-                        Utility.printByte(clientRoutingTable[5]);
-                        Utility.printByte(clientRoutingTable[6]);
-                        mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
-
-                        for (BluetoothDevice dev : mNode.getClientList()) {
-                            if (dev == null) continue;
-                            boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
-                            Log.d(TAG, "OUD: i've notified new server Online " + res);
-                        }
-                        for (String id : nearDeviceMap.keySet()) {
-                            BluetoothDevice dev = nearDeviceMap.get(id);
-                            if (dev != null) {
-                                ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, value, context);
-                                client.startClient();
+                    boolean isClient = suspectedClientId.equals("0");
+                    boolean dead = (value[1] == Constants.FLAG_DEAD);
+                    Log.d(TAG, "OUD: " + "onDescriptorWriteRequest: suspectedServerId: " + suspectedServerId + ", dead: " + dead);
+                    if (isClient) {
+                        mNode.getServer(suspectedServerId).setClientOffline(suspectedClientId);
+                        routingTable.removeDevice(new Device(suspectedId));
+                    } else {
+                        if (mNode.getServer(suspectedServerId) != null && dead) {
+                            if (mNode.isNearTo(suspectedServerId)) {
+                                nearDeviceMap.remove(suspectedServerId);
+                            }
+                            mNode.removeServer(suspectedServerId);
+                            LinkedList<Device> temp = new LinkedList<>();
+                            for (Device dev : routingTable.getDeviceList()) {
+                                String id = dev.getId();
+                                String serverId = (id.length() == 2) ? id.substring(0, 1) : id.substring(0, 2);
+                                if (serverId.equals(suspectedServerId)) {
+                                    temp.add(dev);
+                                }
+                            }
+                            for (Device dev : temp) {
+                                routingTable.removeDevice(dev);
                             }
                         }
-
                     }
+
+
+                    byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                    mNode.parseClientMapToByte(clientRoutingTable);
+                    mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
+
+                    for (BluetoothDevice dev : mNode.getClientList()) {
+                        if (dev == null) continue;
+                        boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                        Log.d(TAG, "OUD: i've notified new server Online " + res);
+                    }
+                    for (String id : nearDeviceMap.keySet()) {
+                        BluetoothDevice dev = nearDeviceMap.get(id);
+                        if (dev != null) {
+                            ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, value, context);
+                            client.startClient();
+                        }
+                    }
+
                 }
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }

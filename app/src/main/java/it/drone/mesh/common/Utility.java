@@ -106,11 +106,10 @@ public class Utility {
         return b;
     }
 
-    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message, boolean internet) {
-        byte[] sInByte = message.getBytes();
+    public static byte[][] messageBuilder(byte firstByte, byte destByte, byte[] sInByte, boolean internet) {
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
         byte[][] finalMessage;
-        int numPacks = (int) Math.floor(sInByte.length / DEST_PACK_MESSAGE_LEN);
+        int numPacks = (int) Math.floor((float) sInByte.length / DEST_PACK_MESSAGE_LEN);
 
         int lastLen = sInByte.length % DEST_PACK_MESSAGE_LEN;
         int numPackToSend = (lastLen == 0) ? numPacks : numPacks + 1;
@@ -140,6 +139,10 @@ public class Utility {
         }
         //Log.d(TAG, "OUD: messageBuilder:Fine for");
         return finalMessage;
+    }
+
+    public static byte[][] messageBuilder(byte firstByte, byte destByte, String message, boolean internet) {
+        return messageBuilder(firstByte, destByte, message.getBytes(), internet);
     }
 
     public static int[] getByteInfo(byte firstByte) {

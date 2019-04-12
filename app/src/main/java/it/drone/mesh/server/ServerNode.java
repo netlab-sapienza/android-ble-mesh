@@ -209,7 +209,10 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
     }
 
     public void setClientOffline(String id) {
+        clientByte = Utility.clearBit(clientByte, Integer.parseInt(id));
         clientList[Integer.parseInt(id)] = null;
+        Log.d(TAG, "OUD: ho rimosso il client " + id);
+
     }
 
     public BluetoothDevice getClient(String id) {
@@ -343,8 +346,41 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
     }
 
     public void parseMapToByte(byte[][] destArrayByte) {
+        int index = Integer.parseInt(getId());
+        if (!(Utility.getBit(destArrayByte[index][0], 0) == 1 || (Utility.getBit(destArrayByte[index][0], 1)) == 1 || (Utility.getBit(destArrayByte[index][0], 2)) == 1 || (Utility.getBit(destArrayByte[index][0], 3)) == 1)) {
+            byte[] tempArrayByte = new byte[SERVER_PACKET_SIZE];
+            int clientId = Integer.parseInt(getId());
+            int serverId = 0;
+            byte firstByte = Utility.byteNearServerBuilder(serverId, clientId);
+            tempArrayByte[0] = firstByte;
+            byte secondByte = 0b00000000;
+            for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
+                if (Utility.getBit(clientByte, i) == 1) {
+                    secondByte = Utility.setBit(secondByte, i);
+                }
+            }
+            tempArrayByte[1] = secondByte;
+            LinkedList<ServerNode> nearTemp = getNearServerList();
+            int tempIndex = 2;
+            int size = nearTemp.size();
+            for (int i = 0; i < size; i += 2) {
+                byte nearByte;
+                if (i + 1 < size) {
+                    nearByte = Utility.byteNearServerBuilder(Integer.parseInt(nearTemp.get(i).getId()), Integer.parseInt(nearTemp.get(i + 1).getId()));
+                } else {
+                    nearByte = Utility.byteNearServerBuilder(Integer.parseInt(nearTemp.get(i).getId()), 0);
+                }
+                tempArrayByte[tempIndex] = nearByte;
+                tempIndex++;
+            }
+            if (hasInternet())
+                tempArrayByte[SERVER_PACKET_SIZE - 1] = Utility.setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
+            System.arraycopy(tempArrayByte, 0, destArrayByte[index], 0, SERVER_PACKET_SIZE);
+        }
+
+
         for (ServerNode s : nearServers) {
-            int index = Integer.parseInt(s.getId());
+            index = Integer.parseInt(s.getId());
             if (Utility.getBit(destArrayByte[index][0], 0) == 1 || (Utility.getBit(destArrayByte[index][0], 1)) == 1 || (Utility.getBit(destArrayByte[index][0], 2)) == 1 || (Utility.getBit(destArrayByte[index][0], 3)) == 1)
                 continue;
             byte[] tempArrayByte = new byte[SERVER_PACKET_SIZE];

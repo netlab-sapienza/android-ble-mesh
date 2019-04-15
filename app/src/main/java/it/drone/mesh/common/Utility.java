@@ -602,9 +602,25 @@ public class Utility {
 
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS)
+                if (status == BluetoothGatt.GATT_SUCCESS && descriptor.getUuid().equals(Constants.DescriptorCheckAliveUUID)) {
                     Log.d(TAG, "OUD: i wrote server disconnected descriptor");
+                    String suspectedId = Utility.getStringId(message[0]);
+                    String suspectedServerId = (suspectedId.length() == 2) ? suspectedId.substring(0, 1) : suspectedId.substring(0, 2);
+                    String suspectedClientId = (suspectedId.length() == 2) ? suspectedId.substring(1, 2) : suspectedId.substring(2, 3);
+                    if (suspectedClientId.equals("")) { //scriviamo anche sulla caratteristica next server id per mettere id di quello morto
+                        BluetoothGattCharacteristic chara = gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID);
+                        chara.setValue(suspectedServerId.getBytes());
+                        gatt.writeCharacteristic(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID));
+                    }
+                }
+
                 super.onDescriptorWrite(gatt, descriptor, status);
+            }
+
+            @Override
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                Log.d(TAG, "OUD: I wrote characteristic NEXT SERVER ID" + new String(characteristic.getValue()));
+                super.onCharacteristicWrite(gatt, characteristic, status);
             }
         });
     }

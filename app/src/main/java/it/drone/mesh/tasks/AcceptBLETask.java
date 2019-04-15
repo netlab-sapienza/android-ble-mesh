@@ -263,6 +263,7 @@ public class AcceptBLETask {
                                 byte[] msg = new byte[2];
                                 msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
                                 msg[1] = Constants.FLAG_DEAD;
+                                Utility.printByte(msg[0]);
                                 for (String idTemp : nearDeviceMap.keySet()) {
                                     BluetoothDevice dev = nearDeviceMap.get(idTemp);
                                     ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, msg, context);
@@ -548,14 +549,18 @@ public class AcceptBLETask {
                     String suspectedServerId = (suspectedId.length() == 2) ? suspectedId.substring(0, 1) : suspectedId.substring(0, 2);
                     String suspectedClientId = (suspectedId.length() == 2) ? suspectedId.substring(1, 2) : suspectedId.substring(2, 3);
 
-                    boolean isClient = suspectedClientId.equals("0");
+                    boolean isClient = !suspectedClientId.equals("0");
                     boolean dead = (value[1] == Constants.FLAG_DEAD);
                     Log.d(TAG, "OUD: " + "onDescriptorWriteRequest: suspectedServerId: " + suspectedServerId + ", dead: " + dead);
                     if (isClient) {
+                        Log.d(TAG, "OUD: RIMUOVO CLIENT");
                         mNode.getServer(suspectedServerId).setClientOffline(suspectedClientId);
-                        routingTable.removeDevice(new Device(suspectedId));
+                        if (!routingTable.removeDevice(new Device(suspectedId))) {
+                            return;
+                        }
                     } else {
                         if (mNode.getServer(suspectedServerId) != null && dead) {
+                            Log.d(TAG, "OUD: RIMUOVO UN SERVER E I SUOI CLIENT");
                             if (mNode.isNearTo(suspectedServerId)) {
                                 nearDeviceMap.remove(suspectedServerId);
                             }
@@ -571,6 +576,8 @@ public class AcceptBLETask {
                             for (Device dev : temp) {
                                 routingTable.removeDevice(dev);
                             }
+                            mGattCharacteristicNextServerId.setValue(suspectedServerId.getBytes());
+                            Log.d(TAG, "OUD: Nuovo ID disponibile : " + new String(mGattCharacteristicNextServerId.getValue()));
                         }
                     }
 

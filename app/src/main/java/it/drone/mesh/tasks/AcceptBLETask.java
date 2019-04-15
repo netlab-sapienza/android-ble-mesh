@@ -250,8 +250,12 @@ public class AcceptBLETask {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
-                    for (byte b : value) Utility.printByte(b);
-                    if (value[2] == (byte) 255 && value[3] == (byte) 255 && value[4] == (byte) 255) { //messaggio di disconnessione di un client
+                    //for (byte b : value) Utility.printByte(b);
+                    byte sorgByte = value[0];
+                    byte destByte = value[1];
+                    final int[] infoSorg = Utility.getByteInfo(sorgByte);
+                    final int[] infoDest = Utility.getByteInfo(destByte);
+                    if (value[2] == (byte) 255 && value[3] == (byte) 255 && value[4] == (byte) 255 && infoSorg[0] == Integer.parseInt(getId()) && infoDest[0] == Integer.parseInt(getId()) && infoDest[1] == 0) { //messaggio di disconnessione di un mio client
                         for (int i = 0; i < ServerNode.MAX_NUM_CLIENT; i++) {
                             if (mNode.getClientList()[i] != null && mNode.getClientList()[i].equals(device)) {
                                 String clientid = getId() + i;
@@ -280,15 +284,11 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "BytesN: " + value.length);
                     if (value.length > 0) {
                         byte[] correct_message = new byte[value.length - 2];
-                        byte sorgByte = value[0];
-                        byte destByte = value[1];
                         System.arraycopy(value, 2, correct_message, 0, value.length - 2);
                         valueReceived = new String((correct_message));
                         Log.d(TAG, "OUD: " + valueReceived);
-                        final int[] infoSorg = Utility.getByteInfo(sorgByte);
-                        final int[] infoDest = Utility.getByteInfo(destByte);
                         //Log.d(TAG, "OUD: " + "id sorg: " + infoSorg[0] + "" + infoSorg[1]);
-                        Log.d(TAG, "OUD: " + "id dest: " + infoDest[0] + "" + infoDest[1]);
+                        //Log.d(TAG, "OUD: " + "id dest: " + infoDest[0] + "" + infoDest[1]);
                         final String senderId = Utility.getStringId(sorgByte);
                         String previousMsg = messageMap.get(senderId);
                         if (previousMsg == null) previousMsg = "";

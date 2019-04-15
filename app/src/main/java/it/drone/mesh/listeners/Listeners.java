@@ -28,7 +28,7 @@ public class Listeners {
     }
 
     public interface OnDisconnectedServerListener {
-        void OnDisconnectedServer(String serverId, byte flags); //suspected false -> morto sicuro
+        void OnDisconnectedServer(String serverId, byte flags); //flags specificate in Constants.java
     }
 
     public interface OnScanCompletedListener {

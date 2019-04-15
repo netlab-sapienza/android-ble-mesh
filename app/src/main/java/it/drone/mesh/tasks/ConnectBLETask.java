@@ -326,18 +326,33 @@ public class ConnectBLETask {
             @Override
             public void OnPacketSent(byte[] packet) {
                 Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
-                if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
-                    if (resultHolder[0]) {
-                        if (listener != null) listener.OnMessageSent(new String(message));
-                        onPacketSent = null;
+                if(finalMessage.length == 1) {
+                    Utility.sendPacket(finalMessage[0], mGatt, new Listeners.OnPacketSentListener() {
+                        @Override
+                        public void OnPacketSent(byte[] packet) {
+                            if (listener != null) listener.OnMessageSent(new String(message));
+                        }
+
+                        @Override
+                        public void OnPacketError(String error) {
+                            if (listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                        }
+                    });
+                }
+                else {
+                    if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
+                        if (resultHolder[0]) {
+                            if (listener != null) listener.OnMessageSent(new String(message));
+                            onPacketSent = null;
+                        } else {
+                            if (listener != null)
+                                listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                        }
                     } else {
-                        if (listener != null)
-                            listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                        Log.d(TAG, "OUD: nPacketSent: " + new String(finalMessage[indexHolder[0]]));
+                        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], mGatt, null);
+                        indexHolder[0] += 1;
                     }
-                } else {
-                    Log.d(TAG, "OUD: nPacketSent: " + new String(finalMessage[indexHolder[0]]));
-                    resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], mGatt, null);
-                    indexHolder[0] += 1;
                 }
             }
 
@@ -377,22 +392,27 @@ public class ConnectBLETask {
         for (byte b : temp) {
             Utility.printByte(b);
         }
-        sendMessage(msg, serverId, false, new Listeners.OnMessageSentListener() {
-            @Override
-            public void OnMessageSent(String message) {
-                Log.d(TAG, "OUD: messaggio quit ok");
-            }
-
-            @Override
-            public void OnCommunicationError(String error) {
-                Log.d(TAG, "OUD: OnCommunicationError: ");
-            }
-        });
         if (this.mGatt != null) {
-            this.mGatt.disconnect();
-            this.mGatt.close();
-            this.mGatt = null;
+            Log.d(TAG, "OUD: STO QUITTANDO");
+            sendMessage(msg, serverId, false, new Listeners.OnMessageSentListener() {
+                @Override
+                public void OnMessageSent(String message) {
+                    Log.d(TAG, "OUD: messaggio quit ok");
+                    mGatt.disconnect();
+                    mGatt.close();
+                    mGatt = null;
+                }
+
+                @Override
+                public void OnCommunicationError(String error) {
+                    Log.d(TAG, "OUD: OnCommunicationError: messaggio quit andato male");
+                    mGatt.disconnect();
+                    mGatt.close();
+                    mGatt = null;
+                }
+            });
         }
+
     }
 
     public boolean hasCorrectId() {

@@ -836,6 +836,7 @@ public class AcceptBLETask {
             byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
 
             boolean[] resultHolder = new boolean[1];
+            //resultHolder[0] = false;
             int[] indexHolder = new int[1];
 
             BluetoothDevice dev = mNode.getClient("" + infoDest[1]);

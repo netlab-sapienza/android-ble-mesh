@@ -322,24 +322,25 @@ public class ConnectBLETask {
         //resultHolder[0] = false;
         int[] indexHolder = new int[1];
 
-        this.onPacketSent = new Listeners.OnPacketSentListener() {
-            @Override
-            public void OnPacketSent(byte[] packet) {
-                Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
-                if(finalMessage.length == 1) {
-                    Utility.sendPacket(finalMessage[0], mGatt, new Listeners.OnPacketSentListener() {
-                        @Override
-                        public void OnPacketSent(byte[] packet) {
-                            if (listener != null) listener.OnMessageSent(new String(message));
-                        }
-
-                        @Override
-                        public void OnPacketError(String error) {
-                            if (listener != null) listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
-                        }
-                    });
+        if (finalMessage.length == 1) {
+            Log.d(TAG, "OUD: lenght == 1");
+            Utility.sendPacket(finalMessage[0], mGatt, new Listeners.OnPacketSentListener() {
+                @Override
+                public void OnPacketSent(byte[] packet) {
+                    if (listener != null) listener.OnMessageSent(new String(message));
                 }
-                else {
+
+                @Override
+                public void OnPacketError(String error) {
+                    if (listener != null)
+                        listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
+                }
+            });
+        } else {
+            this.onPacketSent = new Listeners.OnPacketSentListener() {
+                @Override
+                public void OnPacketSent(byte[] packet) {
+                    Log.d(TAG, "OUD: resultHolder: " + resultHolder[0] + ", indexHolder: " + indexHolder[0]);
                     if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                         if (resultHolder[0]) {
                             if (listener != null) listener.OnMessageSent(new String(message));
@@ -354,16 +355,16 @@ public class ConnectBLETask {
                         indexHolder[0] += 1;
                     }
                 }
-            }
 
-            @Override
-            public void OnPacketError(String error) {
-                listener.OnCommunicationError(error);
-            }
-        };
+                @Override
+                public void OnPacketError(String error) {
+                    listener.OnCommunicationError(error);
+                }
+            };
 
-        resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], this.mGatt, onPacketSent);
-        indexHolder[0] += 1;
+            resultHolder[0] = Utility.sendPacket(finalMessage[indexHolder[0]], this.mGatt, onPacketSent);
+            indexHolder[0] += 1;
+        }
     }
 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {

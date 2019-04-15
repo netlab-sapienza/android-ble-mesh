@@ -250,16 +250,26 @@ public class AcceptBLETask {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
-                    //for (byte b : value) Utility.printByte(b);
+                    for (byte b : value) Utility.printByte(b);
                     byte sorgByte = value[0];
                     byte destByte = value[1];
                     final int[] infoSorg = Utility.getByteInfo(sorgByte);
                     final int[] infoDest = Utility.getByteInfo(destByte);
                     if (value[2] == (byte) 255 && value[3] == (byte) 255 && value[4] == (byte) 255 && infoSorg[0] == Integer.parseInt(getId()) && infoDest[0] == Integer.parseInt(getId()) && infoDest[1] == 0) { //messaggio di disconnessione di un mio client
-                        for (int i = 0; i < ServerNode.MAX_NUM_CLIENT; i++) {
+                        for (int i = 0; i <= ServerNode.MAX_NUM_CLIENT; i++) {
                             if (mNode.getClientList()[i] != null && mNode.getClientList()[i].equals(device)) {
+                                Log.d(TAG, "OUD: onCharacteristicWriteRequest: ");
                                 String clientid = getId() + i;
                                 mNode.setClientOffline("" + i);
+                                byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                                mNode.parseClientMapToByte(clientRoutingTable);
+                                mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client della morte di uno di loro
+
+                                for (BluetoothDevice dev : mNode.getClientList()) {
+                                    if (dev == null) continue;
+                                    boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                                    Log.d(TAG, "OUD: i've notified new server Online " + res);
+                                }
                                 byte[] msg = new byte[2];
                                 msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
                                 msg[1] = Constants.FLAG_DEAD;

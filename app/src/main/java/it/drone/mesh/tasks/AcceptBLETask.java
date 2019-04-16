@@ -261,6 +261,7 @@ public class AcceptBLETask {
                                 Log.d(TAG, "OUD: onCharacteristicWriteRequest: ");
                                 String clientid = getId() + i;
                                 mNode.setClientOffline("" + i);
+
                                 byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
                                 mNode.parseClientMapToByte(clientRoutingTable);
                                 mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client della morte di uno di loro
@@ -268,7 +269,7 @@ public class AcceptBLETask {
                                 for (BluetoothDevice dev : mNode.getClientList()) {
                                     if (dev == null) continue;
                                     boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
-                                    Log.d(TAG, "OUD: i've notified new server Online " + res);
+                                    Log.d(TAG, "OUD: i've notified client dead " + res);
                                 }
                                 byte[] msg = new byte[2];
                                 msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
@@ -276,7 +277,7 @@ public class AcceptBLETask {
                                 Utility.printByte(msg[0]);
                                 for (String idTemp : nearDeviceMap.keySet()) {
                                     BluetoothDevice dev = nearDeviceMap.get(idTemp);
-                                    ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, msg, context);
+                                    ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, msg, context);
                                     client.startClient();
                                 }
                                 routingTable.removeDevice(new Device(clientid));
@@ -604,7 +605,7 @@ public class AcceptBLETask {
                     for (String id : nearDeviceMap.keySet()) {
                         BluetoothDevice dev = nearDeviceMap.get(id);
                         if (dev != null) {
-                            ConnectBLETask client = Utility.createBroadcastServerDisconnectedClient(dev, value, context);
+                            ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, value, context);
                             client.startClient();
                         }
                     }

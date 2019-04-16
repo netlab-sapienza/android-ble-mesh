@@ -572,7 +572,7 @@ public class Utility {
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
-    public static ConnectBLETask createBroadcastServerDisconnectedClient(BluetoothDevice device, byte[] message, Context context) {
+    public static ConnectBLETask createBroadcastSomeoneDisconnectedClient(BluetoothDevice device, byte[] message, Context context) {
         return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -607,7 +607,7 @@ public class Utility {
                     String suspectedId = Utility.getStringId(message[0]);
                     String suspectedServerId = (suspectedId.length() == 2) ? suspectedId.substring(0, 1) : suspectedId.substring(0, 2);
                     String suspectedClientId = (suspectedId.length() == 2) ? suspectedId.substring(1, 2) : suspectedId.substring(2, 3);
-                    if (suspectedClientId.equals("")) { //scriviamo anche sulla caratteristica next server id per mettere id di quello morto
+                    if (suspectedClientId.equals("0")) { //scriviamo anche sulla caratteristica next server id per mettere id di quello morto
                         BluetoothGattCharacteristic chara = gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID);
                         chara.setValue(suspectedServerId.getBytes());
                         gatt.writeCharacteristic(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID));

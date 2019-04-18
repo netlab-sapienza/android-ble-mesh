@@ -260,7 +260,8 @@ public class Utility {
 
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(0, 0), new String(value), false);
 
-        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
+        ConnectBLETask client =  new ConnectBLETask(new Server(device, device.getName()), context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -290,6 +291,7 @@ public class Utility {
                     Log.d(TAG, "OUD: " + "i wrote a characteristic !");
                     if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                         if (resultHolder[0]) {
+                            client.setJobDone();
                             Log.d(TAG, "OUD: sendRoutingTable: Messaggio inviato con successo");
                         } else
                             Log.d(TAG, "OUD: sendRoutingTable: Error sending packet " + indexHolder[0]);
@@ -324,7 +326,9 @@ public class Utility {
                     indexHolder[0] += 1;
                 }
             }
-        });
+        };
+        client.setCallback(callback);
+        return client;
     }
 
     public static byte[][] buildMapFromString(String mapString) {
@@ -342,7 +346,7 @@ public class Utility {
         return res;
     }
 
-    public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, final String nextId, Context context, final byte[] value) {
+    public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, Context context, final byte[] value) {
         Server u = new Server(device, device.getName());
         return new ConnectBLETask(u, context, new BluetoothGattCallback() {
             @Override
@@ -364,32 +368,22 @@ public class Utility {
                     Log.d(TAG, "OUD: " + "IL SERVICE ERA NULL");
                     return;
                 }
-                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicNextServerIdUUID);
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
                 if (characteristic == null) {
                     Log.d(TAG, "OUD: " + "LA CARATTERISTICA ERA NULL");
                     return;
                 }
-                boolean res = gatt.readCharacteristic(characteristic);
-                Log.d(TAG, "OUD: " + "Read Characteristic nextServerID: " + res);
+                String temp = new String(value);
+                BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
+                if (characteristic1 == null) return;
+                characteristic1.setValue(temp);
+                gatt.beginReliableWrite();
+                boolean res = gatt.writeCharacteristic(characteristic1);
+                Log.d(TAG, "OUD: " + "write charac? " + res);
+                gatt.executeReliableWrite();
                 super.onServicesDiscovered(gatt, status);
             }
 
-            @Override
-            public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                Log.d(TAG, "OUD: Status == " + status + ", value: " + new String(characteristic.getValue()) + " Length: " + characteristic.getValue().length);
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String temp = new String(characteristic.getValue());
-                    if (Integer.parseInt(nextId) > Integer.parseInt(temp)) {
-                        characteristic.setValue(nextId);
-                        gatt.beginReliableWrite();
-                        boolean res = gatt.writeCharacteristic(characteristic);
-                        Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
-                        gatt.executeReliableWrite();
-                    }
-
-                }
-                super.onCharacteristicRead(gatt, characteristic, status);
-            }
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
@@ -399,21 +393,6 @@ public class Utility {
                         Log.d(TAG, "OUD: " + "I wrote a new server on a server");
                     } else {
                         Log.d(TAG, "OUD: " + "Error1: " + status);
-                    }
-                } else {
-                    if (status == BluetoothGatt.GATT_SUCCESS) {
-                        String temp = new String(value);
-                        BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                        if (service == null) return;
-                        BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-                        if (characteristic1 == null) return;
-                        characteristic1.setValue(temp);
-                        gatt.beginReliableWrite();
-                        boolean res = gatt.writeCharacteristic(characteristic1);
-                        Log.d(TAG, "OUD: " + "write charac? " + res);
-                        gatt.executeReliableWrite();
-                    } else {
-                        Log.d(TAG, "OUD: " + "Error2: " + status);
                     }
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);

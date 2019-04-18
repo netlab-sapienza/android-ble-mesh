@@ -220,6 +220,7 @@ public class InitActivity extends Activity {
                         client = BLEClient.getInstance(getApplicationContext());
                         if (lastServerIdFound[0] != (byte) 0) {
                             client.setLastServerIdFound(lastServerIdFound);
+                            lastServerIdFound[0] = (byte) 0;
                         }
                         client.startClient(newServer);
                         client.addOnClientOnlineListener(() -> {
@@ -259,6 +260,7 @@ public class InitActivity extends Activity {
                     client = BLEClient.getInstance(getApplicationContext());
                     if (lastServerIdFound[0] != (byte) 0) {
                         client.setLastServerIdFound(lastServerIdFound);
+                        lastServerIdFound[0] = (byte) 0;
                     }
                     client.startClient();
                     client.addOnClientOnlineListener(() -> {

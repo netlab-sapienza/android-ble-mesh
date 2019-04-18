@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import it.drone.mesh.models.Device;
 import it.drone.mesh.models.Server;
+import it.drone.mesh.tasks.ConnectBLETask;
 
 public class Listeners {
     public interface OnMessageReceivedListener {
@@ -55,5 +56,8 @@ public class Listeners {
         void OnPacketSent(byte[] packet);
 
         void OnPacketError(String error);
+    }
+    public interface OnJobDoneListener {
+        void OnJobDone();
     }
 }

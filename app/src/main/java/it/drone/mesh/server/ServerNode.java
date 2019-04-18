@@ -12,7 +12,7 @@ public class ServerNode {
     public static final int MAX_NUM_SERVER = 16;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
-    public static final int MAX_NUM_CLIENT = 2;
+    public static final int MAX_NUM_CLIENT = 1;
     private static String TAG = ServerNode.class.getSimpleName();
     private String id;
     private int lastRequest;
@@ -23,6 +23,7 @@ public class ServerNode {
     private byte clientInternetByte;
     private BluetoothDevice[] clientList;
     private boolean hasInternet = false;
+
 
     public ServerNode(String id) {
         this.id = id;
@@ -85,17 +86,23 @@ public class ServerNode {
         return arrayNode[Integer.parseInt(id)];
     }
 
-    public ServerNode getServer(String serverId) {
+    public ServerNode getServer(String serverId, int numRequest) {
+        if (lastRequest != numRequest) {
+            lastRequest = numRequest;
+        } else return null;
+
         for (ServerNode s : routingTable) {
             if (s.getId().equals(serverId)) return s;
         }
         for (ServerNode s : routingTable) {
-            LinkedList<ServerNode> temp = s.getNearServerList();
-            for (ServerNode n : temp) {
-                if (n.getId().equals(serverId)) return n;
-            }
+            ServerNode n = s.getServer(serverId,numRequest);
+            if(n != null) return n;
         }
         return null;
+    }
+
+    public ServerNode getServer(String serverId) {
+        return getServer(serverId,getLastRequest() + 1);
     }
 
     public boolean removeServer(String suspectedServerId) {
@@ -546,5 +553,12 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
             if (s.getId().equals(suspectedServerId)) return true;
         }
         return false;
+    }
+    public String getNextServerId() {
+        for (int i = 1; i <= MAX_NUM_SERVER ; i++) {
+            boolean trovato = getServer(""+i) != null;
+            if (!trovato) return i+"";
+        }
+        return null;
     }
 }

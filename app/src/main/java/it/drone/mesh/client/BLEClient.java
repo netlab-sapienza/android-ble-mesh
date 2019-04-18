@@ -72,7 +72,10 @@ public class BLEClient {
     public void setLastServerIdFound(byte[] lastServerIdFound) {
         if(lastServerIdFound == null) Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
         else Log.d(TAG, "OUD: " + "setLastServerIdFound: 1: " + (int) lastServerIdFound[0] + ", 2:" + (int) lastServerIdFound[1]);
-        this.lastServerIdFound = lastServerIdFound;
+        Utility.printByte(lastServerIdFound[0]);
+        this.lastServerIdFound[0] = lastServerIdFound[0];
+        this.lastServerIdFound[1] = lastServerIdFound[1];
+        Utility.printByte(this.lastServerIdFound[0]);
     }
 
     private void startScanning() {
@@ -130,6 +133,8 @@ public class BLEClient {
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
 
                 if(lastServerIdFound == null) Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
+                Utility.printByte(lastServerIdFound[0]);
+                Utility.printByte(lastServerIdFound[1]);
                 if (lastServerIdFound[0] != (byte) 0) connectBLE.setLastServerIdFound(lastServerIdFound);
                 //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
                 connectBLE.startClient();

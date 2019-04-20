@@ -223,8 +223,67 @@ public class InitActivity extends Activity {
                             lastServerIdFound[0] = (byte) 0;
                         }
                         client.startClient(newServer);
+
                         client.addOnClientOnlineListener(() -> {
-                            deviceAdapter.setClient(getApplicationContext());
+                            if (client!=null) {
+                                deviceAdapter.setClient(getApplicationContext());
+                                myId.setText(client.getId());
+                                whoAmI.setText(R.string.client);
+                                sendTweet.setVisibility(View.VISIBLE);
+                                sendEmail.setVisibility(View.VISIBLE);
+                                client.addReceivedWithInternetListener((idMitt, message) -> {
+                                    Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                                    String[] info = message.split(";;");
+                                    if (info[0].equals(EMAIL_REQUEST)) {
+                                        try {
+                                            sendAMail(info[1], info[2], idMitt);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    } else if (info[0].equals(TWITTER_REQUEST)) {
+                                        tweetSomething(info[1]);
+                                    }
+                                });
+                                client.addDisconnectedServerListener((serverId, flags) -> {
+                                    lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0); //c'è solo id server nei primi 4 bit
+                                    lastServerIdFound[1] = flags;
+                                    new Handler(getMainLooper()).post(() -> {
+                                        startServices.performClick();
+                                    });
+                                    new Handler(getMainLooper()).postDelayed(()->{
+                                        Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                        startServices.performClick();
+                                    },5000);
+
+                                });
+                            }
+
+
+                        });
+
+                    });
+                    deviceAdapter.setServer(getApplicationContext());
+                } else {
+                    client = BLEClient.getInstance(getApplicationContext());
+                    if (lastServerIdFound[0] != (byte) 0) {
+                        client.setLastServerIdFound(lastServerIdFound);
+                        lastServerIdFound[0] = (byte) 0;
+                        lastServerIdFound[1] = (byte) 0;
+                    }
+                    client.setOnConnectionLostListener(()->{
+                        new Handler(getMainLooper()).post(() -> {
+                            startServices.performClick();
+                        });
+                        new Handler(getMainLooper()).postDelayed(()->{
+                            Toast.makeText(getApplicationContext(),"Problem with Your server, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                            startServices.performClick();
+                        },5000);
+                    });
+                    client.startClient();
+
+                    client.addOnClientOnlineListener(() -> {
+                        deviceAdapter.setClient(getApplicationContext());
+                        if(client != null) {
                             myId.setText(client.getId());
                             whoAmI.setText(R.string.client);
                             sendTweet.setVisibility(View.VISIBLE);
@@ -243,57 +302,19 @@ public class InitActivity extends Activity {
                                 }
                             });
                             client.addDisconnectedServerListener((serverId, flags) -> {
-                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0); //c'è solo id server nei primi 4 bit
+                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0);
                                 lastServerIdFound[1] = flags;
-                                startServices.performClick();
+
+                                new Handler(getMainLooper()).post(() -> {
+                                    startServices.performClick();
+                                });
                                 new Handler(getMainLooper()).postDelayed(()->{
                                     Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
                                     startServices.performClick();
                                 },5000);
-
                             });
-                        });
+                        }
 
-                    });
-                    deviceAdapter.setServer(getApplicationContext());
-                } else {
-                    client = BLEClient.getInstance(getApplicationContext());
-                    if (lastServerIdFound[0] != (byte) 0) {
-                        client.setLastServerIdFound(lastServerIdFound);
-                        lastServerIdFound[0] = (byte) 0;
-                    }
-                    client.startClient();
-                    client.addOnClientOnlineListener(() -> {
-                        deviceAdapter.setClient(getApplicationContext());
-                        myId.setText(client.getId());
-                        whoAmI.setText(R.string.client);
-                        sendTweet.setVisibility(View.VISIBLE);
-                        sendEmail.setVisibility(View.VISIBLE);
-                        client.addReceivedWithInternetListener((idMitt, message) -> {
-                            Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
-                            String[] info = message.split(";;");
-                            if (info[0].equals(EMAIL_REQUEST)) {
-                                try {
-                                    sendAMail(info[1], info[2], idMitt);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            } else if (info[0].equals(TWITTER_REQUEST)) {
-                                tweetSomething(info[1]);
-                            }
-                        });
-                        client.addDisconnectedServerListener((serverId, flags) -> {
-                            lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0);
-                            lastServerIdFound[1] = flags;
-
-                            new Handler(getMainLooper()).post(() -> {
-                                startServices.performClick();
-                            });
-                            new Handler(getMainLooper()).postDelayed(()->{
-                                Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
-                                startServices.performClick();
-                            },5000);
-                        });
                     });
                 }
             }

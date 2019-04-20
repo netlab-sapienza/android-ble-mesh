@@ -265,9 +265,14 @@ public class Utility {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
+                    Log.d(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.d(TAG, "OUD: Status " + status + ", newState: " + newState);
+                    if (!client.getJobDone()) {
+                        Log.d(TAG, "OUD: Retry sending routing table");
+                        client.startClient();
+                    }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
                 super.onConnectionStateChange(gatt, status, newState);

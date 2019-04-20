@@ -128,12 +128,12 @@ public class AcceptBLETask {
 
                         }
                     }
-                    for (ConnectBLETask myClient: myTempClient) {
+                    /*for (ConnectBLETask myClient: myTempClient) {
                         if (myClient.getmGatt().getDevice().equals(device)) {
                             //myClient.getmGatt().connect();
                             myClient.startClient();
                         }
-                    }
+                    }*/
 
                 }
                 super.onConnectionStateChange(device, status, newState);
@@ -217,48 +217,36 @@ public class AcceptBLETask {
                                 client.startClient();
                             }
                             if (isNearToMe) { //passaggio della table al nuovo server
-                                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                                    String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
-                                    Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
-                                        @Override
-                                        public void OnNewServerDiscovered(BluetoothDevice server) {
-                                            Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
-                                            final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
-                                            myTempClient.add(clientNuovoServ);
-                                            clientNuovoServ.setOnJobDoneListener(()->{
-                                                Log.d(TAG, "OUD: Task completato, rimuovo dalla lista : " + clientNuovoServ.getmGatt().getDevice().getName());
-                                                clientNuovoServ.stopClient();
-                                                myTempClient.remove(clientNuovoServ);
-                                            });
-                                            clientNuovoServ.startClient();
-                                        }
+                                String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
+                                Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
+                                    @Override
+                                    public void OnNewServerDiscovered(BluetoothDevice server) {
+                                        Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
+                                        final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
+                                        myTempClient.add(clientNuovoServ);
+                                        clientNuovoServ.startClient();
+                                    }
 
-                                        @Override
-                                        public void OnNewServerNotFound() {
-                                            Log.e(TAG, "OUD: " + "Server non trovato");
-                                            Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
-                                                @Override
-                                                public void OnNewServerDiscovered(BluetoothDevice server) {
-                                                    Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
-                                                    final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
-                                                    myTempClient.add(clientNuovoServ);
-                                                    clientNuovoServ.setOnJobDoneListener(()->{
-                                                        Log.d(TAG, "OUD: Task completato, rimuovo dalla lista : " + clientNuovoServ.getmGatt().getDevice().getName());
-                                                        clientNuovoServ.stopClient();
-                                                        myTempClient.remove(clientNuovoServ);
-                                                    });
-                                                    clientNuovoServ.startClient();
-                                                }
+                                    @Override
+                                    public void OnNewServerNotFound() {
+                                        Log.e(TAG, "OUD: " + "Server non trovato");
+                                        Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
+                                            @Override
+                                            public void OnNewServerDiscovered(BluetoothDevice server) {
+                                                Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
+                                                final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
+                                                myTempClient.add(clientNuovoServ);
+                                                clientNuovoServ.startClient();
+                                            }
 
-                                                @Override
-                                                public void OnNewServerNotFound() {
-                                                    Log.e(TAG, "OUD: " + "Server non trovato");
+                                            @Override
+                                            public void OnNewServerNotFound() {
+                                                Log.e(TAG, "OUD: " + "Server non trovato");
 
-                                                }
-                                            });
-                                        }
-                                    });
-                                },2000);
+                                            }
+                                        });
+                                    }
+                                });
                             }
                         } else {
                             Log.d(TAG, "OUD: " + "Nuova table nella rete value :" + value.length);
@@ -316,7 +304,7 @@ public class AcceptBLETask {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
-                    for (byte b : value) Utility.printByte(b);
+                    //for (byte b : value) Utility.printByte(b);
                     byte sorgByte = value[0];
                     byte destByte = value[1];
                     final int[] infoSorg = Utility.getByteInfo(sorgByte);
@@ -481,7 +469,7 @@ public class AcceptBLETask {
                                     hop = Integer.parseInt(messageSplitted[1]);
                                     timestamp = Long.parseLong(messageSplitted[0]);
                                 } catch (NumberFormatException e) {
-                                    Log.e(TAG, "OUD: " + "Messaggio malformato, non propagabile");
+                                    Log.e(TAG, "OUD: " + "Messaggio malformato");
                                 }
                                 for (Listeners.OnMessageReceivedListener l : messageReceivedListeners) {
                                     l.OnMessageReceived(infoSorg[0] + "" + infoSorg[1], messageSplitted[2], hop, timestamp);
@@ -562,7 +550,9 @@ public class AcceptBLETask {
                         ConnectBLETask client = Utility.createBroadcastNewClientOnline(dev, Integer.parseInt(getId()), currentid, context);
                         client.startClient();
                     }
+                    int i = 0;
                     for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
+                        Log.d(TAG, "OUD: onDescriptorWriteRequest: " + i++);
                         l.OnRoutingTableUpdated("Added client with id : " + currentid);
                     }
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientOnlineUUID)) { //Un altro server mi scrive un nuovo client nella rete
@@ -834,7 +824,7 @@ public class AcceptBLETask {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     Log.d(TAG, "OUD: " + "i wrote a characterisic routing table!");
-                    client.stopClient();
+                    //client.stopClient();
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
@@ -901,7 +891,7 @@ public class AcceptBLETask {
                 boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
                 Log.d(TAG, "OUD: i've notified new client Online " + res);
             }
-
+            // TODO: 20/04/19 comunicare anche agli altri server 
             this.mGattServer.clearServices();
             this.mGattServer.close();
             this.mGattServer = null;

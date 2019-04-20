@@ -121,10 +121,10 @@ public class BLEServer {
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                        Log.i(TAG, "OUD: Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                        Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
+                        Log.i(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
                     }
                     super.onConnectionStateChange(gatt, status, newState);
                 }
@@ -213,6 +213,7 @@ public class BLEServer {
     }
 
     private void initializeServer() {
+        if(acceptBLETask == null) this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
         debugMessageListener.OnDebugMessage("Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -234,7 +235,7 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                //acceptBLETask = null;
+                acceptBLETask = null;
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {

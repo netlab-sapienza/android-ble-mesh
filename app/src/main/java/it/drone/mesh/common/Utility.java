@@ -280,8 +280,10 @@ public class Utility {
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                Log.d(TAG, "OUD: ci entro");
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) return;
+                Log.d(TAG, "OUD: service : " + service.getUuid().toString());
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
                 if (characteristic == null) return;
                 BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.RoutingTableDescriptorUUID);
@@ -315,7 +317,10 @@ public class Utility {
                     if (Integer.parseInt(routingId) > Integer.parseInt(new String(descriptor.getValue()))) {
                         descriptor.setValue(routingId.getBytes());
                         gatt.writeDescriptor(descriptor);
-                    } else return;
+                    } else {
+                        client.setJobDone();
+                        return;
+                    };
                 }
                 super.onDescriptorRead(gatt, descriptor, status);
             }
@@ -353,13 +358,18 @@ public class Utility {
 
     public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, Context context, final byte[] value) {
         Server u = new Server(device, device.getName());
-        return new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        ConnectBLETask client = new ConnectBLETask(u, context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    if (!client.getJobDone()) {
+                        Log.d(TAG, "OUD: Retry sending routing table");
+                        client.startClient();
+                    }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
                 super.onConnectionStateChange(gatt, status, newState);
@@ -396,13 +406,16 @@ public class Utility {
                 if (characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         Log.d(TAG, "OUD: " + "I wrote a new server on a server");
+                        client.setJobDone();
                     } else {
                         Log.d(TAG, "OUD: " + "Error1: " + status);
                     }
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
-        });
+        };
+        client.setCallback(callback);
+        return client;
     }
 
     public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final HashMap<String, BluetoothDevice> nearMapDevice, final String nuovoId, final Listeners.OnNewServerDiscoveredListener listener) {
@@ -473,13 +486,18 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastNewClientOnline(BluetoothDevice device, final int serverId, final int clientId, Context context) {
-        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
+        ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    if (!client.getJobDone()) {
+                        Log.d(TAG, "OUD: Retry sending routing table");
+                        client.startClient();
+                    }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
                 super.onConnectionStateChange(gatt, status, newState);
@@ -498,28 +516,41 @@ public class Utility {
                 descriptor.setValue(val);
                 boolean res = gatt.writeDescriptor(descriptor);
 
-                Log.d(TAG, "OUD: " + "write descriptor client online: " + res);
+                Log.d(TAG, "OUD: " + "write descriptor client online: " + res);if (!client.getJobDone()) {
+                    Log.d(TAG, "OUD: Retry sending routing table");
+                    client.startClient();
+                }
                 super.onServicesDiscovered(gatt, status);
             }
 
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS)
+                if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d(TAG, "OUD: i wrote new client online descriptor");
+                    client.setJobDone();
+                }
 
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
-        });
+        };
+        client.setCallback(callback);
+        return client;
     }
 
     public static ConnectBLETask createBroadcastClientWithInternet(BluetoothDevice device, final String clientId, Context context) {
-        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
+
+        ConnectBLETask client =  new ConnectBLETask(new Server(device, device.getName()), context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    if (!client.getJobDone()) {
+                        Log.d(TAG, "OUD: Retry sending routing table");
+                        client.startClient();
+                    }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
                 super.onConnectionStateChange(gatt, status, newState);
@@ -542,11 +573,15 @@ public class Utility {
 
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS)
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    client.setJobDone();
                     Log.d(TAG, "OUD: i wrote new client online descriptor");
+                }
                 super.onDescriptorWrite(gatt, descriptor, status);
             }
-        });
+        };
+        client.setCallback(callback);
+        return client;
     }
 
     public static boolean isDeviceOnline(Context context) {
@@ -557,13 +592,18 @@ public class Utility {
     }
 
     public static ConnectBLETask createBroadcastSomeoneDisconnectedClient(BluetoothDevice device, byte[] message, Context context) {
-        return new ConnectBLETask(new Server(device, device.getName()), context, new BluetoothGattCallback() {
+        ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery Routing Table from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    if (!client.getJobDone()) {
+                        Log.d(TAG, "OUD: Retry sending routing table");
+                        client.startClient();
+                    }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
                 super.onConnectionStateChange(gatt, status, newState);
@@ -596,6 +636,9 @@ public class Utility {
                         chara.setValue(suspectedServerId.getBytes());
                         gatt.writeCharacteristic(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID));
                     }
+                    else {
+                        client.setJobDone();
+                    }
                 }
 
                 super.onDescriptorWrite(gatt, descriptor, status);
@@ -603,9 +646,14 @@ public class Utility {
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                Log.d(TAG, "OUD: I wrote characteristic NEXT SERVER ID" + new String(characteristic.getValue()));
+                if (status== BluetoothGatt.GATT_SUCCESS) {
+                    Log.d(TAG, "OUD: I wrote characteristic NEXT SERVER ID" + new String(characteristic.getValue()));
+                    client.setJobDone();
+                }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
-        });
+        };
+        client.setCallback(callback);
+        return client;
     }
 }

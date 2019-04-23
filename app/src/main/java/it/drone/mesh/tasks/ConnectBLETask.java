@@ -67,6 +67,7 @@ public class ConnectBLETask {
         internetListeners = new ArrayList<>();
         routingTable = RoutingTable.getInstance();
         temporaryClient = false;
+        serverId = "";
         mGattCallback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -79,6 +80,7 @@ public class ConnectBLETask {
                     if (onDisconnectedServerListener != null) onDisconnectedServerListener.OnDisconnectedServer(serverId,Constants.FLAG_SUSPECTED_DEAD);
                     else {
                         serverId = "";
+                        Log.d(TAG, "OUD: id :  " + getId() + (hasCorrectId()))  ;
                         if(hasCorrectId()) OnConnectionLostListener.OnConnectionLost();
                     }
                     /*boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.DescriptorUUID));
@@ -408,7 +410,6 @@ public class ConnectBLETask {
             Utility.printByte(lastServerIdFound[0]);
             Utility.printByte(lastServerIdFound[1]);
             if (mGatt!= null) {
-                mGatt.disconnect();
                 mGatt.close();
                 mGatt = null;
             }

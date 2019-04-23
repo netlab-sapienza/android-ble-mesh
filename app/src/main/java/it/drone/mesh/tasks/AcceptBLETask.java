@@ -64,7 +64,6 @@ public class AcceptBLETask {
     private RoutingTable routingTable;
     private HashMap<BluetoothDevice, Listeners.OnPacketSentListener> listenerHashMap;
     private byte[] lastServerIdFound = new byte[2];
-    private LinkedList<ConnectBLETask> myTempClient = new LinkedList<>();
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
@@ -223,7 +222,6 @@ public class AcceptBLETask {
                                     public void OnNewServerDiscovered(BluetoothDevice server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                         final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
-                                        myTempClient.add(clientNuovoServ);
                                         clientNuovoServ.startClient();
                                     }
 
@@ -235,7 +233,6 @@ public class AcceptBLETask {
                                             public void OnNewServerDiscovered(BluetoothDevice server) {
                                                 Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                                 final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
-                                                myTempClient.add(clientNuovoServ);
                                                 clientNuovoServ.startClient();
                                             }
 
@@ -824,7 +821,7 @@ public class AcceptBLETask {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     Log.d(TAG, "OUD: " + "i wrote a characterisic routing table!");
-                    //client.stopClient();
+                    client.stopClient();
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
@@ -871,6 +868,7 @@ public class AcceptBLETask {
             this.mGattServer.addService(this.mGattService);
 
             for (Listeners.OnServerInitializedListener l : serverInitializedListeners) {
+                Log.d(TAG, "OUD: Richiamo listener");
                 l.OnServerInitialized();
             }
 

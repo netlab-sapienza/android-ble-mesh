@@ -12,11 +12,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
@@ -222,6 +224,15 @@ public class InitActivity extends Activity {
                             client.setLastServerIdFound(lastServerIdFound);
                             lastServerIdFound[0] = (byte) 0;
                         }
+                        client.setOnConnectionLostListener(()->{
+                            new Handler(getMainLooper()).post(() -> {
+                                startServices.performClick();
+                            });
+                            new Handler(getMainLooper()).postDelayed(()->{
+                                Toast.makeText(getApplicationContext(),"Problem with Your server, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                startServices.performClick();
+                            },5000);
+                        });
                         client.startClient(newServer);
 
                         client.addOnClientOnlineListener(() -> {

@@ -117,7 +117,8 @@ public class BLEServer {
         } else {
             final Server newServer = ServerList.getServer(offset);
             debugMessageListener.OnDebugMessage( "OUD: " + "Try reading ID of : " + newServer.getUserName());
-            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context, new BluetoothGattCallback() {
+            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
+            BluetoothGattCallback callback = new BluetoothGattCallback() {
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -133,6 +134,7 @@ public class BLEServer {
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                     Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices() + " from " + gatt.getDevice().getName());
                     for (BluetoothGattService service : gatt.getServices()) {
+                        Log.d(TAG, "OUD: onServicesDiscovered: " + service.getUuid().toString());
                         if (service.getUuid().toString().equals(Constants.ServiceUUID.toString())) {
                             if (service.getCharacteristics() != null) {
                                 for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
@@ -166,6 +168,7 @@ public class BLEServer {
                             if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
                             if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
                                 enoughServerListener.OnEnoughServer(newServer);
+                                connectBLE.stopClient();
                                 return;
                             }
                             askIdToNearServer(offset + 1);
@@ -174,7 +177,8 @@ public class BLEServer {
                     else askIdToNearServer(offset + 1);
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
-            });
+            };
+            connectBLE.setCallback(callback);
             connectBLE.startClient();
         }
     }
@@ -235,7 +239,7 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                acceptBLETask = null;
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {
@@ -276,6 +280,7 @@ public class BLEServer {
     }
 
     public void addServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        Log.d(TAG, "OUD: " + (acceptBLETask==null));
         if(acceptBLETask != null) this.acceptBLETask.addServerInitializedListener(l);
     }
 

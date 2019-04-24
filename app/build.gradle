@@ -61,4 +61,5 @@ dependencies {
     implementation 'com.github.instacart.truetime-android:library-extension-rx:3.4'
     implementation 'com.github.luongvo:GmailBackground:2.1.1'
     implementation 'org.twitter4j:twitter4j-core:4.0.1'
+    implementation 'com.google.android.gms:play-services-location:16.0.0'
 }

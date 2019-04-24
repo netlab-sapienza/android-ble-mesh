@@ -9,16 +9,15 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
@@ -35,6 +34,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStates;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
@@ -60,6 +67,11 @@ import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
 public class InitActivity extends Activity {
 
     private static final String TAG = InitActivity.class.getSimpleName();
+
+    // Per chiedere il GPS su Maps
+    protected static final int REQUEST_CHECK_SETTINGS = 0x1;
+    private GoogleApiClient mGoogleApiClient;
+
 
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
@@ -224,19 +236,19 @@ public class InitActivity extends Activity {
                             client.setLastServerIdFound(lastServerIdFound);
                             lastServerIdFound[0] = (byte) 0;
                         }
-                        client.setOnConnectionLostListener(()->{
+                        client.setOnConnectionLostListener(() -> {
                             new Handler(getMainLooper()).post(() -> {
                                 startServices.performClick();
                             });
-                            new Handler(getMainLooper()).postDelayed(()->{
-                                Toast.makeText(getApplicationContext(),"Problem with Your server, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                            new Handler(getMainLooper()).postDelayed(() -> {
+                                Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                 startServices.performClick();
-                            },5000);
+                            }, 5000);
                         });
                         client.startClient(newServer);
 
                         client.addOnClientOnlineListener(() -> {
-                            if (client!=null) {
+                            if (client != null) {
                                 deviceAdapter.setClient(getApplicationContext());
                                 myId.setText(client.getId());
                                 whoAmI.setText(R.string.client);
@@ -256,15 +268,15 @@ public class InitActivity extends Activity {
                                     }
                                 });
                                 client.addDisconnectedServerListener((serverId, flags) -> {
-                                    lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0); //c'è solo id server nei primi 4 bit
+                                    lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
                                     lastServerIdFound[1] = flags;
                                     new Handler(getMainLooper()).post(() -> {
                                         startServices.performClick();
                                     });
-                                    new Handler(getMainLooper()).postDelayed(()->{
-                                        Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                    new Handler(getMainLooper()).postDelayed(() -> {
+                                        Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                         startServices.performClick();
-                                    },5000);
+                                    }, 5000);
 
                                 });
                             }
@@ -281,20 +293,20 @@ public class InitActivity extends Activity {
                         lastServerIdFound[0] = (byte) 0;
                         lastServerIdFound[1] = (byte) 0;
                     }
-                    client.setOnConnectionLostListener(()->{
+                    client.setOnConnectionLostListener(() -> {
                         new Handler(getMainLooper()).post(() -> {
                             startServices.performClick();
                         });
-                        new Handler(getMainLooper()).postDelayed(()->{
-                            Toast.makeText(getApplicationContext(),"Problem with Your server, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                        new Handler(getMainLooper()).postDelayed(() -> {
+                            Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                             startServices.performClick();
-                        },5000);
+                        }, 5000);
                     });
                     client.startClient();
 
                     client.addOnClientOnlineListener(() -> {
                         deviceAdapter.setClient(getApplicationContext());
-                        if(client != null) {
+                        if (client != null) {
                             myId.setText(client.getId());
                             whoAmI.setText(R.string.client);
                             sendTweet.setVisibility(View.VISIBLE);
@@ -313,16 +325,16 @@ public class InitActivity extends Activity {
                                 }
                             });
                             client.addDisconnectedServerListener((serverId, flags) -> {
-                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId),0),0);
+                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
                                 lastServerIdFound[1] = flags;
 
                                 new Handler(getMainLooper()).post(() -> {
                                     startServices.performClick();
                                 });
-                                new Handler(getMainLooper()).postDelayed(()->{
-                                    Toast.makeText(getApplicationContext(),"Your server is offline, restart service in 5 seconds",Toast.LENGTH_SHORT).show();
+                                new Handler(getMainLooper()).postDelayed(() -> {
+                                    Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                     startServices.performClick();
-                                },5000);
+                                }, 5000);
                             });
                         }
 
@@ -395,7 +407,7 @@ public class InitActivity extends Activity {
         });
 
         sendEmail.setOnClickListener(view -> {
-            if ((client == null || client.getConnectBLETask() == null) && (server == null ||server.getAcceptBLETask() == null)) {
+            if ((client == null || client.getConnectBLETask() == null) && (server == null || server.getAcceptBLETask() == null)) {
                 Toast.makeText(this, "Not connected in the BLE mesh", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -622,6 +634,10 @@ public class InitActivity extends Activity {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
+
+                setGPSOn();
+
+
             } else {
                 // Bluetooth is not supported.
                 writeDebug(getString(R.string.bt_not_supported));
@@ -629,12 +645,88 @@ public class InitActivity extends Activity {
         }
     }
 
+    public void setGPSOn() {
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(30 * 1000);
+        locationRequest.setFastestInterval(5 * 1000);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        builder.setAlwaysShow(true); //this is the key ingredient
+
+
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(LocationServices.API)
+                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                        @Override
+                        public void onConnected(Bundle bundle) {
+
+                        }
+
+                        @Override
+                        public void onConnectionSuspended(int i) {
+                            mGoogleApiClient.connect();
+                        }
+                    })
+                    .addOnConnectionFailedListener(connectionResult -> Log.e("Location error", "Location error " + connectionResult.getErrorCode())).build();
+            mGoogleApiClient.connect();
+        }
+
+        PendingResult<LocationSettingsResult> result =
+                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
+        result.setResultCallback(result1 -> {
+            final com.google.android.gms.common.api.Status status = result1.getStatus();
+            final LocationSettingsStates state = result1.getLocationSettingsStates();
+            switch (status.getStatusCode()) {
+                case LocationSettingsStatusCodes.SUCCESS:
+                    // All location settings are satisfied. The client can initialize location
+                    // requests here.
+                    break;
+                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                    // Location settings are not satisfied. But could be fixed by showing the user
+                    // a dialog.
+                    try {
+                        // Show the dialog by calling startResolutionForResult(),
+                        // and check the result in onActivityResult().
+                        status.startResolutionForResult(InitActivity.this, REQUEST_CHECK_SETTINGS);
+                    } catch (IntentSender.SendIntentException e) {
+                        // Ignore the error.
+                    }
+                    break;
+                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                    // Location settings are not satisfied. However, we have no way to fix the
+                    // settings so we won't show the dialog.
+                    break;
+            }
+        });
+    }
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == RESULT_OK) {
-                checkBluetoothAvailability();
-            } else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+        switch (requestCode) {
+            // Check for the integer request code originally supplied to startResolutionForResult().
+            case REQUEST_CHECK_SETTINGS:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        writeDebug("GPS OK");
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        setGPSOn();
+                        break;
+                }
+                break;
+            case REQUEST_ENABLE_BT:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        checkBluetoothAvailability();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+                        break;
+                }
+                break;
         }
     }
 

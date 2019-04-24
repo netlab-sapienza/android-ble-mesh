@@ -126,7 +126,7 @@ public class BLEServer {
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                         if (!connectBLE.getJobDone()) {
-                            connectBLE.startClient();
+                            connectBLE.restartClient();
                             Log.d(TAG, "OUD: Retry reading ID");
                         }
                         Log.i(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
@@ -172,13 +172,17 @@ public class BLEServer {
                             if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
                             if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
                                 enoughServerListener.OnEnoughServer(newServer);
-                                connectBLE.stopClient();
+                                connectBLE.setJobDone();
                                 return;
                             }
+                            connectBLE.setJobDone();
                             askIdToNearServer(offset + 1);
                         }
                     }
-                    else askIdToNearServer(offset + 1);
+                    else {
+                        connectBLE.setJobDone();
+                        askIdToNearServer(offset + 1);
+                    }
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
             };
@@ -193,12 +197,7 @@ public class BLEServer {
         if (mScanCallback == null) {
             ServerList.cleanUserList();
             // Will stop the scanning after a set time.
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    initializeServer();
-                }
-            }, SCAN_PERIOD);
+            new Handler().postDelayed(() -> initializeServer(), SCAN_PERIOD);
 
             // Kick off a new scan.
             mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {

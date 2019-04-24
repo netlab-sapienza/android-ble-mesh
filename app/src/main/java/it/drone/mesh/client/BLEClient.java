@@ -153,7 +153,7 @@ public class BLEClient {
                         serverDevice = newServer.getBluetoothDevice();
                         Log.d(TAG, "OUD: You're a client and your id is " + connectBLETask.getId());
                     } else {
-                        connectBLE.stopClient();
+                        connectBLE.setJobDone();
                         Log.d(TAG, "OUD: " + "id non assegnato, passo al prossimo server");
                         tryConnection(offset + 1);
                     }

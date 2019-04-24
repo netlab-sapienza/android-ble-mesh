@@ -34,14 +34,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStates;
+import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.tasks.Task;
 import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
@@ -634,10 +635,7 @@ public class InitActivity extends Activity {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
-
                 setGPSOn();
-
-
             } else {
                 // Bluetooth is not supported.
                 writeDebug(getString(R.string.bt_not_supported));
@@ -645,23 +643,57 @@ public class InitActivity extends Activity {
         }
     }
 
-    public void setGPSOn() {
+
+    /**
+     * Makes request to enable GPS
+     */
+    protected void setGPSOn() {
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(30 * 1000);
         locationRequest.setFastestInterval(5 * 1000);
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest);
-        builder.setAlwaysShow(true); //this is the key ingredient
+        builder.setAlwaysShow(true);
 
+        Task<LocationSettingsResponse> task = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build());
+        task.addOnCompleteListener(task1 -> {
+            try {
+                task1.getResult(ApiException.class);
+            } catch (ApiException exception) {
+                switch (exception.getStatusCode()) {
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        // Location settings are not satisfied. But could be fixed by showing the
+                        // user a dialog.
+                        try {
+                            // Cast to a resolvable exception.
+                            ResolvableApiException resolvable = (ResolvableApiException) exception;
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            resolvable.startResolutionForResult(
+                                    InitActivity.this,
+                                    REQUEST_CHECK_SETTINGS);
+                        } catch (IntentSender.SendIntentException e) {
+                            // Ignore the error.
+                            writeErrorDebug("GPS: " + e.getMessage());
+                        } catch (ClassCastException e) {
+                            writeErrorDebug("GPS: " + e.getMessage());
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        writeErrorDebug("Location settings are not satisfied. However, we have no way to fix the settings so we won't show the dialog.");
+                        break;
+                }
+            }
+        });
 
+/*
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addApi(LocationServices.API)
                     .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                         @Override
                         public void onConnected(Bundle bundle) {
-
                         }
 
                         @Override
@@ -671,35 +703,7 @@ public class InitActivity extends Activity {
                     })
                     .addOnConnectionFailedListener(connectionResult -> Log.e("Location error", "Location error " + connectionResult.getErrorCode())).build();
             mGoogleApiClient.connect();
-        }
-
-        PendingResult<LocationSettingsResult> result =
-                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
-        result.setResultCallback(result1 -> {
-            final com.google.android.gms.common.api.Status status = result1.getStatus();
-            final LocationSettingsStates state = result1.getLocationSettingsStates();
-            switch (status.getStatusCode()) {
-                case LocationSettingsStatusCodes.SUCCESS:
-                    // All location settings are satisfied. The client can initialize location
-                    // requests here.
-                    break;
-                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                    // Location settings are not satisfied. But could be fixed by showing the user
-                    // a dialog.
-                    try {
-                        // Show the dialog by calling startResolutionForResult(),
-                        // and check the result in onActivityResult().
-                        status.startResolutionForResult(InitActivity.this, REQUEST_CHECK_SETTINGS);
-                    } catch (IntentSender.SendIntentException e) {
-                        // Ignore the error.
-                    }
-                    break;
-                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                    // Location settings are not satisfied. However, we have no way to fix the
-                    // settings so we won't show the dialog.
-                    break;
-            }
-        });
+        }*/
     }
 
 

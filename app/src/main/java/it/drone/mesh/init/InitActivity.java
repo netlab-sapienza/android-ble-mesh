@@ -686,24 +686,6 @@ public class InitActivity extends Activity {
                 }
             }
         });
-
-/*
-        if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(LocationServices.API)
-                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                        @Override
-                        public void onConnected(Bundle bundle) {
-                        }
-
-                        @Override
-                        public void onConnectionSuspended(int i) {
-                            mGoogleApiClient.connect();
-                        }
-                    })
-                    .addOnConnectionFailedListener(connectionResult -> Log.e("Location error", "Location error " + connectionResult.getErrorCode())).build();
-            mGoogleApiClient.connect();
-        }*/
     }
 
 

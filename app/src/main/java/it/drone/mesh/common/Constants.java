@@ -53,4 +53,5 @@ public class Constants {
     public static final byte FLAG_SUSPECTED_DEAD = (byte) 0;
     public static final byte FLAG_DEAD = (byte) 1;
 
+    public static final int MAX_ATTEMPTS_RETRY = 5;
 }

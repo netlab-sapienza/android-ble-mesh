@@ -125,6 +125,10 @@ public class BLEServer {
                         Log.i(TAG, "OUD: Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        if (!connectBLE.getJobDone()) {
+                            connectBLE.startClient();
+                            Log.d(TAG, "OUD: Retry reading ID");
+                        }
                         Log.i(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
                     }
                     super.onConnectionStateChange(gatt, status, newState);

@@ -33,6 +33,7 @@ public class RoutingTable {
     }
 
     public void addDevice(Device device) {
+        if (routingTable.contains(device)) return;
         this.routingTable.add(device);
         for (OnRoutingTableUpdateListener listener : listeners)
             listener.OnDeviceAdded(device);

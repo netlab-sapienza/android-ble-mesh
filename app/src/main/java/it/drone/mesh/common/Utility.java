@@ -271,8 +271,7 @@ public class Utility {
                     Log.d(TAG, "OUD: Status " + status + ", newState: " + newState);
                     if (!client.getJobDone()) {
                         Log.d(TAG, "OUD: Retry sending routing table");
-                        client.stopClient();
-                        client.startClient();
+                        client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
@@ -284,15 +283,13 @@ public class Utility {
                 Log.d(TAG, "OUD: ci entro");
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 Log.d(TAG, "OUD: service : " + service.getUuid().toString());
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
                 if (characteristic == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.RoutingTableDescriptorUUID);
@@ -341,8 +338,7 @@ public class Utility {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
                     if (characteristic1 == null) {
-                        client.stopClient();
-                        client.startClient();
+                        client.restartClient();
                         return;
                     }
                     resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]], gatt, null);
@@ -381,8 +377,7 @@ public class Utility {
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     if (!client.getJobDone()) {
                         Log.d(TAG, "OUD: Retry sending routing table");
-                        client.stopClient();
-                        client.startClient();
+                        client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
@@ -394,15 +389,13 @@ public class Utility {
                 Log.d(TAG, "OUD: " + "ho scoperto serviceszeze");
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 String temp = new String(value);
                 BluetoothGattCharacteristic characteristic1 = service.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
                 if (characteristic1 == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 characteristic1.setValue(temp);
@@ -422,6 +415,7 @@ public class Utility {
                         Log.d(TAG, "OUD: " + "I wrote a new server on a server");
                         client.setJobDone();
                     } else {
+                        client.restartClient();
                         Log.d(TAG, "OUD: " + "Error1: " + status);
                     }
                 }
@@ -509,9 +503,7 @@ public class Utility {
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     if (!client.getJobDone()) {
-                        client.stopClient();
-                        Log.d(TAG, "OUD: Retry sending routing table");
-                        client.startClient();
+                        client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
@@ -522,14 +514,12 @@ public class Utility {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
                 if (characteristic == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorClientOnlineUUID);
@@ -568,9 +558,7 @@ public class Utility {
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     if (!client.getJobDone()) {
-                        Log.d(TAG, "OUD: Retry sending routing table");
-                        client.stopClient();
-                        client.startClient();
+                        client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
@@ -581,20 +569,17 @@ public class Utility {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
                 if (characteristic == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorClientWithInternetUUID);
                 if (descriptor == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 descriptor.setValue(clientId.getBytes());
@@ -634,9 +619,7 @@ public class Utility {
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     if (!client.getJobDone()) {
-                        Log.d(TAG, "OUD: Retry sending routing table");
-                        client.stopClient();
-                        client.startClient();
+                        client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                 }
@@ -647,20 +630,17 @@ public class Utility {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
                 if (service == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
                 if (characteristic == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorCheckAliveUUID);
                 if (descriptor == null) {
-                    client.stopClient();
-                    client.startClient();
+                    client.restartClient();
                     return;
                 }
                 descriptor.setValue(message);

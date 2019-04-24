@@ -12,7 +12,7 @@ public class ServerNode {
     public static final int MAX_NUM_SERVER = 16;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
-    public static final int MAX_NUM_CLIENT = 2;
+    public static final int MAX_NUM_CLIENT = 1;
     private static String TAG = ServerNode.class.getSimpleName();
     private String id;
     private int lastRequest;

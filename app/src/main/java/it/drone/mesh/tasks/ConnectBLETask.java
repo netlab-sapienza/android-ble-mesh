@@ -16,6 +16,7 @@ import android.widget.Toast;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.zip.CheckedOutputStream;
 
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
@@ -43,22 +44,11 @@ public class ConnectBLETask {
     private Listeners.OnJobDoneListener onJobDoneListener;
     private boolean jobDone = false;
     private Listeners.OnConnectionLost OnConnectionLostListener;
-
-    public ConnectBLETask(Server server, Context context, BluetoothGattCallback callback) {
-        // GATT OBJECT TO CONNECT TO A GATT SERVER
-        this.context = context;
-        this.server = server;
-        this.mGattCallback = callback;
-        this.id = null;
-        serverId = "";
-        receivedListeners = new ArrayList<>();
-        internetListeners = new ArrayList<>();
-        routingTable = RoutingTable.getInstance();
-
-    }
+    private int maxAttempt;
 
     public ConnectBLETask(Server server, final Context context) {
         // GATT OBJECT TO CONNECT TO A GATT SERVER
+        maxAttempt = 0;
         this.context = context;
         this.server = server;
         this.id = null;
@@ -405,7 +395,7 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        if((temporaryClient && mGatt != null) || serverId.equals("")) {
+        if((temporaryClient && mGatt != null) || serverId.equals("") || !hasCorrectId()) {
             Log.d(TAG, "OUD: Sono un client temporaneo sto morendo");
             Utility.printByte(lastServerIdFound[0]);
             Utility.printByte(lastServerIdFound[1]);
@@ -507,6 +497,13 @@ public class ConnectBLETask {
     }
     public void setOnConnectionLostListener(Listeners.OnConnectionLost l) {
         this.OnConnectionLostListener = l;
+    }
+    public void restartClient() {
+        Log.d(TAG, "OUD: restartClient");
+        stopClient();
+        maxAttempt++;
+        if (maxAttempt == Constants.MAX_ATTEMPTS_RETRY) return;
+        startClient();
     }
 
 }

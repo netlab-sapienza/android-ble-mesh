@@ -216,6 +216,8 @@ public class AcceptBLETask {
                                 client.startClient();
                             }
                             if (isNearToMe) { //passaggio della table al nuovo server
+                                // TODO: 24/04/19 sleep pseudo Randomica .
+
                                 String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
                                 Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                     @Override
@@ -735,15 +737,24 @@ public class AcceptBLETask {
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                    if (!client.getJobDone()) {
+                        client.restartClient();
+                    }
                 }
             }
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                if (service == null) return;
+                if (service == null) {
+                    client.restartClient();
+                    return;
+                }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicNextServerIdUUID);
-                if (characteristic == null) return;
+                if (characteristic == null){
+                    client.restartClient();
+                    return;
+                }
                 boolean res = gatt.readCharacteristic(characteristic);
                 Log.d(TAG, "OUD: " + "Read Characteristic nextServerID: " + res);
                 super.onServicesDiscovered(gatt, status);
@@ -801,9 +812,15 @@ public class AcceptBLETask {
                     gatt.executeReliableWrite();
                     Log.d(TAG, "OUD: " + "I wrote a characteristic nextServerId! " + new String(characteristic.getValue()));*/
                     BluetoothGattService serv = gatt.getService(Constants.ServiceUUID);
-                    if (serv == null) return;
+                    if (serv == null) {
+                        client.restartClient();
+                        return;
+                    }
                     BluetoothGattCharacteristic characteristic1 = serv.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-                    if (characteristic1 == null) return;
+                    if (characteristic1 == null) {
+                        client.restartClient();
+                        return;
+                    }
                     byte[] message = mNode.parseNewServer();
                     Log.d(TAG, "Message len: " + message.length);
                     characteristic1.setValue(message);
@@ -821,7 +838,7 @@ public class AcceptBLETask {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     Log.d(TAG, "OUD: " + "i wrote a characterisic routing table!");
-                    client.stopClient();
+                    client.setJobDone();
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
@@ -1004,6 +1021,9 @@ public class AcceptBLETask {
                         Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        if (!connectBLETask.getJobDone()) {
+                            connectBLETask.restartClient();
+                        }
                         Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                     }
                     super.onConnectionStateChange(gatt, status, newState);
@@ -1013,9 +1033,15 @@ public class AcceptBLETask {
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                     Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                     BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                    if (service == null) return;
+                    if (service == null) {
+                        connectBLETask.restartClient();
+                        return;
+                    }
                     BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                    if (characteristic == null) return;
+                    if (characteristic == null) {
+                        connectBLETask.restartClient();
+                        return;
+                    }
                     BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorUUID);
                     boolean res = gatt.readDescriptor(descriptor);
                     Log.d(TAG, "OUD: " + "Read Server id: " + res);

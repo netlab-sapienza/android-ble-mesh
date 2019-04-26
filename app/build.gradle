@@ -26,8 +26,8 @@ android {
         applicationId "it.drone.mesh"
         minSdkVersion 23
         targetSdkVersion 28
-        versionCode 1
-        versionName "0.1 alpha"
+        versionCode 2
+        versionName "0.2 alpha"
     }
     applicationVariants.all { variant ->
         variant.resValue "string", "versionName", variant.versionName

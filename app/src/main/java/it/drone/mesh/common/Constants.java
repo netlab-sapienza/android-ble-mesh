@@ -41,8 +41,6 @@ public class Constants {
     public static final UUID RoutingTableDescriptorUUID = UUID.fromString("2322b81d-0000-1000-8000-00805f9b34fb");
 
 
-    public static final int REQUEST_ENABLE_BT = 322;
-
     // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
     public static final int MAX_ATTEMPTS_UNTIL_SERVER = 1;
     // periodo minimo e max di attesa in secondi
@@ -54,4 +52,9 @@ public class Constants {
     public static final byte FLAG_DEAD = (byte) 1;
 
     public static final int MAX_ATTEMPTS_RETRY = 5;
+
+    public static final boolean DEMO_RUN = true; // Used to programmatically enable or disable functionalities for the demo
+    public static final boolean TEST_TIME_OF_CONVERGENCE = true; // Se true allora il device misura la convergenza della rete
+    public static final int SIZE_OF_NETWORK = 1; // questo numero va modificato in base alla grandezza della rete
+
 }

@@ -35,7 +35,6 @@ import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -47,15 +46,18 @@ import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.listeners.ServerScanCallback;
+import it.drone.mesh.models.Device;
 import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import twitter4j.Status;
@@ -63,7 +65,9 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
-import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.common.Constants.DEMO_RUN;
+import static it.drone.mesh.common.Constants.SIZE_OF_NETWORK;
+import static it.drone.mesh.common.Constants.TEST_TIME_OF_CONVERGENCE;
 
 public class InitActivity extends Activity {
 
@@ -71,12 +75,11 @@ public class InitActivity extends Activity {
 
     // Per chiedere il GPS su Maps
     protected static final int REQUEST_CHECK_SETTINGS = 0x1;
-    private GoogleApiClient mGoogleApiClient;
-
 
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    public static final int REQUEST_ENABLE_BT = 322;
 
     private static final String EMAIL_REQUEST = "email";
     private static final String TWITTER_REQUEST = "twitter";
@@ -100,6 +103,8 @@ public class InitActivity extends Activity {
     private Button startServices, sendTweet, sendEmail;
     private byte[] lastServerIdFound = new byte[2];
 
+
+    private long startTime; // Per fare test su tempo convergenza rete;
 
     @SuppressLint("CheckResult")
     @Override
@@ -138,7 +143,7 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        if (Utility.isDeviceOnline(this)) {
+        if (Utility.isDeviceOnline(this) && !DEMO_RUN) {
             TrueTimeRx.build()
                     .initializeRx("time.google.com")
                     .subscribeOn(Schedulers.io())
@@ -184,6 +189,9 @@ public class InitActivity extends Activity {
                 */
                 deviceAdapter.cleanView();
             } else {
+                if (TEST_TIME_OF_CONVERGENCE)
+                    initializeConvergenceNetworkTimeTest();
+
                 //initializeService();
                 startServices.setText(R.string.stop_service);
                 isServiceStarted = true;
@@ -208,14 +216,12 @@ public class InitActivity extends Activity {
                         server.setLastServerIdFound(lastServerIdFound);
                     }
                     server.startServer();
-                    server.addServerInitializedListener(() -> {
-                        new Handler(Looper.getMainLooper()).post(() -> {
-                            myId.setText(server.getId());
-                            whoAmI.setText(R.string.server);
-                            sendEmail.setVisibility(View.VISIBLE);
-                            sendTweet.setVisibility(View.VISIBLE);
-                        });
-                    });
+                    server.addServerInitializedListener(() -> new Handler(Looper.getMainLooper()).post(() -> {
+                        myId.setText(server.getId());
+                        whoAmI.setText(R.string.server);
+                        sendEmail.setVisibility(View.VISIBLE);
+                        sendTweet.setVisibility(View.VISIBLE);
+                    }));
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                         String[] info = message.split(";;");
@@ -238,9 +244,7 @@ public class InitActivity extends Activity {
                             lastServerIdFound[0] = (byte) 0;
                         }
                         client.setOnConnectionLostListener(() -> {
-                            new Handler(getMainLooper()).post(() -> {
-                                startServices.performClick();
-                            });
+                            new Handler(getMainLooper()).post(() -> startServices.performClick());
                             new Handler(getMainLooper()).postDelayed(() -> {
                                 Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                 startServices.performClick();
@@ -271,9 +275,7 @@ public class InitActivity extends Activity {
                                 client.addDisconnectedServerListener((serverId, flags) -> {
                                     lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
                                     lastServerIdFound[1] = flags;
-                                    new Handler(getMainLooper()).post(() -> {
-                                        startServices.performClick();
-                                    });
+                                    new Handler(getMainLooper()).post(() -> startServices.performClick());
                                     new Handler(getMainLooper()).postDelayed(() -> {
                                         Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                         startServices.performClick();
@@ -295,9 +297,7 @@ public class InitActivity extends Activity {
                         lastServerIdFound[1] = (byte) 0;
                     }
                     client.setOnConnectionLostListener(() -> {
-                        new Handler(getMainLooper()).post(() -> {
-                            startServices.performClick();
-                        });
+                        new Handler(getMainLooper()).post(() -> startServices.performClick());
                         new Handler(getMainLooper()).postDelayed(() -> {
                             Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                             startServices.performClick();
@@ -329,9 +329,7 @@ public class InitActivity extends Activity {
                                 lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
                                 lastServerIdFound[1] = flags;
 
-                                new Handler(getMainLooper()).post(() -> {
-                                    startServices.performClick();
-                                });
+                                new Handler(getMainLooper()).post(() -> startServices.performClick());
                                 new Handler(getMainLooper()).postDelayed(() -> {
                                     Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                     startServices.performClick();
@@ -343,8 +341,8 @@ public class InitActivity extends Activity {
                 }
             }
         });
-        sendTweet.setOnClickListener(view -> {
 
+        sendTweet.setOnClickListener(view -> {
             TextView titleView = new TextView(this);
             titleView.setText(R.string.tweet_something);
             titleView.setGravity(Gravity.CENTER);
@@ -446,8 +444,6 @@ public class InitActivity extends Activity {
 
             layout.addView(bodyEmail);
             builder.setView(layout);
-
-
             builder.setPositiveButton("OK", (dialog, which) -> {
 
                 String id;
@@ -496,6 +492,31 @@ public class InitActivity extends Activity {
 
     }
 
+    /**
+     * Subscribe the activity to routing table updates and when the number of devices reaches Costants.SIZE_OF_NETWORK takes the time
+     */
+    private void initializeConvergenceNetworkTimeTest() {
+        startTime = System.nanoTime();
+
+        RoutingTable.getInstance().subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
+            @Override
+            public void OnDeviceAdded(Device device) {
+                if (SIZE_OF_NETWORK == RoutingTable.getInstance().getDeviceList().size()) {
+                    long endTime = System.nanoTime();
+                    long convergenceTime = (endTime - startTime) / 1000000;
+
+                    writeDebug("Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime);
+                }
+
+            }
+
+            @Override
+            public void OnDeviceRemoved(Device device) {
+
+            }
+        });
+    }
+
 
     /**
      * Controlla che l'app sia eseguibile e inizia lo scanner
@@ -530,7 +551,8 @@ public class InitActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
-                askPermissionsStorage();
+                if (!DEMO_RUN)
+                    askPermissionsExternalStorage();
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
             }
@@ -545,7 +567,10 @@ public class InitActivity extends Activity {
 
     }
 
-    private void askPermissionsStorage() {
+    /**
+     * no need to use external storage to take data, gonna be deprecated
+     */
+    private void askPermissionsExternalStorage() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -580,7 +605,8 @@ public class InitActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     checkBluetoothAvailability();
-                    askPermissionsStorage();
+                    if (!DEMO_RUN)
+                        askPermissionsExternalStorage();
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
                 }
@@ -733,10 +759,9 @@ public class InitActivity extends Activity {
 
 
     private void sendAMail(final String destEmail, String body, final String idMitt) throws IOException {
-
         Properties properties = new Properties();
         InputStream inputStream =
-                this.getClass().getClassLoader().getResourceAsStream("email.properties");
+                Objects.requireNonNull(this.getClass().getClassLoader()).getResourceAsStream("email.properties");
         properties.load(inputStream);
         BackgroundMail.newBuilder(this)
                 .withUsername(properties.getProperty("email.username"))

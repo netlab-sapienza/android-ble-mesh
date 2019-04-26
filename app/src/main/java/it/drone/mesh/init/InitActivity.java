@@ -88,13 +88,10 @@ public class InitActivity extends Activity {
     private Switch canIBeServerSwitch;
     private DeviceAdapter deviceAdapter;
 
-    ServerScanCallback mScanCallback;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothLeScanner mBluetoothLeScanner;
     private boolean canIBeServer = false;
 
     private boolean isServiceStarted = false;
-    private boolean isScanning = false;
 
     private BLEClient client;
     private BLEServer server;
@@ -105,12 +102,14 @@ public class InitActivity extends Activity {
 
 
     private long startTime; // Per fare test su tempo convergenza rete;
+    private boolean alreadyInizialized;
 
     @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long offset = Constants.NO_OFFSET;
         canIBeServer = false;
+        alreadyInizialized = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
@@ -496,6 +495,9 @@ public class InitActivity extends Activity {
      * Subscribe the activity to routing table updates and when the number of devices reaches Costants.SIZE_OF_NETWORK takes the time
      */
     private void initializeConvergenceNetworkTimeTest() {
+        if(alreadyInizialized) return;
+        else alreadyInizialized = true;
+
         startTime = System.nanoTime();
 
         RoutingTable.getInstance().subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
@@ -504,8 +506,9 @@ public class InitActivity extends Activity {
                 if (SIZE_OF_NETWORK == RoutingTable.getInstance().getDeviceList().size()) {
                     long endTime = System.nanoTime();
                     long convergenceTime = (endTime - startTime) / 1000000;
-
+                    cleanDebug();
                     writeDebug("Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime);
+                    Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show();
                 }
 
             }

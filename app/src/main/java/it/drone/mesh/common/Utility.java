@@ -333,6 +333,7 @@ public class Utility {
 
             @Override
             public void onDescriptorWrite(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                // TODO: 24/04/19 prima scrivere la table e poi settare il routing id con il nuovo valore 
                 super.onDescriptorWrite(gatt, descriptor, status);
                 Log.d(TAG, "OUD: onDescriptorWrite: status :" + status);
                 if (status == BluetoothGatt.GATT_SUCCESS) {

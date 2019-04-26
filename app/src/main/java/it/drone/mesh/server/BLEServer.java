@@ -170,11 +170,12 @@ public class BLEServer {
                         } else if (descriptor.getUuid().equals(Constants.NEXT_ID_UUID)) {
                             int nextId = Integer.parseInt(new String(descriptor.getValue()));
                             if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
+                            /*
                             if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
                                 enoughServerListener.OnEnoughServer(newServer);
                                 connectBLE.setJobDone();
                                 return;
-                            }
+                            }*/
                             connectBLE.setJobDone();
                             askIdToNearServer(offset + 1);
                         }

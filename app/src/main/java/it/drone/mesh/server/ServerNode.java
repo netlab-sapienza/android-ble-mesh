@@ -12,7 +12,7 @@ public class ServerNode {
     public static final int MAX_NUM_SERVER = 16;
     public static final int CLIENT_LIST_SIZE = 7;
     public static final int SERVER_PACKET_SIZE = 11;
-    public static final int MAX_NUM_CLIENT = 1;
+    public static final int MAX_NUM_CLIENT = 2;
     private static String TAG = ServerNode.class.getSimpleName();
     private String id;
     private int lastRequest;
@@ -261,7 +261,7 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
 
     @Override
     public boolean equals(Object o) {
-        if (o.getClass().equals(this.getClass())) {
+        if (o != null && o.getClass().equals(this.getClass())) {
             ServerNode temp = (ServerNode) o;
             return temp.getId().equals(this.id);
         }
@@ -560,5 +560,11 @@ public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
             if (!trovato) return i+"";
         }
         return null;
+    }
+
+    public void removeNearServer(String id) {
+        ServerNode toBeRemoved = getServer(id);
+        routingTable.remove(toBeRemoved);
+        nearServers.remove(toBeRemoved);
     }
 }

@@ -223,6 +223,14 @@ public class AcceptBLETask {
                                     @Override
                                     public void OnNewServerDiscovered(BluetoothDevice server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
+                                        byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
+                                        mNode.parseMapToByte(tempMap);
+
+                                        int dim = tempMap.length * tempMap[0].length;
+                                        final byte[] message = new byte[dim];
+                                        for (int i = 0; i < tempMap.length; i++) { //passaggio della routing table da mapByte a array byte
+                                            System.arraycopy(tempMap[i], 0, message, (i * tempMap[0].length), tempMap[0].length);
+                                        }
                                         final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                         clientNuovoServ.startClient();
                                     }
@@ -233,6 +241,14 @@ public class AcceptBLETask {
                                         Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                             @Override
                                             public void OnNewServerDiscovered(BluetoothDevice server) {
+                                                byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
+                                                mNode.parseMapToByte(tempMap);
+
+                                                int dim = tempMap.length * tempMap[0].length;
+                                                final byte[] message = new byte[dim];
+                                                for (int i = 0; i < tempMap.length; i++) { //passaggio della routing table da mapByte a array byte
+                                                    System.arraycopy(tempMap[i], 0, message, (i * tempMap[0].length), tempMap[0].length);
+                                                }
                                                 Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                                 final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                                 clientNuovoServ.startClient();
@@ -290,20 +306,25 @@ public class AcceptBLETask {
                                 boolean res = mGattServer.notifyCharacteristicChanged(dev, chara, false);
                                 Log.d(TAG, "OUD: i've notified new client Online " + res);
                             }
-
+                            /*
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
                             for (String idTemp : nearDeviceMap.keySet()) {
                                 BluetoothDevice dev = nearDeviceMap.get(idTemp);
                                 ConnectBLETask client = Utility.createBroadcastRoutingTableClient(dev, new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
                                 client.startClient();
-                            }
+                            }*/
                             messageMap.put(senderId, "");
                         }
                     } else {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
-                    //for (byte b : value) Utility.printByte(b);
+                    //for (byte b : value) Utility.printByte(b)
+                    for (BluetoothDevice dev:nearDeviceMap.values()
+                         ) {
+                        if (dev.equals(device)) Log.d(TAG, "OUD: SONO UGUALI");
+
+                    }
                     byte sorgByte = value[0];
                     byte destByte = value[1];
                     final int[] infoSorg = Utility.getByteInfo(sorgByte);
@@ -969,7 +990,7 @@ public class AcceptBLETask {
             indexHolder[0] += 1;
         } else {
             //non sono io il destinatario
-            final ServerNode nodeDest;
+            ServerNode nodeDest;
 
             if (internet) {
                 if(mitt.equals(getId())) {
@@ -996,14 +1017,25 @@ public class AcceptBLETask {
                 nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
 
             if (nodeDest == null) {
-                Log.e(TAG, "next hop null");
+                Log.e(TAG, "OUD: next hop null");
                 return;
             }
             Log.d(TAG, "OUD: next-hop : " + nodeDest.getId());
-            final BluetoothDevice near = nearDeviceMap.get(nodeDest.getId());
+            BluetoothDevice near = nearDeviceMap.get(nodeDest.getId());
             if (near == null) {
-                Log.e(TAG, "near server null");
-                return;
+                Log.e(TAG, "OUD: near server null");
+                mNode.removeNearServer(nodeDest.getId());
+                if(internet) nodeDest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
+                else nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
+                if (nodeDest == null) {
+                    Log.e(TAG, "OUD: next hop null");
+                    return;
+                }
+                near = nearDeviceMap.get(nodeDest.getId());
+                if(near == null) {
+                    Log.e(TAG, "OUD: near server null di nuovo");
+                    return;
+                }
             }
             Log.d(TAG, "OUD: next-hop : " + near.getName());
             final Server server = new Server(near, (near.getName() == null ? "Unknown" : near.getName()));

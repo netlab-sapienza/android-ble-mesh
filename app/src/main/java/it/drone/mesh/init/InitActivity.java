@@ -508,7 +508,7 @@ public class InitActivity extends Activity {
                     long convergenceTime = (endTime - startTime) / 1000000;
                     cleanDebug();
                     writeDebug("Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime);
-                    Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show();
+                    new Handler(Looper.getMainLooper()).post(()-> Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show());
                 }
 
             }

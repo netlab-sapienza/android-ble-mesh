@@ -719,7 +719,6 @@ public class AcceptBLETask {
                 super.onNotificationSent(device, status);
             }
         };
-
     }
 
     public void setId(String id) {
@@ -761,6 +760,7 @@ public class AcceptBLETask {
                     if (!client.getJobDone()) {
                         client.restartClient();
                     }
+
                 }
             }
 
@@ -850,6 +850,7 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
                     gatt.executeReliableWrite();
                 } else {
+                    client.setJobDone();
                     initializeId(offset + 1);
                 }
                 super.onCharacteristicRead(gatt, characteristic, status);
@@ -870,7 +871,6 @@ public class AcceptBLETask {
 
 
     public void startServer() {
-        // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
         Log.d(TAG, "OUD: " + "dev found:" + nearDeviceMap.size());
         if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
@@ -930,6 +930,7 @@ public class AcceptBLETask {
             // TODO: 20/04/19 comunicare anche agli altri server 
             this.mGattServer.clearServices();
             this.mGattServer.close();
+
             this.mGattServer = null;
         }
     }
@@ -943,8 +944,8 @@ public class AcceptBLETask {
 
 
     public void sendMessage(String message, String mitt, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
-        int infoSorg[] = Utility.getIdArrayByString(mitt);
-        int infoDest[] = Utility.getIdArrayByString(dest);
+        int[] infoSorg = Utility.getIdArrayByString(mitt);
+        int[] infoDest = Utility.getIdArrayByString(dest);
         Log.d(TAG, "OUD: message: " + message);
         if (infoDest[0] == Integer.parseInt(getId())) {
             if (infoDest[1] == 0) {

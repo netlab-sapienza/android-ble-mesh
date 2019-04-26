@@ -243,7 +243,8 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
+                acceptBLETask = null;
+                context.stopService(new Intent(context, AdvertiserService.class));
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {

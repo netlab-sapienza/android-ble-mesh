@@ -502,7 +502,10 @@ public class ConnectBLETask {
         Log.d(TAG, "OUD: restartClient");
         stopClient();
         maxAttempt++;
-        if (maxAttempt == Constants.MAX_ATTEMPTS_RETRY) return;
+        if (maxAttempt == Constants.MAX_ATTEMPTS_RETRY) {
+            Log.d(TAG, "OUD: restartClient: mi arrendo, stop definitivo");
+            return;
+        }
         startClient();
     }
 

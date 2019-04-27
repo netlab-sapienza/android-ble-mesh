@@ -306,8 +306,8 @@ public class AcceptBLETask {
                                 boolean res = mGattServer.notifyCharacteristicChanged(dev, chara, false);
                                 Log.d(TAG, "OUD: i've notified new client Online " + res);
                             }
-                            /*
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
+                            /*
                             for (String idTemp : nearDeviceMap.keySet()) {
                                 BluetoothDevice dev = nearDeviceMap.get(idTemp);
                                 ConnectBLETask client = Utility.createBroadcastRoutingTableClient(dev, new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
@@ -1055,6 +1055,8 @@ public class AcceptBLETask {
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                         if (!connectBLETask.getJobDone()) {
+                            resultHolder[0] = false;
+                            indexHolder[0] = 0;
                             connectBLETask.restartClient();
                         }
                         Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());

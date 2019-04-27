@@ -271,6 +271,8 @@ public class Utility {
                     Log.d(TAG, "OUD: Status " + status + ", newState: " + newState);
                     if (!client.getJobDone()) {
                         Log.d(TAG, "OUD: Retry sending routing table");
+                        resultHolder[0] = false;
+                        indexHolder[0] = 0;
                         client.restartClient();
                     }
                     Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
@@ -318,15 +320,16 @@ public class Utility {
 
             @Override
             public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                //Log.d(TAG, "OUD: onDescriptorRead: " + new String(descriptor.getValue()) + "length: " + descriptor.getValue().length + "routingId: " + routingId);
+                Log.d(TAG, "OUD: onDescriptorRead: WAWA");
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if ((Integer.parseInt(routingId) > Integer.parseInt(new String(descriptor.getValue()))) || client.getMaxAttempt() != 0) {
+                        Log.d(TAG, "onDescriptorRead: routing id: " + routingId + " valore trovato: " + new String(descriptor.getValue()));
                         descriptor.setValue(routingId.getBytes());
                         gatt.writeDescriptor(descriptor);
                     } else {
                         client.setJobDone();
                         return;
-                    };
+                    }
                 }
                 super.onDescriptorRead(gatt, descriptor, status);
             }

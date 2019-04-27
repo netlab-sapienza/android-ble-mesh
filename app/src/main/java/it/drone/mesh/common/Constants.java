@@ -42,7 +42,7 @@ public class Constants {
 
 
     // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
-    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 3;
+    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 2;
     // periodo minimo e max di attesa in secondi
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
@@ -55,6 +55,6 @@ public class Constants {
 
     public static final boolean DEMO_RUN = true; // Used to programmatically enable or disable functionalities for the demo
     public static final boolean TEST_TIME_OF_CONVERGENCE = true; // Se true allora il device misura la convergenza della rete
-    public static final int SIZE_OF_NETWORK = 6; // questo numero va modificato in base alla grandezza della rete
+    public static final int SIZE_OF_NETWORK = 4; // questo numero va modificato in base alla grandezza della rete
 
 }

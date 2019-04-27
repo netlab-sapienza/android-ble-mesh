@@ -160,6 +160,7 @@ public class BLEServer {
 
                 @Override
                 public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                    Log.d(TAG, "OUD: nDescriptorRead: descrittore uuid: " + descriptor.getUuid().toString() + ", status: " + status);
                     if (status == 0) {
                         Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
                         if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
@@ -230,6 +231,7 @@ public class BLEServer {
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
         isScanning = false;
+        Log.d(TAG, "initializeServer: size: " + ServerList.getServerList().size());
         askIdToNearServer(0);
     }
 
@@ -246,7 +248,8 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                acceptBLETask = null;
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
+                nearDeviceMap.clear();
                 context.stopService(new Intent(context, AdvertiserService.class));
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");

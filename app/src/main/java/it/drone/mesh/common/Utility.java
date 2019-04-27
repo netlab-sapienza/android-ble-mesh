@@ -304,7 +304,10 @@ public class Utility {
                     Log.d(TAG, "OUD: " + "i wrote a characteristic !");
                     if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                         if (resultHolder[0]) {
-                            client.setJobDone();
+                            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.RoutingTableDescriptorUUID)
+                            descriptor.setValue(routingId.getBytes());
+                            gatt.writeDescriptor(descriptor);
+
                             Log.d(TAG, "OUD: sendRoutingTable: Messaggio inviato con successo");
                         } else
                             Log.d(TAG, "OUD: sendRoutingTable: Error sending packet " + indexHolder[0]);
@@ -321,8 +324,13 @@ public class Utility {
                 //Log.d(TAG, "OUD: onDescriptorRead: " + new String(descriptor.getValue()) + "length: " + descriptor.getValue().length + "routingId: " + routingId);
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (Integer.parseInt(routingId) > Integer.parseInt(new String(descriptor.getValue()))) {
-                        descriptor.setValue(routingId.getBytes());
-                        gatt.writeDescriptor(descriptor);
+                        BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
+                        if (characteristic1 == null) {
+                            client.restartClient();
+                            return;
+                        }
+                        resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]], gatt, null);
+                        indexHolder[0] += 1;
                     } else {
                         client.setJobDone();
                         return;
@@ -333,17 +341,11 @@ public class Utility {
 
             @Override
             public void onDescriptorWrite(final BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                // TODO: 24/04/19 prima scrivere la table e poi settare il routing id con il nuovo valore 
                 super.onDescriptorWrite(gatt, descriptor, status);
                 Log.d(TAG, "OUD: onDescriptorWrite: status :" + status);
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    BluetoothGattCharacteristic characteristic1 = descriptor.getCharacteristic();
-                    if (characteristic1 == null) {
-                        client.restartClient();
-                        return;
-                    }
-                    resultHolder[0] = Utility.sendRoutingTablePacket(finalMessage[indexHolder[0]], gatt, null);
-                    indexHolder[0] += 1;
+                    client.setJobDone();
+                    return;
                 }
             }
         };

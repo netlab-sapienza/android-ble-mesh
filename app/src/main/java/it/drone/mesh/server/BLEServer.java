@@ -153,6 +153,7 @@ public class BLEServer {
                             }
                         }
                     }
+                    connectBLE.setJobDone();
                     askIdToNearServer(offset + 1);
                     super.onServicesDiscovered(gatt, status);
                 }
@@ -166,11 +167,11 @@ public class BLEServer {
                             Log.d(TAG, "OUD: Server inserito correttamente nella mappa");
                             BluetoothGattDescriptor nextId = descriptor.getCharacteristic().getDescriptor(Constants.NEXT_ID_UUID);
                             boolean res = gatt.readDescriptor(nextId);
-                            Log.d(TAG, "OUD: Descrittore letto ");
+                            Log.d(TAG, "OUD: Descrittore letto " + res);
                         } else if (descriptor.getUuid().equals(Constants.NEXT_ID_UUID)) {
+                            /*
                             int nextId = Integer.parseInt(new String(descriptor.getValue()));
                             if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
-                            /*
                             if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
                                 enoughServerListener.OnEnoughServer(newServer);
                                 connectBLE.setJobDone();
@@ -193,6 +194,7 @@ public class BLEServer {
     }
 
     private void startScanning() {
+        if (!isServiceStarted) return;
         isScanning = true;
         debugMessageListener.OnDebugMessage("Start scanning");
         if (mScanCallback == null) {
@@ -221,6 +223,7 @@ public class BLEServer {
     }
 
     private void initializeServer() {
+        if (!isServiceStarted) return;
         if(acceptBLETask == null) this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
         debugMessageListener.OnDebugMessage("Stopping Scanning");
         // Stop the scan, wipe the callback.

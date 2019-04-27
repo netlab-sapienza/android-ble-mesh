@@ -506,5 +506,8 @@ public class ConnectBLETask {
         startClient();
     }
 
+    public int getMaxAttempt() {
+        return maxAttempt;
+    }
 }
 

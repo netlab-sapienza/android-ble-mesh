@@ -82,9 +82,40 @@ public class ConnectBLETask {
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
-                Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices());
+                Log.d(TAG, "OUD: " + "I discovered a service");
+                for (BluetoothGattService s: gatt.getServices()) {
+                    Log.d(TAG, "OUD: onServicesDiscovered: service uuid: " + s.getUuid());
+                }
+
+                BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
+                if (service == null) {
+                    return;
+                }
+                Log.d(TAG, "OUD: service : " + service.getUuid().toString());
+                for (BluetoothGattCharacteristic s: service.getCharacteristics()) {
+                    Log.d(TAG, "OUD: onServicesDiscovered: characteristic uuid: " + s.getUuid());
+                }
+                BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
+                if (characteristic == null) {
+                    return;
+                }
+                Utility.printByte(lastServerIdFound[0]);
+                if (lastServerIdFound[0] != (byte) 0) {
+                    BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorCheckAliveUUID);
+                    desc.setValue(lastServerIdFound);
+                    boolean res = gatt.writeDescriptor(desc);
+                    Log.d(TAG, "OUD: " + "Writing descriptor SERVER DEAD? " + desc.getUuid() + " ---> " + res);
+                    Utility.printByte(lastServerIdFound[0]);
+                }
+                else {
+                    BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
+                    boolean res = gatt.readDescriptor(desc);
+                    Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
+                }
+
+                /*
                 for (BluetoothGattService service : gatt.getServices()) {
-                    if (service.getUuid().toString().equals(Constants.ServiceUUID.toString())) {
+                    if (service.getUuid().equals(Constants.ServiceUUID)) {
                         if (service.getCharacteristics() != null) {
                             for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
                                 if (chars.getUuid().equals(Constants.CharacteristicUUID)) {
@@ -106,7 +137,7 @@ public class ConnectBLETask {
                             }
                         }
                     }
-                }
+                }*/
                 super.onServicesDiscovered(gatt, status);
             }
 

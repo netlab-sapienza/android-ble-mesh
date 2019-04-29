@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -56,7 +55,6 @@ import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.listeners.ServerScanCallback;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
@@ -237,6 +235,7 @@ public class InitActivity extends Activity {
                     server.setEnoughServerListener((newServer) -> {
                         Log.d(TAG, "OUD: Stop server");
                         server.stopServer();
+                        server = null;
                         client = BLEClient.getInstance(getApplicationContext());
                         if (lastServerIdFound[0] != (byte) 0) {
                             client.setLastServerIdFound(lastServerIdFound);

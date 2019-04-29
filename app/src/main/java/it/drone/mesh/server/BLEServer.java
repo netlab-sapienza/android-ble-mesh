@@ -170,14 +170,12 @@ public class BLEServer {
                             boolean res = gatt.readDescriptor(nextId);
                             Log.d(TAG, "OUD: Descrittore letto " + res);
                         } else if (descriptor.getUuid().equals(Constants.NEXT_ID_UUID)) {
-                            /*
                             int nextId = Integer.parseInt(new String(descriptor.getValue()));
-                            if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
-                            if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
+                            if (nextId == 1) {
                                 enoughServerListener.OnEnoughServer(newServer);
                                 connectBLE.setJobDone();
                                 return;
-                            }*/
+                            }
                             connectBLE.setJobDone();
                             askIdToNearServer(offset + 1);
                         }
@@ -250,6 +248,8 @@ public class BLEServer {
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
                 nearDeviceMap.clear();
+                attemptsUntilServer = 1;
+                lastServerIdFound = new byte[2];
                 context.stopService(new Intent(context, AdvertiserService.class));
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");

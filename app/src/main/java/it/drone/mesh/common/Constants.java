@@ -20,8 +20,8 @@ public class Constants {
     public static final UUID NEXT_ID_UUID = UUID.fromString("2122b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID Client_Configuration_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    public static final ParcelUuid Service_UUID = ParcelUuid.fromString("00001814-0000-1000-8000-00805f9b34fb");
-    public static final UUID ServiceUUID = UUID.fromString("00001814-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid Service_UUID = ParcelUuid.fromString("00002019-0000-1000-8000-00805f9b34fb");
+    public static final UUID ServiceUUID = UUID.fromString("00002019-0000-1000-8000-00805f9b34fb");
 
     public static final UUID CharacteristicUUID = UUID.fromString("1111b81d-0000-1000-8000-00805f9b34fb");
 
@@ -54,7 +54,7 @@ public class Constants {
     public static final int MAX_ATTEMPTS_RETRY = 5;
 
     public static final boolean DEMO_RUN = true; // Used to programmatically enable or disable functionalities for the demo
-    public static final boolean TEST_TIME_OF_CONVERGENCE = true; // Se true allora il device misura la convergenza della rete
-    public static final int SIZE_OF_NETWORK = 2; // questo numero va modificato in base alla grandezza della rete
+    public static final boolean TEST_TIME_OF_CONVERGENCE = false; // Se true allora il device misura la convergenza della rete
+    public static final int SIZE_OF_NETWORK = 3; // questo numero va modificato in base alla grandezza della rete
 
 }

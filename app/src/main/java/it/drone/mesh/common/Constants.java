@@ -20,8 +20,8 @@ public class Constants {
     public static final UUID NEXT_ID_UUID = UUID.fromString("2122b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID Client_Configuration_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    public static final ParcelUuid Service_UUID = ParcelUuid.fromString("00001814-0000-1000-8000-00805f9b34fb");
-    public static final UUID ServiceUUID = UUID.fromString("00001814-0000-1000-8000-00805f9b34fb");
+    public static final ParcelUuid Service_UUID = ParcelUuid.fromString("00002019-0000-1000-8000-00805f9b34fb");
+    public static final UUID ServiceUUID = UUID.fromString("00002019-0000-1000-8000-00805f9b34fb");
 
     public static final UUID CharacteristicUUID = UUID.fromString("1111b81d-0000-1000-8000-00805f9b34fb");
 
@@ -30,6 +30,7 @@ public class Constants {
 
     public static final UUID DescriptorUUID = UUID.fromString("2222b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID DescriptorClientOnlineUUID = UUID.fromString("2422b81d-0000-1000-8000-00805f9b34fb");
+    public static final UUID DescriptorCheckAliveUUID = UUID.fromString("2822b81d-0000-1000-8000-00805f9b34fb");
 
     public static final UUID DescriptorClientWithInternetUUID = UUID.fromString("2622b81d-0000-1000-8000-00805f9b34fb");
     public static final UUID RoutingTableCharacteristicUUID = UUID.fromString("1211b1d-0000-1000-8000-00805f9b34fb");
@@ -40,12 +41,20 @@ public class Constants {
     public static final UUID RoutingTableDescriptorUUID = UUID.fromString("2322b81d-0000-1000-8000-00805f9b34fb");
 
 
-    public static final int REQUEST_ENABLE_BT = 322;
-
     // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
-    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 1;
+    public static final int MAX_ATTEMPTS_UNTIL_SERVER = 4;
     // periodo minimo e max di attesa in secondi
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
     public static final long NO_OFFSET = Long.MAX_VALUE;
+
+    public static final byte FLAG_SUSPECTED_DEAD = (byte) 0;
+    public static final byte FLAG_DEAD = (byte) 1;
+
+    public static final int MAX_ATTEMPTS_RETRY = 5;
+
+    public static final boolean DEMO_RUN = true; // Used to programmatically enable or disable functionalities for the demo
+    public static final boolean TEST_TIME_OF_CONVERGENCE = false; // Se true allora il device misura la convergenza della rete
+    public static final int SIZE_OF_NETWORK = 3; // questo numero va modificato in base alla grandezza della rete
+
 }

@@ -19,12 +19,14 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Set;
 
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
+import it.drone.mesh.models.Device;
 import it.drone.mesh.models.Server;
 import it.drone.mesh.server.ServerNode;
 
@@ -42,6 +44,7 @@ public class AcceptBLETask {
     private BluetoothGattCharacteristic mGattCharacteristicClientOnline;
     private BluetoothGattDescriptor mGattClientOnlineConfigurationDescriptor;
     private BluetoothGattDescriptor mGattClientOnlineDescriptor;
+    private BluetoothGattDescriptor mGattCheckAliveDescriptor;
 
     private BluetoothGattDescriptor mGattClientWithInternetDescriptor;
 
@@ -60,6 +63,7 @@ public class AcceptBLETask {
     private ArrayList<Listeners.OnMessageReceivedListener> messageReceivedListeners;
     private RoutingTable routingTable;
     private HashMap<BluetoothDevice, Listeners.OnPacketSentListener> listenerHashMap;
+    private byte[] lastServerIdFound = new byte[2];
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
@@ -81,6 +85,7 @@ public class AcceptBLETask {
         mGattClientOnlineConfigurationDescriptor = new BluetoothGattDescriptor(Constants.ClientOnline_Configuration_UUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientOnlineDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientOnlineUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         mGattClientWithInternetDescriptor = new BluetoothGattDescriptor(Constants.DescriptorClientWithInternetUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        mGattCheckAliveDescriptor = new BluetoothGattDescriptor(Constants.DescriptorCheckAliveUUID, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
 
         mGattCharacteristicNextServerId = new BluetoothGattCharacteristic(Constants.CharacteristicNextServerIdUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         mGattCharacteristicClientOnline = new BluetoothGattCharacteristic(Constants.ClientOnlineCharacteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
@@ -94,6 +99,41 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "I'm the server, I've connected to " + device.getName());
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "OUD: " + "onConnectionStateChange: DISCONNECTED from" + device.getName());
+                    for (int i = 1; i <= ServerNode.MAX_NUM_CLIENT; i++) {
+                        if (mNode.getClient(""+i) != null && mNode.getClient(""+i).equals(device)) {
+                            String clientid = getId()+i;
+                            mNode.setClientOffline(""+i);
+                            byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                            mNode.parseClientMapToByte(clientRoutingTable);
+                            mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client della morte di uno di loro
+
+                            for (BluetoothDevice dev : mNode.getClientList()) {
+                                if (dev == null) continue;
+                                boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                                Log.d(TAG, "OUD: i've notified client dead " + res);
+                            }
+                            byte[] msg = new byte[2];
+                            msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
+                            msg[1] = Constants.FLAG_DEAD;
+                            Utility.printByte(msg[0]);
+                            for (String idTemp : nearDeviceMap.keySet()) {
+                                BluetoothDevice dev = nearDeviceMap.get(idTemp);
+                                ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, msg, context);
+                                client.startClient();
+                            }
+                            routingTable.removeDevice(new Device(clientid));
+                            mGattDescriptorNextId.setValue(("" + mNode.nextId(null)).getBytes());
+                            return;
+
+                        }
+                    }
+                    /*for (ConnectBLETask myClient: myTempClient) {
+                        if (myClient.getmGatt().getDevice().equals(device)) {
+                            //myClient.getmGatt().connect();
+                            myClient.startClient();
+                        }
+                    }*/
+
                 }
                 super.onConnectionStateChange(device, status, newState);
             }
@@ -128,17 +168,29 @@ public class AcceptBLETask {
                         byte flagByte = value[1];
                         if (Utility.getBit(flagByte, 0) == 1) {  //il primo bit del secondo byte indica che è la richiesta di unione alla rete da parte di un nuovo server
                             Log.d(TAG, "OUD: " + "Nuovo server nella rete ");
-                            boolean isNearToMe = mNode.updateRoutingTable(value);
+                            mGattServer.sendResponse(device, requestId, 0, 0, value);
                             byte idByte = value[0];
                             int serverId = Utility.getBit(idByte, 0) + Utility.getBit(idByte, 1) * 2 + Utility.getBit(idByte, 2) * 4 + Utility.getBit(idByte, 3) * 8;
+                            if(mNode.getServer(""+serverId) != null) {
+                                Log.d(TAG, "OUD: onCharacteristicWriteRequest: server già presente ignoro la cosa");
+                                return;
+                            }
+
+                            boolean isNearToMe = mNode.updateRoutingTable(value);
                             routingTable.addDevice(serverId, 0);
                             Log.d(TAG, "OUD : isNear ? : " + isNearToMe);
                             mNode.printMapStatus();
                             for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
                                 l.OnRoutingTableUpdated(mNode.getMapStringStatus());
                             }
-                            mGattServer.sendResponse(device, requestId, 0, 0, value);
+
                             mGattDescriptorRoutingTable.setValue(("" + (Integer.parseInt(new String(mGattDescriptorRoutingTable.getValue())) + 1)).getBytes()); //incrementiamo la versione della routing table
+
+                            if(!new String(mGattCharacteristicNextServerId.getValue()).equals(mNode.getNextServerId())) {
+                                Log.d(TAG, "OUD:  " + new String((""+mNode.getNextServerId()).getBytes()));
+                                mGattCharacteristicNextServerId.setValue((""+mNode.getNextServerId()).getBytes());
+
+                            }
 
                             byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
                             mNode.parseClientMapToByte(clientRoutingTable);
@@ -160,15 +212,25 @@ public class AcceptBLETask {
                             }
                             for (String idTemp : nearDeviceMap.keySet()) {    //broadcast del nuovo server nella rete
                                 BluetoothDevice dev = nearDeviceMap.get(idTemp);
-                                final ConnectBLETask client = Utility.createBroadCastNextServerIdClient(dev, new String(mGattCharacteristicNextServerId.getValue()), context, value);
+                                final ConnectBLETask client = Utility.createBroadCastNextServerIdClient(dev,context, value);
                                 client.startClient();
                             }
                             if (isNearToMe) { //passaggio della table al nuovo server
+                                // TODO: 24/04/19 sleep pseudo Randomica .
+
                                 String idNewServer = "" + (Utility.getBit(value[0], 0) + Utility.getBit(value[0], 1) * 2 + Utility.getBit(value[0], 2) * 4 + Utility.getBit(value[0], 3) * 8);
                                 Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                     @Override
                                     public void OnNewServerDiscovered(BluetoothDevice server) {
                                         Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
+                                        byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
+                                        mNode.parseMapToByte(tempMap);
+
+                                        int dim = tempMap.length * tempMap[0].length;
+                                        final byte[] message = new byte[dim];
+                                        for (int i = 0; i < tempMap.length; i++) { //passaggio della routing table da mapByte a array byte
+                                            System.arraycopy(tempMap[i], 0, message, (i * tempMap[0].length), tempMap[0].length);
+                                        }
                                         final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                         clientNuovoServ.startClient();
                                     }
@@ -179,6 +241,14 @@ public class AcceptBLETask {
                                         Utility.updateServerToAsk(mBluetoothAdapter, nearDeviceMap, idNewServer, new Listeners.OnNewServerDiscoveredListener() {
                                             @Override
                                             public void OnNewServerDiscovered(BluetoothDevice server) {
+                                                byte[][] tempMap = new byte[16][ServerNode.SERVER_PACKET_SIZE];
+                                                mNode.parseMapToByte(tempMap);
+
+                                                int dim = tempMap.length * tempMap[0].length;
+                                                final byte[] message = new byte[dim];
+                                                for (int i = 0; i < tempMap.length; i++) { //passaggio della routing table da mapByte a array byte
+                                                    System.arraycopy(tempMap[i], 0, message, (i * tempMap[0].length), tempMap[0].length);
+                                                }
                                                 Log.d(TAG, "OUD: " + "Nuovo server scoperto!");
                                                 final ConnectBLETask clientNuovoServ = Utility.createBroadcastRoutingTableClient(server, new String(mGattDescriptorRoutingTable.getValue()), context, message, getId());
                                                 clientNuovoServ.startClient();
@@ -224,6 +294,11 @@ public class AcceptBLETask {
 
                             mGattCharacteristicClientOnline.setValue(clientRoutingTable);
 
+                            if(!new String(mGattCharacteristicNextServerId.getValue()).equals(mNode.getNextServerId())) {
+                                Log.d(TAG, "OUD:  " + new String((""+mNode.getNextServerId()).getBytes()));
+                                mGattCharacteristicNextServerId.setValue((""+mNode.getNextServerId()).getBytes());
+                            }
+
                             BluetoothGattCharacteristic chara = characteristic.getService().getCharacteristic(Constants.ClientOnlineCharacteristicUUID);
                             for (BluetoothDevice dev : mNode.getClientList()) {  //ancora non viene utilizzato
                                 if (chara == null) break;
@@ -231,19 +306,61 @@ public class AcceptBLETask {
                                 boolean res = mGattServer.notifyCharacteristicChanged(dev, chara, false);
                                 Log.d(TAG, "OUD: i've notified new client Online " + res);
                             }
-
                             mGattServer.sendResponse(device, requestId, 0, 0, null);
+                            /*
                             for (String idTemp : nearDeviceMap.keySet()) {
                                 BluetoothDevice dev = nearDeviceMap.get(idTemp);
                                 ConnectBLETask client = Utility.createBroadcastRoutingTableClient(dev, new String(mGattDescriptorRoutingTable.getValue()), context, messageMap.get(senderId).getBytes(), getId());
                                 client.startClient();
-                            }
+                            }*/
                             messageMap.put(senderId, "");
                         }
                     } else {
                         mGattServer.sendResponse(device, requestId, 6, 0, null);
                     }
                 } else { //messaggio normale con/senza internet
+                    //for (byte b : value) Utility.printByte(b)
+                    for (BluetoothDevice dev:nearDeviceMap.values()
+                         ) {
+                        if (dev.equals(device)) Log.d(TAG, "OUD: SONO UGUALI");
+
+                    }
+                    byte sorgByte = value[0];
+                    byte destByte = value[1];
+                    final int[] infoSorg = Utility.getByteInfo(sorgByte);
+                    final int[] infoDest = Utility.getByteInfo(destByte);
+                    if (value[2] == (byte) 255 && value[3] == (byte) 255 && value[4] == (byte) 255 && infoSorg[0] == Integer.parseInt(getId()) && infoDest[0] == Integer.parseInt(getId()) && infoDest[1] == 0) { //messaggio di disconnessione di un mio client
+                        for (int i = 0; i <= ServerNode.MAX_NUM_CLIENT; i++) {
+                            if (mNode.getClientList()[i] != null && mNode.getClientList()[i].equals(device)) {
+                                Log.d(TAG, "OUD: onCharacteristicWriteRequest: ");
+                                String clientid = getId() + i;
+                                mNode.setClientOffline("" + i);
+
+                                byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                                mNode.parseClientMapToByte(clientRoutingTable);
+                                mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client della morte di uno di loro
+
+                                for (BluetoothDevice dev : mNode.getClientList()) {
+                                    if (dev == null) continue;
+                                    boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                                    Log.d(TAG, "OUD: i've notified client dead " + res);
+                                }
+                                byte[] msg = new byte[2];
+                                msg[0] = Utility.byteMessageBuilder(Integer.parseInt(getId()), i);
+                                msg[1] = Constants.FLAG_DEAD;
+                                Utility.printByte(msg[0]);
+                                for (String idTemp : nearDeviceMap.keySet()) {
+                                    BluetoothDevice dev = nearDeviceMap.get(idTemp);
+                                    ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, msg, context);
+                                    client.startClient();
+                                }
+                                routingTable.removeDevice(new Device(clientid));
+                                mGattDescriptorNextId.setValue(("" + mNode.nextId(null)).getBytes());
+                                return;
+                            }
+                        }
+                        return;
+                    }
                     final String valueReceived;
                     Log.d(TAG, "OUD: " + "I've been asked to write from " + device.getName() + "  address:  " + device.getAddress());
                     Log.d(TAG, "OUD: " + "Device address: " + device.getAddress());
@@ -253,15 +370,11 @@ public class AcceptBLETask {
                     Log.d(TAG, "OUD: " + "BytesN: " + value.length);
                     if (value.length > 0) {
                         byte[] correct_message = new byte[value.length - 2];
-                        byte sorgByte = value[0];
-                        byte destByte = value[1];
                         System.arraycopy(value, 2, correct_message, 0, value.length - 2);
                         valueReceived = new String((correct_message));
                         Log.d(TAG, "OUD: " + valueReceived);
-                        final int[] infoSorg = Utility.getByteInfo(sorgByte);
-                        final int[] infoDest = Utility.getByteInfo(destByte);
                         //Log.d(TAG, "OUD: " + "id sorg: " + infoSorg[0] + "" + infoSorg[1]);
-                        Log.d(TAG, "OUD: " + "id dest: " + infoDest[0] + "" + infoDest[1]);
+                        //Log.d(TAG, "OUD: " + "id dest: " + infoDest[0] + "" + infoDest[1]);
                         final String senderId = Utility.getStringId(sorgByte);
                         String previousMsg = messageMap.get(senderId);
                         if (previousMsg == null) previousMsg = "";
@@ -368,6 +481,7 @@ public class AcceptBLETask {
                             Log.d(TAG, "OUD: onCharacteristicWriteRequest: msg no internet");
                             if (infoDest[1] == 0 && (infoDest[0] + "").equals(getId())) {
                                 Log.d(TAG, "OUD: messaggio per me ");
+
                                 String[] messageSplitted = message.split(";;");
                                 int hop = -1;
                                 long timestamp = -1;
@@ -375,7 +489,7 @@ public class AcceptBLETask {
                                     hop = Integer.parseInt(messageSplitted[1]);
                                     timestamp = Long.parseLong(messageSplitted[0]);
                                 } catch (NumberFormatException e) {
-                                    Log.e(TAG, "OUD: " + "Messaggio malformato, non propagabile");
+                                    Log.e(TAG, "OUD: " + "Messaggio malformato");
                                 }
                                 for (Listeners.OnMessageReceivedListener l : messageReceivedListeners) {
                                     l.OnMessageReceived(infoSorg[0] + "" + infoSorg[1], messageSplitted[2], hop, timestamp);
@@ -456,7 +570,9 @@ public class AcceptBLETask {
                         ConnectBLETask client = Utility.createBroadcastNewClientOnline(dev, Integer.parseInt(getId()), currentid, context);
                         client.startClient();
                     }
+                    int i = 0;
                     for (OnRoutingTableUpdatedListener l : routingTableUpdatedListeners) {
+                        Log.d(TAG, "OUD: onDescriptorWriteRequest: " + i++);
                         l.OnRoutingTableUpdated("Added client with id : " + currentid);
                     }
                 } else if (descriptor.getUuid().equals(Constants.DescriptorClientOnlineUUID)) { //Un altro server mi scrive un nuovo client nella rete
@@ -513,7 +629,77 @@ public class AcceptBLETask {
                         }
                     }
 
-                    // TODO: 14/01/19 Propagare la notizia che si ha internet, fare meglio il parsing dell'id alla riga sopra
+
+                }
+                else if (descriptor.getUuid().equals(Constants.DescriptorCheckAliveUUID)) {
+                    String suspectedId = Utility.getStringId(value[0]);
+                    String suspectedServerId = (suspectedId.length() == 2) ? suspectedId.substring(0, 1) : suspectedId.substring(0, 2);
+                    String suspectedClientId = (suspectedId.length() == 2) ? suspectedId.substring(1, 2) : suspectedId.substring(2, 3);
+
+                    boolean isClient = !suspectedClientId.equals("0");
+                    boolean dead = (value[1] == Constants.FLAG_DEAD);
+                    Log.d(TAG, "OUD: " + "onDescriptorWriteRequest: suspectedServerId: " + suspectedServerId + ", dead: " + dead);
+                    if (isClient) {
+                        Log.d(TAG, "OUD: RIMUOVO CLIENT");
+                        mNode.getServer(suspectedServerId).setClientOffline(suspectedClientId);
+                        if (!routingTable.removeDevice(new Device(suspectedId))) {
+                            return;
+                        }
+                        byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                        mNode.parseClientMapToByte(clientRoutingTable);
+                        mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
+
+                        for (BluetoothDevice dev : mNode.getClientList()) {
+                            if (dev == null) continue;
+                            boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                            Log.d(TAG, "OUD: i've notified new server Online " + res);
+                        }
+                        for (String id : nearDeviceMap.keySet()) {
+                            BluetoothDevice dev = nearDeviceMap.get(id);
+                            if (dev != null) {
+                                ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, value, context);
+                                client.startClient();
+                            }
+                        }
+                    } else {
+                        if (mNode.getServer(suspectedServerId) != null && dead) {
+                            Log.d(TAG, "OUD: RIMUOVO UN SERVER E I SUOI CLIENT");
+                            if (mNode.isNearTo(suspectedServerId)) {
+                                nearDeviceMap.remove(suspectedServerId);
+                            }
+                            mNode.removeServer(suspectedServerId);
+                            LinkedList<Device> temp = new LinkedList<>();
+                            for (Device dev : routingTable.getDeviceList()) {
+                                String id = dev.getId();
+                                String serverId = (id.length() == 2) ? id.substring(0, 1) : id.substring(0, 2);
+                                if (serverId.equals(suspectedServerId)) {
+                                    temp.add(dev);
+                                }
+                            }
+                            for (Device dev : temp) {
+                                routingTable.removeDevice(dev);
+                            }
+                            mGattCharacteristicNextServerId.setValue(suspectedServerId.getBytes());
+                            Log.d(TAG, "OUD: Nuovo ID disponibile : " + new String(mGattCharacteristicNextServerId.getValue()));
+
+                            byte[] clientRoutingTable = new byte[ServerNode.MAX_NUM_SERVER + 2];
+                            mNode.parseClientMapToByte(clientRoutingTable);
+                            mGattCharacteristicClientOnline.setValue(clientRoutingTable);  //Aggiorno client Char del nuovo server Online
+
+                            for (BluetoothDevice dev : mNode.getClientList()) {
+                                if (dev == null) continue;
+                                boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristicClientOnline, false);
+                                Log.d(TAG, "OUD: i've notified new server Online " + res);
+                            }
+                            for (String id : nearDeviceMap.keySet()) {
+                                BluetoothDevice dev = nearDeviceMap.get(id);
+                                if (dev != null) {
+                                    ConnectBLETask client = Utility.createBroadcastSomeoneDisconnectedClient(dev, value, context);
+                                    client.startClient();
+                                }
+                            }
+                        }
+                    }
                 }
                 super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
             }
@@ -533,7 +719,6 @@ public class AcceptBLETask {
                 super.onNotificationSent(device, status);
             }
         };
-
     }
 
     public void setId(String id) {
@@ -562,24 +747,35 @@ public class AcceptBLETask {
             Log.d(TAG, "OUD: " + "device null");
             return; //vedi sopra
         }
-        final Server u = new Server(dev, dev.getName());
-        ConnectBLETask client = new ConnectBLETask(u, context, new BluetoothGattCallback() {
+        final Server server = new Server(dev, dev.getName());
+        ConnectBLETask client = new ConnectBLETask(server, context);
+        BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                    Log.d(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                     gatt.discoverServices();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                    Log.d(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
+                    if (!client.getJobDone()) {
+                        client.restartClient();
+                    }
+
                 }
             }
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                if (service == null) return;
+                if (service == null) {
+                    client.restartClient();
+                    return;
+                }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicNextServerIdUUID);
-                if (characteristic == null) return;
+                if (characteristic == null){
+                    client.restartClient();
+                    return;
+                }
                 boolean res = gatt.readCharacteristic(characteristic);
                 Log.d(TAG, "OUD: " + "Read Characteristic nextServerID: " + res);
                 super.onServicesDiscovered(gatt, status);
@@ -613,6 +809,7 @@ public class AcceptBLETask {
                     mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
                     mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
                     mGattCharacteristic.addDescriptor(mGattClientWithInternetDescriptor);
+                    mGattCharacteristic.addDescriptor(mGattCheckAliveDescriptor);
                     mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
                     mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
@@ -629,25 +826,22 @@ public class AcceptBLETask {
                         l.OnServerInitialized();
                     }
 
-                    characteristic.setValue(("" + (Integer.parseInt(getId()) + 1)).getBytes());
+                    /*characteristic.setValue(("" + (Integer.parseInt(getId()) + 1)).getBytes());
                     gatt.beginReliableWrite();
                     boolean res = gatt.writeCharacteristic(characteristic);
                     Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
                     gatt.executeReliableWrite();
-                } else {
-                    initializeId(offset + 1);
-                }
-                super.onCharacteristicRead(gatt, characteristic, status);
-            }
-
-            @Override
-            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.CharacteristicNextServerIdUUID)) {
-                    Log.d(TAG, "OUD: " + "I wrote a characteristic nextServerId! " + new String(characteristic.getValue()));
+                    Log.d(TAG, "OUD: " + "I wrote a characteristic nextServerId! " + new String(characteristic.getValue()));*/
                     BluetoothGattService serv = gatt.getService(Constants.ServiceUUID);
-                    if (serv == null) return;
+                    if (serv == null) {
+                        client.restartClient();
+                        return;
+                    }
                     BluetoothGattCharacteristic characteristic1 = serv.getCharacteristic(Constants.RoutingTableCharacteristicUUID);
-                    if (characteristic1 == null) return;
+                    if (characteristic1 == null) {
+                        client.restartClient();
+                        return;
+                    }
                     byte[] message = mNode.parseNewServer();
                     Log.d(TAG, "Message len: " + message.length);
                     characteristic1.setValue(message);
@@ -655,18 +849,28 @@ public class AcceptBLETask {
                     boolean res = gatt.writeCharacteristic(characteristic1);
                     Log.d(TAG, "OUD: " + "Write Characteristic :--> " + res);
                     gatt.executeReliableWrite();
-                } else if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
+                } else {
+                    client.setJobDone();
+                    initializeId(offset + 1);
+                }
+                super.onCharacteristicRead(gatt, characteristic, status);
+            }
+
+            @Override
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                if (status == BluetoothGatt.GATT_SUCCESS && characteristic.getUuid().equals(Constants.RoutingTableCharacteristicUUID)) {
                     Log.d(TAG, "OUD: " + "i wrote a characterisic routing table!");
+                    client.setJobDone();
                 }
                 super.onCharacteristicWrite(gatt, characteristic, status);
             }
-        });
+        };
+        client.setCallback(callback);
         client.startClient();
     }
 
 
     public void startServer() {
-        // I CREATE A SERVICE WITH 1 CHARACTERISTIC AND 1 DESCRIPTOR
         Log.d(TAG, "OUD: " + "dev found:" + nearDeviceMap.size());
         if (nearDeviceMap != null && nearDeviceMap.keySet().size() != 0) {
             Log.d(TAG, "OUD: " + "startServer: Finding next id");
@@ -689,6 +893,7 @@ public class AcceptBLETask {
             mGattCharacteristic.addDescriptor(mGattDescriptorNextId);
             mGattCharacteristic.addDescriptor(mGattClientConfigurationDescriptor);
             mGattCharacteristic.addDescriptor(mGattClientWithInternetDescriptor);
+            mGattCharacteristic.addDescriptor(mGattCheckAliveDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineConfigurationDescriptor);
             mGattCharacteristicClientOnline.addDescriptor(mGattClientOnlineDescriptor);
             this.mGattCharacteristicRoutingTable.addDescriptor(mGattDescriptorRoutingTable);
@@ -701,6 +906,7 @@ public class AcceptBLETask {
             this.mGattServer.addService(this.mGattService);
 
             for (Listeners.OnServerInitializedListener l : serverInitializedListeners) {
+                Log.d(TAG, "OUD: Richiamo listener");
                 l.OnServerInitialized();
             }
 
@@ -710,8 +916,21 @@ public class AcceptBLETask {
 
     public void stopServer() {
         if (mGattServer != null) {
+            Log.d(TAG, "OUD: " + "stopServer: Richiamato anche nell'accept");
+            byte[] msg = new byte[Utility.PACK_LEN];
+            msg[0] = (byte) 255;
+            msg[1] = (byte) 255;
+            msg[2] = (byte) 255;
+            mGattCharacteristic.setValue(msg);
+            for (BluetoothDevice dev : mNode.getClientList()) {//notifico i miei client che sto morendo
+                if (dev == null) continue;
+                boolean res = mGattServer.notifyCharacteristicChanged(dev, mGattCharacteristic, false);
+                Log.d(TAG, "OUD: i've notified new client Online " + res);
+            }
+            // TODO: 20/04/19 comunicare anche agli altri server 
             this.mGattServer.clearServices();
             this.mGattServer.close();
+
             this.mGattServer = null;
         }
     }
@@ -725,8 +944,8 @@ public class AcceptBLETask {
 
 
     public void sendMessage(String message, String mitt, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
-        int infoSorg[] = Utility.getIdArrayByString(mitt);
-        int infoDest[] = Utility.getIdArrayByString(dest);
+        int[] infoSorg = Utility.getIdArrayByString(mitt);
+        int[] infoDest = Utility.getIdArrayByString(dest);
         Log.d(TAG, "OUD: message: " + message);
         if (infoDest[0] == Integer.parseInt(getId())) {
             if (infoDest[1] == 0) {
@@ -738,6 +957,7 @@ public class AcceptBLETask {
             byte[][] finalMessage = Utility.messageBuilder(Utility.byteMessageBuilder(infoSorg[0], infoSorg[1]), Utility.byteMessageBuilder(infoDest[0], infoDest[1]), message, internet);
 
             boolean[] resultHolder = new boolean[1];
+            //resultHolder[0] = false;
             int[] indexHolder = new int[1];
 
             BluetoothDevice dev = mNode.getClient("" + infoDest[1]);
@@ -771,7 +991,7 @@ public class AcceptBLETask {
             indexHolder[0] += 1;
         } else {
             //non sono io il destinatario
-            final ServerNode nodeDest;
+            ServerNode nodeDest;
 
             if (internet) {
                 if(mitt.equals(getId())) {
@@ -798,14 +1018,25 @@ public class AcceptBLETask {
                 nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
 
             if (nodeDest == null) {
-                Log.e(TAG, "next hop null");
+                Log.e(TAG, "OUD: next hop null");
                 return;
             }
             Log.d(TAG, "OUD: next-hop : " + nodeDest.getId());
-            final BluetoothDevice near = nearDeviceMap.get(nodeDest.getId());
+            BluetoothDevice near = nearDeviceMap.get(nodeDest.getId());
             if (near == null) {
-                Log.e(TAG, "near server null");
-                return;
+                Log.e(TAG, "OUD: near server null");
+                mNode.removeNearServer(nodeDest.getId());
+                if(internet) nodeDest = mNode.getNearestServerWithInternet(mNode.getLastRequest() + 1, getId());
+                else nodeDest = mNode.getServerToSend(infoDest[0] + "", getId(), mNode.getLastRequest() + 1);
+                if (nodeDest == null) {
+                    Log.e(TAG, "OUD: next hop null");
+                    return;
+                }
+                near = nearDeviceMap.get(nodeDest.getId());
+                if(near == null) {
+                    Log.e(TAG, "OUD: near server null di nuovo");
+                    return;
+                }
             }
             Log.d(TAG, "OUD: next-hop : " + near.getName());
             final Server server = new Server(near, (near.getName() == null ? "Unknown" : near.getName()));
@@ -815,13 +1046,19 @@ public class AcceptBLETask {
             final int[] indexHolder = new int[1]; //si inizializza automaticamente a 0 il primo elemento
             final boolean[] resultHolder = new boolean[1];
 
-            final ConnectBLETask connectBLETask = new ConnectBLETask(server, context, new BluetoothGattCallback() {
+            final ConnectBLETask connectBLETask = new ConnectBLETask(server, context);
+            final BluetoothGattCallback callback = new BluetoothGattCallback() {
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
                         Log.i(TAG, "OUD: " + "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        if (!connectBLETask.getJobDone()) {
+                            resultHolder[0] = false;
+                            indexHolder[0] = 0;
+                            connectBLETask.restartClient();
+                        }
                         Log.i(TAG, "OUD: " + "Disconnected from GATT client " + gatt.getDevice().getName());
                     }
                     super.onConnectionStateChange(gatt, status, newState);
@@ -831,9 +1068,15 @@ public class AcceptBLETask {
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                     Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                     BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
-                    if (service == null) return;
+                    if (service == null) {
+                        connectBLETask.restartClient();
+                        return;
+                    }
                     BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
-                    if (characteristic == null) return;
+                    if (characteristic == null) {
+                        connectBLETask.restartClient();
+                        return;
+                    }
                     BluetoothGattDescriptor descriptor = characteristic.getDescriptor(Constants.DescriptorUUID);
                     boolean res = gatt.readDescriptor(descriptor);
                     Log.d(TAG, "OUD: " + "Read Server id: " + res);
@@ -846,6 +1089,7 @@ public class AcceptBLETask {
                         if (indexHolder[0] >= finalMessage.length || !resultHolder[0]) {
                             if (resultHolder[0]) {
                                 listener.OnMessageSent(message);
+                                connectBLETask.setJobDone();
                             } else
                                 listener.OnCommunicationError("Error sending packet " + indexHolder[0]);
                         } else {
@@ -863,6 +1107,10 @@ public class AcceptBLETask {
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
 
+            };
+            connectBLETask.setCallback(callback);
+            connectBLETask.setOnJobDoneListener(() -> {
+                Log.d(TAG, "OUD: client sendMessage finito");
             });
             connectBLETask.startClient();
         }
@@ -898,6 +1146,10 @@ public class AcceptBLETask {
 
     public void addOnMessageReceived(Listeners.OnMessageReceivedListener l) {
         this.messageReceivedListeners.add(l);
+    }
+
+    public void setLastServerIdFound(byte[] lastServerIdFound) {
+        this.lastServerIdFound = lastServerIdFound;
     }
 
     public interface OnConnectionRejectedListener {

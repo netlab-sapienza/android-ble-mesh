@@ -6,9 +6,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -33,19 +33,29 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.creativityapps.gmailbackgroundlibrary.BackgroundMail;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.tasks.Task;
 import com.instacart.library.truetime.TrueTimeRx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
 import io.reactivex.schedulers.Schedulers;
 import it.drone.mesh.R;
 import it.drone.mesh.client.BLEClient;
 import it.drone.mesh.common.Constants;
+import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
-import it.drone.mesh.listeners.ServerScanCallback;
+import it.drone.mesh.models.Device;
 import it.drone.mesh.server.BLEServer;
 import it.drone.mesh.tasks.AcceptBLETask;
 import twitter4j.Status;
@@ -53,15 +63,21 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
-import static it.drone.mesh.common.Constants.REQUEST_ENABLE_BT;
+import static it.drone.mesh.common.Constants.DEMO_RUN;
+import static it.drone.mesh.common.Constants.SIZE_OF_NETWORK;
+import static it.drone.mesh.common.Constants.TEST_TIME_OF_CONVERGENCE;
 
 public class InitActivity extends Activity {
 
     private static final String TAG = InitActivity.class.getSimpleName();
 
+    // Per chiedere il GPS su Maps
+    protected static final int REQUEST_CHECK_SETTINGS = 0x1;
+
     private static final long HANDLER_PERIOD = 5000;
     private static final int PERMISSION_REQUEST_WRITE = 564;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
+    public static final int REQUEST_ENABLE_BT = 322;
 
     private static final String EMAIL_REQUEST = "email";
     private static final String TWITTER_REQUEST = "twitter";
@@ -70,26 +86,28 @@ public class InitActivity extends Activity {
     private Switch canIBeServerSwitch;
     private DeviceAdapter deviceAdapter;
 
-    ServerScanCallback mScanCallback;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothLeScanner mBluetoothLeScanner;
     private boolean canIBeServer = false;
 
     private boolean isServiceStarted = false;
-    private boolean isScanning = false;
 
     private BLEClient client;
     private BLEServer server;
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private Button startServices, sendTweet, sendEmail;
+    private byte[] lastServerIdFound = new byte[2];
 
+
+    private long startTime; // Per fare test su tempo convergenza rete;
+    private boolean alreadyInizialized;
 
     @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long offset = Constants.NO_OFFSET;
         canIBeServer = false;
+        alreadyInizialized = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init);
         startServices = findViewById(R.id.startServices);
@@ -122,7 +140,7 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        if (Utility.isDeviceOnline(this)) {
+        if (Utility.isDeviceOnline(this) && !DEMO_RUN) {
             TrueTimeRx.build()
                     .initializeRx("time.google.com")
                     .subscribeOn(Schedulers.io())
@@ -132,6 +150,7 @@ public class InitActivity extends Activity {
                         deviceAdapter.setOffset(offset);
                         new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
                     }, throwable -> {
+                        // TODO: 22/01/19 vedere se rilancia un eccezione ogni volta che muore internet 
                         new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
                         throwable.printStackTrace();
                     });
@@ -167,6 +186,9 @@ public class InitActivity extends Activity {
                 */
                 deviceAdapter.cleanView();
             } else {
+                if (TEST_TIME_OF_CONVERGENCE)
+                    initializeConvergenceNetworkTimeTest();
+
                 //initializeService();
                 startServices.setText(R.string.stop_service);
                 isServiceStarted = true;
@@ -187,15 +209,16 @@ public class InitActivity extends Activity {
                             writeErrorDebug(message);
                         }
                     });
+                    if (lastServerIdFound[0] != (byte) 0) {
+                        server.setLastServerIdFound(lastServerIdFound);
+                    }
                     server.startServer();
-                    server.addServerInitializedListener(() -> {
-                        new Handler(Looper.getMainLooper()).post(() -> {
-                            myId.setText(server.getId());
-                            whoAmI.setText(R.string.server);
-                            sendEmail.setVisibility(View.VISIBLE);
-                            sendTweet.setVisibility(View.VISIBLE);
-                        });
-                    });
+                    server.addServerInitializedListener(() -> new Handler(Looper.getMainLooper()).post(() -> {
+                        myId.setText(server.getId());
+                        whoAmI.setText(R.string.server);
+                        sendEmail.setVisibility(View.VISIBLE);
+                        sendTweet.setVisibility(View.VISIBLE);
+                    }));
                     server.addOnMessageReceivedWithInternet((idMitt, message) -> {
                         Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
                         String[] info = message.split(";;");
@@ -212,10 +235,77 @@ public class InitActivity extends Activity {
                     server.setEnoughServerListener((newServer) -> {
                         Log.d(TAG, "OUD: Stop server");
                         server.stopServer();
+                        server = null;
                         client = BLEClient.getInstance(getApplicationContext());
+                        if (lastServerIdFound[0] != (byte) 0) {
+                            client.setLastServerIdFound(lastServerIdFound);
+                            lastServerIdFound[0] = (byte) 0;
+                        }
+                        client.setOnConnectionLostListener(() -> {
+                            new Handler(getMainLooper()).post(() -> startServices.performClick());
+                            new Handler(getMainLooper()).postDelayed(() -> {
+                                Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
+                                startServices.performClick();
+                            }, 5000);
+                        });
                         client.startClient(newServer);
+
                         client.addOnClientOnlineListener(() -> {
-                            deviceAdapter.setClient(getApplicationContext());
+                            if (client != null) {
+                                deviceAdapter.setClient(getApplicationContext());
+                                myId.setText(client.getId());
+                                whoAmI.setText(R.string.client);
+                                sendTweet.setVisibility(View.VISIBLE);
+                                sendEmail.setVisibility(View.VISIBLE);
+                                client.addReceivedWithInternetListener((idMitt, message) -> {
+                                    Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
+                                    String[] info = message.split(";;");
+                                    if (info[0].equals(EMAIL_REQUEST)) {
+                                        try {
+                                            sendAMail(info[1], info[2], idMitt);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    } else if (info[0].equals(TWITTER_REQUEST)) {
+                                        tweetSomething(info[1]);
+                                    }
+                                });
+                                client.addDisconnectedServerListener((serverId, flags) -> {
+                                    lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
+                                    lastServerIdFound[1] = flags;
+                                    new Handler(getMainLooper()).post(() -> startServices.performClick());
+                                    new Handler(getMainLooper()).postDelayed(() -> {
+                                        Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
+                                        startServices.performClick();
+                                    }, 5000);
+
+                                });
+                            }
+
+
+                        });
+
+                    });
+                    deviceAdapter.setServer(getApplicationContext());
+                } else {
+                    client = BLEClient.getInstance(getApplicationContext());
+                    if (lastServerIdFound[0] != (byte) 0) {
+                        client.setLastServerIdFound(lastServerIdFound);
+                        lastServerIdFound[0] = (byte) 0;
+                        lastServerIdFound[1] = (byte) 0;
+                    }
+                    client.setOnConnectionLostListener(() -> {
+                        new Handler(getMainLooper()).post(() -> startServices.performClick());
+                        new Handler(getMainLooper()).postDelayed(() -> {
+                            Toast.makeText(getApplicationContext(), "Problem with Your server, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
+                            startServices.performClick();
+                        }, 5000);
+                    });
+                    client.startClient();
+
+                    client.addOnClientOnlineListener(() -> {
+                        deviceAdapter.setClient(getApplicationContext());
+                        if (client != null) {
                             myId.setText(client.getId());
                             whoAmI.setText(R.string.client);
                             sendTweet.setVisibility(View.VISIBLE);
@@ -233,38 +323,24 @@ public class InitActivity extends Activity {
                                     tweetSomething(info[1]);
                                 }
                             });
-                        });
+                            client.addDisconnectedServerListener((serverId, flags) -> {
+                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
+                                lastServerIdFound[1] = flags;
 
-                    });
-                    deviceAdapter.setServer(getApplicationContext());
-                } else {
-                    client = BLEClient.getInstance(getApplicationContext());
-                    client.startClient();
-                    client.addOnClientOnlineListener(() -> {
-                        deviceAdapter.setClient(getApplicationContext());
-                        myId.setText(client.getId());
-                        whoAmI.setText(R.string.client);
-                        sendTweet.setVisibility(View.VISIBLE);
-                        sendEmail.setVisibility(View.VISIBLE);
-                        client.addReceivedWithInternetListener((idMitt, message) -> {
-                            Log.d(TAG, "Message with internet from " + idMitt + " received: " + message);
-                            String[] info = message.split(";;");
-                            if (info[0].equals(EMAIL_REQUEST)) {
-                                try {
-                                    sendAMail(info[1], info[2], idMitt);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            } else if (info[0].equals(TWITTER_REQUEST)) {
-                                tweetSomething(info[1]);
-                            }
-                        });
+                                new Handler(getMainLooper()).post(() -> startServices.performClick());
+                                new Handler(getMainLooper()).postDelayed(() -> {
+                                    Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
+                                    startServices.performClick();
+                                }, 5000);
+                            });
+                        }
+
                     });
                 }
             }
         });
-        sendTweet.setOnClickListener(view -> {
 
+        sendTweet.setOnClickListener(view -> {
             TextView titleView = new TextView(this);
             titleView.setText(R.string.tweet_something);
             titleView.setGravity(Gravity.CENTER);
@@ -328,7 +404,7 @@ public class InitActivity extends Activity {
         });
 
         sendEmail.setOnClickListener(view -> {
-            if ((client == null || client.getConnectBLETask() == null) && (server == null ||server.getAcceptBLETask() == null)) {
+            if ((client == null || client.getConnectBLETask() == null) && (server == null || server.getAcceptBLETask() == null)) {
                 Toast.makeText(this, "Not connected in the BLE mesh", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -366,8 +442,6 @@ public class InitActivity extends Activity {
 
             layout.addView(bodyEmail);
             builder.setView(layout);
-
-
             builder.setPositiveButton("OK", (dialog, which) -> {
 
                 String id;
@@ -416,6 +490,35 @@ public class InitActivity extends Activity {
 
     }
 
+    /**
+     * Subscribe the activity to routing table updates and when the number of devices reaches Costants.SIZE_OF_NETWORK takes the time
+     */
+    private void initializeConvergenceNetworkTimeTest() {
+        if(alreadyInizialized) return;
+        else alreadyInizialized = true;
+
+        startTime = System.nanoTime();
+
+        RoutingTable.getInstance().subscribeToUpdates(new RoutingTable.OnRoutingTableUpdateListener() {
+            @Override
+            public void OnDeviceAdded(Device device) {
+                if (SIZE_OF_NETWORK == RoutingTable.getInstance().getDeviceList().size()) {
+                    long endTime = System.nanoTime();
+                    long convergenceTime = (endTime - startTime) / 1000000;
+                    cleanDebug();
+                    writeDebug("Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime);
+                    new Handler(Looper.getMainLooper()).post(()-> Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show());
+                }
+
+            }
+
+            @Override
+            public void OnDeviceRemoved(Device device) {
+
+            }
+        });
+    }
+
 
     /**
      * Controlla che l'app sia eseguibile e inizia lo scanner
@@ -450,7 +553,8 @@ public class InitActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 checkBluetoothAvailability(savedInstanceState);
-                askPermissionsStorage();
+                if (!DEMO_RUN)
+                    askPermissionsExternalStorage();
             } else {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
             }
@@ -465,7 +569,10 @@ public class InitActivity extends Activity {
 
     }
 
-    private void askPermissionsStorage() {
+    /**
+     * no need to use external storage to take data, gonna be deprecated
+     */
+    private void askPermissionsExternalStorage() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -500,7 +607,8 @@ public class InitActivity extends Activity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.i(TAG, "onRequestPermissionsResult: OK");
                     checkBluetoothAvailability();
-                    askPermissionsStorage();
+                    if (!DEMO_RUN)
+                        askPermissionsExternalStorage();
                 } else {
                     Log.e(TAG, "onRequestPermissionsResult: Permission denied");
                 }
@@ -555,6 +663,7 @@ public class InitActivity extends Activity {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
+                setGPSOn();
             } else {
                 // Bluetooth is not supported.
                 writeDebug(getString(R.string.bt_not_supported));
@@ -562,12 +671,76 @@ public class InitActivity extends Activity {
         }
     }
 
+
+    /**
+     * Makes request to enable GPS
+     */
+    protected void setGPSOn() {
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(30 * 1000);
+        locationRequest.setFastestInterval(5 * 1000);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        builder.setAlwaysShow(true);
+
+        Task<LocationSettingsResponse> task = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build());
+        task.addOnCompleteListener(task1 -> {
+            try {
+                task1.getResult(ApiException.class);
+            } catch (ApiException exception) {
+                switch (exception.getStatusCode()) {
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        // Location settings are not satisfied. But could be fixed by showing the
+                        // user a dialog.
+                        try {
+                            // Cast to a resolvable exception.
+                            ResolvableApiException resolvable = (ResolvableApiException) exception;
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            resolvable.startResolutionForResult(
+                                    InitActivity.this,
+                                    REQUEST_CHECK_SETTINGS);
+                        } catch (IntentSender.SendIntentException e) {
+                            // Ignore the error.
+                            writeErrorDebug("GPS: " + e.getMessage());
+                        } catch (ClassCastException e) {
+                            writeErrorDebug("GPS: " + e.getMessage());
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        writeErrorDebug("Location settings are not satisfied. However, we have no way to fix the settings so we won't show the dialog.");
+                        break;
+                }
+            }
+        });
+    }
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == RESULT_OK) {
-                checkBluetoothAvailability();
-            } else writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+        switch (requestCode) {
+            // Check for the integer request code originally supplied to startResolutionForResult().
+            case REQUEST_CHECK_SETTINGS:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        writeDebug("GPS OK");
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        setGPSOn();
+                        break;
+                }
+                break;
+            case REQUEST_ENABLE_BT:
+                switch (resultCode) {
+                    case Activity.RESULT_OK:
+                        checkBluetoothAvailability();
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        writeErrorDebug("Bluetooth is not enabled. Please reboot application.");
+                        break;
+                }
+                break;
         }
     }
 
@@ -588,10 +761,9 @@ public class InitActivity extends Activity {
 
 
     private void sendAMail(final String destEmail, String body, final String idMitt) throws IOException {
-
         Properties properties = new Properties();
         InputStream inputStream =
-                this.getClass().getClassLoader().getResourceAsStream("email.properties");
+                Objects.requireNonNull(this.getClass().getClassLoader()).getResourceAsStream("email.properties");
         properties.load(inputStream);
         BackgroundMail.newBuilder(this)
                 .withUsername(properties.getProperty("email.username"))
@@ -618,6 +790,7 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG, "OUD: " + "onDestroy: Stommorendo");
         if (isServiceStarted) {
             if (client != null) {
                 client.stopClient();

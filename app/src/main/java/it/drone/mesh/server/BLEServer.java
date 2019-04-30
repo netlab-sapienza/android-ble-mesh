@@ -61,6 +61,7 @@ public class BLEServer {
     private int randomValueScanPeriod;
     private Listeners.OnDebugMessageListener debugMessageListener;
     private Listeners.OnEnoughServerListener enoughServerListener;
+    private byte[] lastServerIdFound = new byte[2];
 
     private BLEServer(Context context) {
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
@@ -93,6 +94,10 @@ public class BLEServer {
         return mBluetoothManager;
     }
 
+    public void setLastServerIdFound(byte[] lastServerIdFound) {
+        this.lastServerIdFound = lastServerIdFound;
+    }
+
     private void askIdToNearServer(final int offset) {
         final int size = ServerList.getServerList().size();
         if (offset >= size) {
@@ -106,19 +111,25 @@ public class BLEServer {
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(message -> debugMessageListener.OnDebugMessage("RoutingTable updated: \n" + message));
+                acceptBLETask.setLastServerIdFound(lastServerIdFound);
                 acceptBLETask.startServer();
             }
         } else {
             final Server newServer = ServerList.getServer(offset);
             debugMessageListener.OnDebugMessage( "OUD: " + "Try reading ID of : " + newServer.getUserName());
-            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context, new BluetoothGattCallback() {
+            final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
+            BluetoothGattCallback callback = new BluetoothGattCallback() {
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        Log.i(TAG, "Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
+                        Log.i(TAG, "OUD: Connected to GATT client. Attempting to start service discovery from " + gatt.getDevice().getName());
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                        Log.i(TAG, "Disconnected from GATT client " + gatt.getDevice().getName());
+                        if (!connectBLE.getJobDone()) {
+                            connectBLE.restartClient();
+                            Log.d(TAG, "OUD: Retry reading ID");
+                        }
+                        Log.i(TAG, "OUD: Disconnected from GATT client " + gatt.getDevice().getName());
                     }
                     super.onConnectionStateChange(gatt, status, newState);
                 }
@@ -127,6 +138,7 @@ public class BLEServer {
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                     Log.d(TAG, "OUD: " + "I discovered a service" + gatt.getServices() + " from " + gatt.getDevice().getName());
                     for (BluetoothGattService service : gatt.getServices()) {
+                        Log.d(TAG, "OUD: onServicesDiscovered: " + service.getUuid().toString());
                         if (service.getUuid().toString().equals(Constants.ServiceUUID.toString())) {
                             if (service.getCharacteristics() != null) {
                                 for (BluetoothGattCharacteristic chars : service.getCharacteristics()) {
@@ -141,12 +153,14 @@ public class BLEServer {
                             }
                         }
                     }
+                    connectBLE.setJobDone();
                     askIdToNearServer(offset + 1);
                     super.onServicesDiscovered(gatt, status);
                 }
 
                 @Override
                 public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+                    Log.d(TAG, "OUD: nDescriptorRead: descrittore uuid: " + descriptor.getUuid().toString() + ", status: " + status);
                     if (status == 0) {
                         Log.d(TAG, "OUD: " + "I read a descriptor UUID: " + descriptor.getUuid().toString());
                         if (descriptor.getUuid().toString().equals(Constants.DescriptorUUID.toString())) {
@@ -154,37 +168,38 @@ public class BLEServer {
                             Log.d(TAG, "OUD: Server inserito correttamente nella mappa");
                             BluetoothGattDescriptor nextId = descriptor.getCharacteristic().getDescriptor(Constants.NEXT_ID_UUID);
                             boolean res = gatt.readDescriptor(nextId);
-                            Log.d(TAG, "OUD: Descrittore letto ");
+                            Log.d(TAG, "OUD: Descrittore letto " + res);
                         } else if (descriptor.getUuid().equals(Constants.NEXT_ID_UUID)) {
                             int nextId = Integer.parseInt(new String(descriptor.getValue()));
-                            if (ServerNode.MAX_NUM_CLIENT < 3) nextId--;
-                            if (nextId <= (ServerNode.MAX_NUM_CLIENT / 3)) {
+                            if (nextId == 1) {
                                 enoughServerListener.OnEnoughServer(newServer);
+                                connectBLE.setJobDone();
                                 return;
                             }
+                            connectBLE.setJobDone();
                             askIdToNearServer(offset + 1);
                         }
                     }
-                    else askIdToNearServer(offset + 1);
+                    else {
+                        connectBLE.setJobDone();
+                        askIdToNearServer(offset + 1);
+                    }
                     super.onDescriptorRead(gatt, descriptor, status);
                 }
-            });
+            };
+            connectBLE.setCallback(callback);
             connectBLE.startClient();
         }
     }
 
     private void startScanning() {
+        if (!isServiceStarted) return;
         isScanning = true;
         debugMessageListener.OnDebugMessage("Start scanning");
         if (mScanCallback == null) {
             ServerList.cleanUserList();
             // Will stop the scanning after a set time.
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    initializeServer();
-                }
-            }, SCAN_PERIOD);
+            new Handler().postDelayed(() -> initializeServer(), SCAN_PERIOD);
 
             // Kick off a new scan.
             mScanCallback = new ServerScanCallback(new ServerScanCallback.OnServerFoundListener() {
@@ -207,11 +222,14 @@ public class BLEServer {
     }
 
     private void initializeServer() {
+        if (!isServiceStarted) return;
+        if(acceptBLETask == null) this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
         debugMessageListener.OnDebugMessage("Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
         isScanning = false;
+        Log.d(TAG, "initializeServer: size: " + ServerList.getServerList().size());
         askIdToNearServer(0);
     }
 
@@ -228,7 +246,11 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                //acceptBLETask = null;
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
+                nearDeviceMap.clear();
+                attemptsUntilServer = 1;
+                lastServerIdFound = new byte[2];
+                context.stopService(new Intent(context, AdvertiserService.class));
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {
@@ -269,6 +291,7 @@ public class BLEServer {
     }
 
     public void addServerInitializedListener(Listeners.OnServerInitializedListener l) {
+        Log.d(TAG, "OUD: " + (acceptBLETask==null));
         if(acceptBLETask != null) this.acceptBLETask.addServerInitializedListener(l);
     }
 

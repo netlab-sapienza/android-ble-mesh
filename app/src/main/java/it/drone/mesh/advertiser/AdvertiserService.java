@@ -110,8 +110,8 @@ public class AdvertiserService extends Service {
             @Override
             public void run() {
                 Log.d(TAG, "OUD: " + "AdvertiserService has reached timeout of " + TIMEOUT + " milliseconds, stopping advertising.");
-                sendFailureIntent(ADVERTISING_TIMED_OUT);
-                stopSelf();
+                //sendFailureIntent(ADVERTISING_TIMED_OUT);
+                //stopSelf();
             }
         };
         mHandler.postDelayed(timeoutRunnable, TIMEOUT);

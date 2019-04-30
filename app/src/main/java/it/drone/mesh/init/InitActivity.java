@@ -652,9 +652,11 @@ public class InitActivity extends Activity {
                     // Are Bluetooth Advertisements supported on this device?
                     if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
                         writeDebug("Everything is supported and enabled");
-                        canIBeServer = true;
-                        canIBeServerSwitch.setVisibility(View.VISIBLE);
-                        canIBeServerSwitch.setChecked(true);
+                        if (!DEMO_RUN) {
+                            canIBeServer = true;
+                            canIBeServerSwitch.setVisibility(View.VISIBLE);
+                            canIBeServerSwitch.setChecked(true);
+                        }
                     } else {
                         writeDebug("Your device does not support multiple advertisement, you can be only client");
                     }

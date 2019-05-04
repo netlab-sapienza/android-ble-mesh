@@ -33,7 +33,7 @@ Be Mesh: Bluetooth Low Energy Mesh Networking
 ## Pre-requisites
 
 - The phone candidate to be server must support multipleAdvertisement
-- Android SDK >= 21
+- Android SDK >= 23
 - Compatible with Android Things!
 
 

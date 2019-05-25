@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.0'
+        classpath 'com.android.tools.build:gradle:3.4.0'
     }
 }
 
@@ -24,10 +24,10 @@ android {
     buildToolsVersion '28.0.3'
     defaultConfig {
         applicationId "it.drone.mesh"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 28
-        versionCode 1
-        versionName "0.1 alpha"
+        versionCode 2
+        versionName "1.0 demo"
     }
     applicationVariants.all { variant ->
         variant.resValue "string", "versionName", variant.versionName
@@ -61,4 +61,5 @@ dependencies {
     implementation 'com.github.instacart.truetime-android:library-extension-rx:3.4'
     implementation 'com.github.luongvo:GmailBackground:2.1.1'
     implementation 'org.twitter4j:twitter4j-core:4.0.1'
+    implementation 'com.google.android.gms:play-services-location:16.0.0'
 }

@@ -33,12 +33,13 @@ public class RoutingTable {
     }
 
     public void addDevice(Device device) {
+        if (routingTable.contains(device)) return;
         this.routingTable.add(device);
         for (OnRoutingTableUpdateListener listener : listeners)
             listener.OnDeviceAdded(device);
     }
 
-    public void removeDevice(Device device) {
+    public boolean removeDevice(Device device) {
         boolean removed = this.routingTable.remove(device);
         if (removed) {
             for (OnRoutingTableUpdateListener listener : listeners)
@@ -46,6 +47,7 @@ public class RoutingTable {
         } else {
             Log.e(TAG, "removeDevice: Failed");
         }
+        return removed;
     }
 
     public void subscribeToUpdates(OnRoutingTableUpdateListener listener) {

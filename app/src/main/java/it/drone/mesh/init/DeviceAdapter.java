@@ -28,6 +28,8 @@ import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Device;
 import it.drone.mesh.server.BLEServer;
 
+import static it.drone.mesh.common.Constants.DEMO_RUN;
+
 public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
 
     private static final String TEST_MESSAGE = "I AM A TEST MESSAGE";
@@ -53,6 +55,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
                 new Handler(Looper.getMainLooper()).post(() -> notifyDataSetChanged());
             }
         });
+
     }
 
 
@@ -74,7 +77,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         SpannableString spannableOutput = new SpannableString(device.getOutput());
         Selection.setSelection(spannableOutput, spannableOutput.length());
         deviceViewHolder.output.setText(spannableOutput, TextView.BufferType.SPANNABLE);
-   
+
         deviceViewHolder.testButton.setOnClickListener(view -> {
             if (deviceViewHolder.messageToSend.getText().length() > 0) {
                 String messageToSend = deviceViewHolder.messageToSend.getText().toString();
@@ -124,17 +127,18 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         else
             myId = "MY_ID_UNAVAILABLE";
 
-        String[] info = message.split(";;");
-        try {
-            Utility.saveData(Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, Arrays.asList(myId, destinationId, info[0], info[1]));
-        } catch (IOException e) {
-            Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
-            e.printStackTrace();
+        if (!DEMO_RUN) {
+            String[] info = message.split(";;");
+            try {
+                Utility.saveData(Arrays.asList("MY_ID", "DESTINATION_ID", "START_TIME", "HOP"), Utility.BETA_FILENAME_SENT, Arrays.asList(myId, destinationId, info[0], info[1]));
+            } catch (IOException e) {
+                Log.e(TAG, "sendMessage: OUD: Levate sto OUD e controllate la stacktrace");
+                e.printStackTrace();
+            }
         }
 
         if (client != null) {
             client.sendMessage(message, destinationId, internet, listener);
-            //Log.d(TAG, "OUD: " + "Messaggio inviato: " + res);
         } else if (server != null) {
             server.sendMessage(message, destinationId, internet, listener);
         } else {
@@ -152,18 +156,20 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         client.addReceivedListener((idMitt, message, numHop, sentTimeStamp) -> {
             for (Device device : devices) {
                 if (device.getId().equals(idMitt)) {
-                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sentTimeStamp) + ", Message: " + message + ", Hop: " + numHop);
+                    device.writeOutput("Time: " + Math.abs((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sentTimeStamp) + ", Message: " + message + ", Hop: " + numHop);
                 }
             }
 
             new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
 
-            String myId = client.getId();
-            try {
-                Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - sentTimeStamp, numHop));
-            } catch (IOException e) {
-                Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
-                e.printStackTrace();
+            if (!DEMO_RUN) {
+                String myId = client.getId();
+                try {
+                    Utility.saveData(Arrays.asList("MY_ID", "SENDER_ID", "DELIVERY_TIME", "HOP"), Utility.BETA_FILENAME_RECEIVED, Arrays.asList(myId, idMitt, System.currentTimeMillis() - sentTimeStamp, numHop));
+                } catch (IOException e) {
+                    Log.e(TAG, "sendMessage: OUD : Levate sto OUD e controllate la stacktrace");
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -173,7 +179,7 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         server.addOnMessageReceivedListener((idMitt, message, hop, sendTimeStamp) -> {
             for (Device device : devices) {
                 if (device.getId().equals(idMitt)) {
-                    device.writeOutput("Time: " + ((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sendTimeStamp) + ", Message: " + message + ", NumHop: " + hop);
+                    device.writeOutput("Time: " + Math.abs((System.currentTimeMillis() + (offset == Constants.NO_OFFSET ? 0 : offset)) - sendTimeStamp) + ", Message: " + message + ", NumHop: " + hop);
                     new Handler(Looper.getMainLooper()).post(this::notifyDataSetChanged);
                 }
             }

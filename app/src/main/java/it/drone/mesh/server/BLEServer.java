@@ -36,6 +36,7 @@ import static it.drone.mesh.common.Constants.SCAN_PERIOD_MIN;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 /**
+ * This class implements the functionalities needed by a BLE Server in our BLE network. It masks the complexity of the job done in the lower tier, the AcceptBLETask
  * BLEServer ha il compito di offrire un servizio che implementi le seguenti funzioni:
  * 1) Fornire identità nella sottorete
  * 2) Permettere lo scambio di messaggi nella sottorete e nelle altre reti
@@ -98,6 +99,11 @@ public class BLEServer {
         this.lastServerIdFound = lastServerIdFound;
     }
 
+    /**
+     * routine to ask the id to the near servers in order to create the initial map of near servers and, in case there are enough server, to have a list of near servers to connect as a client
+     *
+     * @param offset the offset of the list in the near servers list
+     */
     private void askIdToNearServer(final int offset) {
         final int size = ServerList.getServerList().size();
         if (offset >= size) {
@@ -116,7 +122,7 @@ public class BLEServer {
             }
         } else {
             final Server newServer = ServerList.getServer(offset);
-            debugMessageListener.OnDebugMessage( "OUD: " + "Try reading ID of : " + newServer.getUserName());
+            debugMessageListener.OnDebugMessage("OUD: " + "Try reading ID of : " + newServer.getUserName());
             final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
             BluetoothGattCallback callback = new BluetoothGattCallback() {
                 @Override
@@ -179,8 +185,7 @@ public class BLEServer {
                             connectBLE.setJobDone();
                             askIdToNearServer(offset + 1);
                         }
-                    }
-                    else {
+                    } else {
                         connectBLE.setJobDone();
                         askIdToNearServer(offset + 1);
                     }
@@ -192,6 +197,9 @@ public class BLEServer {
         }
     }
 
+    /**
+     * initialize the scanning phase
+     */
     private void startScanning() {
         if (!isServiceStarted) return;
         isScanning = true;
@@ -217,13 +225,14 @@ public class BLEServer {
             mBluetoothLeScanner.startScan(Utility.buildScanFilters(), Utility.buildScanSettings(), mScanCallback);
 
         } else {
-            debugMessageListener.OnDebugMessage( "startScanning: Scanning already started ");
+            debugMessageListener.OnDebugMessage("startScanning: Scanning already started ");
         }
     }
 
     private void initializeServer() {
         if (!isServiceStarted) return;
-        if(acceptBLETask == null) this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
+        if (acceptBLETask == null)
+            this.acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
         debugMessageListener.OnDebugMessage("Stopping Scanning");
         // Stop the scan, wipe the callback.
         mBluetoothLeScanner.stopScan(mScanCallback);
@@ -246,7 +255,7 @@ public class BLEServer {
             if (acceptBLETask != null) {
                 acceptBLETask.stopServer();
                 acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
-                acceptBLETask = new AcceptBLETask(mBluetoothAdapter,mBluetoothManager,context);
+                acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
                 nearDeviceMap.clear();
                 attemptsUntilServer = 1;
                 lastServerIdFound = new byte[2];
@@ -254,7 +263,7 @@ public class BLEServer {
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");
             if (isScanning) {
-                debugMessageListener.OnDebugMessage( "stopServer: Stopping Scanning");
+                debugMessageListener.OnDebugMessage("stopServer: Stopping Scanning");
 
                 // Stop the scan, wipe the callback(or maybe not).
                 mBluetoothLeScanner.stopScan(mScanCallback);
@@ -267,46 +276,56 @@ public class BLEServer {
     }
 
     public void setOnDebugMessageListener(Listeners.OnDebugMessageListener l) {
-        this.debugMessageListener= l;
+        this.debugMessageListener = l;
     }
 
     public void addConnectionRejectedListener(AcceptBLETask.OnConnectionRejectedListener connectionRejectedListeners) {
-        if(acceptBLETask != null) this.acceptBLETask.addConnectionRejectedListener(connectionRejectedListeners);
+        if (acceptBLETask != null)
+            this.acceptBLETask.addConnectionRejectedListener(connectionRejectedListeners);
     }
 
     public void removeConnectionRejectedListener(AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener) {
-        if(acceptBLETask != null) this.acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
+        if (acceptBLETask != null)
+            this.acceptBLETask.removeConnectionRejectedListener(connectionRejectedListener);
     }
 
     public void addRoutingTableUpdatedListener(AcceptBLETask.OnRoutingTableUpdatedListener routingTableUpdatedListener) {
-        if(acceptBLETask != null) this.acceptBLETask.addRoutingTableUpdatedListener(routingTableUpdatedListener);
+        if (acceptBLETask != null)
+            this.acceptBLETask.addRoutingTableUpdatedListener(routingTableUpdatedListener);
     }
 
     public void removeRoutingTableUpdatedListener(AcceptBLETask.OnRoutingTableUpdatedListener routingTableUpdatedListener) {
-        if(acceptBLETask != null) this.acceptBLETask.removeRoutingTableUpdatedListener(routingTableUpdatedListener);
+        if (acceptBLETask != null)
+            this.acceptBLETask.removeRoutingTableUpdatedListener(routingTableUpdatedListener);
     }
 
     public void addOnMessageReceivedWithInternet(Listeners.OnMessageWithInternetListener listener) {
-        if(acceptBLETask != null) this.acceptBLETask.addOnMessageReceivedWithInternet(listener);
+        if (acceptBLETask != null) this.acceptBLETask.addOnMessageReceivedWithInternet(listener);
     }
 
     public void addServerInitializedListener(Listeners.OnServerInitializedListener l) {
-        Log.d(TAG, "OUD: " + (acceptBLETask==null));
-        if(acceptBLETask != null) this.acceptBLETask.addServerInitializedListener(l);
+        Log.d(TAG, "OUD: " + (acceptBLETask == null));
+        if (acceptBLETask != null) this.acceptBLETask.addServerInitializedListener(l);
     }
 
     public void removeServerInitializedListener(Listeners.OnServerInitializedListener l) {
-        if(acceptBLETask != null) this.acceptBLETask.removeServerInitializedListener(l);
+        if (acceptBLETask != null) this.acceptBLETask.removeServerInitializedListener(l);
     }
 
     public String getId() {
-        if(acceptBLETask != null) return acceptBLETask.getId();
+        if (acceptBLETask != null) return acceptBLETask.getId();
         else return null;
     }
 
+    /**
+     * @param message  the message to send
+     * @param dest     the id of the recipient in string form, like "21"
+     * @param internet if the message have to be sent to the internet
+     * @param listener the listener to update the upper layer if the message has been sent or not
+     */
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener listener) {
         if (acceptBLETask != null)
-            acceptBLETask.sendMessage(message,getId(), dest, internet, listener);
+            acceptBLETask.sendMessage(message, getId(), dest, internet, listener);
         else listener.OnCommunicationError("Server not initialized");
     }
 

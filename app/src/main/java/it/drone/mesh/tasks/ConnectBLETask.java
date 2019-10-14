@@ -16,7 +16,6 @@ import android.widget.Toast;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.zip.CheckedOutputStream;
 
 import it.drone.mesh.common.Constants;
 import it.drone.mesh.common.RoutingTable;
@@ -24,6 +23,10 @@ import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Server;
 
+
+/**
+ * lower tier del BLEClient, implementa le varie primitive di invio e ricezione messaggi, l'inizializzazione del client e la gestione degli errori di base
+ */
 public class ConnectBLETask {
     private final static String TAG = ConnectBLETask.class.getName();
 
@@ -67,11 +70,12 @@ public class ConnectBLETask {
                     Log.d(TAG, "OUD: onConnectionStateChange: discover services :" + res);
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "OUD: " + "onConnectionStateChange: disco  ");
-                    if (onDisconnectedServerListener != null) onDisconnectedServerListener.OnDisconnectedServer(serverId,Constants.FLAG_SUSPECTED_DEAD);
+                    if (onDisconnectedServerListener != null)
+                        onDisconnectedServerListener.OnDisconnectedServer(serverId, Constants.FLAG_SUSPECTED_DEAD);
                     else {
                         serverId = "";
-                        Log.d(TAG, "OUD: id :  " + getId() + (hasCorrectId()))  ;
-                        if(hasCorrectId()) OnConnectionLostListener.OnConnectionLost();
+                        Log.d(TAG, "OUD: id :  " + getId() + (hasCorrectId()));
+                        if (hasCorrectId()) OnConnectionLostListener.OnConnectionLost();
                     }
                     /*boolean res = gatt.readDescriptor(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicUUID).getDescriptor(Constants.DescriptorUUID));
                     Log.d(TAG, "OUD: " + "onConnectionStateChange: res del read descriptor " + res);*/
@@ -83,7 +87,7 @@ public class ConnectBLETask {
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
                 Log.d(TAG, "OUD: " + "GATT: " + gatt.toString());
                 Log.d(TAG, "OUD: " + "I discovered a service");
-                for (BluetoothGattService s: gatt.getServices()) {
+                for (BluetoothGattService s : gatt.getServices()) {
                     Log.d(TAG, "OUD: onServicesDiscovered: service uuid: " + s.getUuid());
                 }
 
@@ -92,7 +96,7 @@ public class ConnectBLETask {
                     return;
                 }
                 Log.d(TAG, "OUD: service : " + service.getUuid().toString());
-                for (BluetoothGattCharacteristic s: service.getCharacteristics()) {
+                for (BluetoothGattCharacteristic s : service.getCharacteristics()) {
                     Log.d(TAG, "OUD: onServicesDiscovered: characteristic uuid: " + s.getUuid());
                 }
                 BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.CharacteristicUUID);
@@ -106,8 +110,7 @@ public class ConnectBLETask {
                     boolean res = gatt.writeDescriptor(desc);
                     Log.d(TAG, "OUD: " + "Writing descriptor SERVER DEAD? " + desc.getUuid() + " ---> " + res);
                     Utility.printByte(lastServerIdFound[0]);
-                }
-                else {
+                } else {
                     BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
                     boolean res = gatt.readDescriptor(desc);
                     Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
@@ -191,7 +194,7 @@ public class ConnectBLETask {
 
                 byte sorgByte = value[0];
                 byte destByte = value[1];
-                if(sorgByte == (byte) 255 && destByte == (byte) 255 && value[2] == (byte) 255) {
+                if (sorgByte == (byte) 255 && destByte == (byte) 255 && value[2] == (byte) 255) {
                     if (onDisconnectedServerListener != null) {
                         Log.d(TAG, "OUD: SERVER DEAD");
                         onDisconnectedServerListener.OnDisconnectedServer(serverId, Constants.FLAG_DEAD);
@@ -316,8 +319,7 @@ public class ConnectBLETask {
                     }
 
 
-                }
-                else if(descriptor.getUuid().equals(Constants.DescriptorCheckAliveUUID)) {
+                } else if (descriptor.getUuid().equals(Constants.DescriptorCheckAliveUUID)) {
                     lastServerIdFound[0] = 0b00000000;
                     lastServerIdFound[1] = 0b00000000;
                     BluetoothGattDescriptor desc = descriptor.getCharacteristic().getDescriptor(Constants.DescriptorUUID);
@@ -426,11 +428,11 @@ public class ConnectBLETask {
     }
 
     public void stopClient() {
-        if((temporaryClient && mGatt != null) || serverId.equals("") || !hasCorrectId()) {
+        if ((temporaryClient && mGatt != null) || serverId.equals("") || !hasCorrectId()) {
             Log.d(TAG, "OUD: Sono un client temporaneo sto morendo");
             Utility.printByte(lastServerIdFound[0]);
             Utility.printByte(lastServerIdFound[1]);
-            if (mGatt!= null) {
+            if (mGatt != null) {
                 mGatt.close();
                 mGatt = null;
             }
@@ -500,9 +502,11 @@ public class ConnectBLETask {
     public void removeReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
         this.internetListeners.remove(l);
     }
-    public void addDisconnectedServerListener(Listeners.OnDisconnectedServerListener l){
+
+    public void addDisconnectedServerListener(Listeners.OnDisconnectedServerListener l) {
         this.onDisconnectedServerListener = l;
     }
+
     public void setLastServerIdFound(byte[] s) {
         lastServerIdFound = s;
     }
@@ -511,14 +515,17 @@ public class ConnectBLETask {
         this.temporaryClient = true;
         this.mGattCallback = callback;
     }
+
     public void setJobDone() {
         jobDone = true;
         stopClient();
         if (this.onJobDoneListener != null) onJobDoneListener.OnJobDone();
     }
+
     public boolean getJobDone() {
         return jobDone;
     }
+
     public BluetoothGatt getmGatt() {
         return mGatt;
     }
@@ -526,9 +533,11 @@ public class ConnectBLETask {
     public void setOnJobDoneListener(Listeners.OnJobDoneListener l) {
         this.onJobDoneListener = l;
     }
+
     public void setOnConnectionLostListener(Listeners.OnConnectionLost l) {
         this.OnConnectionLostListener = l;
     }
+
     public void restartClient() {
         Log.d(TAG, "OUD: restartClient");
         stopClient();

@@ -10,7 +10,6 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.util.LinkedList;
-import java.util.Objects;
 
 import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
@@ -21,6 +20,9 @@ import it.drone.mesh.tasks.ConnectBLETask;
 
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
+/**
+ * This class implements the functionalities needed by a BLE client in our BLE network. It masks the complexity of the job done in the lower tier, the ConnectBLETask
+ */
 public class BLEClient {
 
     private static final String TAG = BLEClient.class.getSimpleName();
@@ -71,14 +73,13 @@ public class BLEClient {
     }
 
     public void setLastServerIdFound(byte[] lastServerIdFound) {
-        if(lastServerIdFound != null) {
+        if (lastServerIdFound != null) {
             Log.d(TAG, "OUD: " + "setLastServerIdFound: 1: " + (int) lastServerIdFound[0] + ", 2:" + (int) lastServerIdFound[1]);
             Utility.printByte(lastServerIdFound[0]);
             this.lastServerIdFound[0] = lastServerIdFound[0];
             this.lastServerIdFound[1] = lastServerIdFound[1];
             Utility.printByte(this.lastServerIdFound[0]);
-        }
-        else Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
+        } else Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
     }
 
     private void startScanning() {
@@ -114,7 +115,7 @@ public class BLEClient {
         mBluetoothLeScanner.stopScan(mScanCallback);
         mScanCallback = null;
         isScanning = false;
-        new Handler(Looper.getMainLooper()).postDelayed(() -> tryConnection(0),1000);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> tryConnection(0), 1000);
     }
 
     private void tryConnection(final int offset) {
@@ -135,19 +136,21 @@ public class BLEClient {
                 Log.d(TAG, "OUD: " + "tryConnection with: " + newServer.getUserName());
                 final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
 
-                if(lastServerIdFound == null) Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
+                if (lastServerIdFound == null)
+                    Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
                 Utility.printByte(lastServerIdFound[0]);
                 Utility.printByte(lastServerIdFound[1]);
-                if (lastServerIdFound[0] != (byte) 0) connectBLE.setLastServerIdFound(lastServerIdFound);
+                if (lastServerIdFound[0] != (byte) 0)
+                    connectBLE.setLastServerIdFound(lastServerIdFound);
                 //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
-                connectBLE.setOnConnectionLostListener(()->{
+                connectBLE.setOnConnectionLostListener(() -> {
                     OnConnectionListener.OnConnectionLost();
                 });
                 connectBLE.startClient();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (connectBLE.hasCorrectId()) {
                         connectBLETask = connectBLE;
-                        for (OnClientOnlineListener l: listeners) {
+                        for (OnClientOnlineListener l : listeners) {
                             l.onClientOnline();
                         }
                         serverDevice = newServer.getBluetoothDevice();
@@ -168,6 +171,9 @@ public class BLEClient {
         startScanning();
     }
 
+    /**
+     * @param newServer the server to connect, without scan etcetc.
+     */
     public void startClient(Server newServer) {
         final ConnectBLETask connectBLE = new ConnectBLETask(newServer, context);
         //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
@@ -188,7 +194,7 @@ public class BLEClient {
     }
 
     public void stopClient() {
-        if(connectBLETask != null) {
+        if (connectBLETask != null) {
             connectBLETask.stopClient();
             connectBLETask = null;
         }
@@ -205,37 +211,42 @@ public class BLEClient {
     }
 
     public void addReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
-        if(connectBLETask != null) this.connectBLETask.addReceivedListener(onMessageReceivedListener);
+        if (connectBLETask != null)
+            this.connectBLETask.addReceivedListener(onMessageReceivedListener);
     }
 
     public void removeReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {
-        if(connectBLETask != null) this.connectBLETask.removeReceivedListener(onMessageReceivedListener);
+        if (connectBLETask != null)
+            this.connectBLETask.removeReceivedListener(onMessageReceivedListener);
     }
 
     public void addReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
-        if(connectBLETask != null) this.connectBLETask.addReceivedWithInternetListener(l);
+        if (connectBLETask != null) this.connectBLETask.addReceivedWithInternetListener(l);
     }
+
     public void addDisconnectedServerListener(Listeners.OnDisconnectedServerListener l) {
-        if(connectBLETask != null) this.connectBLETask.addDisconnectedServerListener(l);
+        if (connectBLETask != null) this.connectBLETask.addDisconnectedServerListener(l);
     }
 
     public void removeReceivedWithInternetListener(Listeners.OnMessageWithInternetListener l) {
-        if(connectBLETask != null) this.connectBLETask.removeReceivedWithInternetListener(l);
+        if (connectBLETask != null) this.connectBLETask.removeReceivedWithInternetListener(l);
     }
 
     public void sendMessage(String message, String dest, boolean internet, Listeners.OnMessageSentListener onMessageSentListener) {
-        if(connectBLETask != null) connectBLETask.sendMessage(message,dest,internet,onMessageSentListener);
-        else onMessageSentListener.OnCommunicationError("Client non inizializzato");
+        if (connectBLETask != null)
+            connectBLETask.sendMessage(message, dest, internet, onMessageSentListener);
+        else onMessageSentListener.OnCommunicationError("Client not initialized");
     }
 
     public String getId() {
-        if(connectBLETask != null) return connectBLETask.getId();
+        if (connectBLETask != null) return connectBLETask.getId();
         else return null;
     }
 
-    public interface OnClientOnlineListener{
+    public interface OnClientOnlineListener {
         void onClientOnline();
     }
+
     public void setOnConnectionLostListener(Listeners.OnConnectionLost l) {
         OnConnectionListener = l;
     }

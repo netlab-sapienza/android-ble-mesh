@@ -494,7 +494,7 @@ public class InitActivity extends Activity {
      * Subscribe the activity to routing table updates and when the number of devices reaches Costants.SIZE_OF_NETWORK takes the time
      */
     private void initializeConvergenceNetworkTimeTest() {
-        if(alreadyInizialized) return;
+        if (alreadyInizialized) return;
         else alreadyInizialized = true;
 
         startTime = System.nanoTime();
@@ -507,7 +507,7 @@ public class InitActivity extends Activity {
                     long convergenceTime = (endTime - startTime) / 1000000;
                     cleanDebug();
                     writeDebug("Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime);
-                    new Handler(Looper.getMainLooper()).post(()-> Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show());
+                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(InitActivity.this, "Network convergence reached! Number of devices: " + SIZE_OF_NETWORK + ", Time (millis): " + convergenceTime, Toast.LENGTH_SHORT).show());
                 }
 
             }
@@ -521,13 +521,17 @@ public class InitActivity extends Activity {
 
 
     /**
-     * Controlla che l'app sia eseguibile e inizia lo scanner
+     * Clean the field debugger
      */
-
     private void cleanDebug() {
         runOnUiThread(() -> debugger.setText(""));
     }
 
+    /**
+     * Write a message debug into log and text debugger. The message will be logged into the debug logger.
+     *
+     * @param message message to be written
+     */
     private void writeDebug(final String message) {
         runOnUiThread(() -> {
             if (debugger.getLineCount() == debugger.getMaxLines())
@@ -538,6 +542,11 @@ public class InitActivity extends Activity {
         Log.d(TAG, "OUD: " + message);
     }
 
+    /**
+     * Write a message debug into log and text debugger. The message will be logged into the error logger.
+     *
+     * @param message message to be written
+     */
     private void writeErrorDebug(final String message) {
         runOnUiThread(() -> {
             if (debugger.getLineCount() == debugger.getMaxLines())
@@ -703,10 +712,8 @@ public class InitActivity extends Activity {
                             resolvable.startResolutionForResult(
                                     InitActivity.this,
                                     REQUEST_CHECK_SETTINGS);
-                        } catch (IntentSender.SendIntentException e) {
+                        } catch (IntentSender.SendIntentException | ClassCastException e) {
                             // Ignore the error.
-                            writeErrorDebug("GPS: " + e.getMessage());
-                        } catch (ClassCastException e) {
                             writeErrorDebug("GPS: " + e.getMessage());
                         }
                         break;
@@ -746,6 +753,11 @@ public class InitActivity extends Activity {
         }
     }
 
+    /**
+     * Makes a tweet into the feed of the account corresponding the parameters passed to the application
+     *
+     * @param tweetToUpdate body of the tweet
+     */
     private void tweetSomething(String tweetToUpdate) {
         HandlerThread handlerThread = new HandlerThread("Twitter");
         handlerThread.start();
@@ -761,7 +773,14 @@ public class InitActivity extends Activity {
         });
     }
 
-
+    /**
+     * Send an email
+     *
+     * @param destEmail destination email address
+     * @param body      body field of the email
+     * @param idMitt    id of the sender
+     * @throws IOException if configuration files were not passed
+     */
     private void sendAMail(final String destEmail, String body, final String idMitt) throws IOException {
         Properties properties = new Properties();
         InputStream inputStream =
@@ -792,7 +811,6 @@ public class InitActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "OUD: " + "onDestroy: Stommorendo");
         if (isServiceStarted) {
             if (client != null) {
                 client.stopClient();

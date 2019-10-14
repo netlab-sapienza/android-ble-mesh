@@ -50,20 +50,38 @@ public class Utility {
     public static int DEST_PACK_MESSAGE_LEN = 16;
     private static String TAG = Utility.class.getSimpleName();
 
+    /**
+     * @param val    byte to read
+     * @param offset the offset of the bit to return
+     * @return 1 if the Nth bit is 1 or 0 otherwise
+     */
     public static int getBit(byte val, int offset) {
         return (val >> offset) & 1;
     }
 
+    /**
+     * @param val    byte to read
+     * @param offset offset the offset of the bit to return
+     * @return the byte with the Nth bit set to 1
+     */
     public static byte setBit(byte val, int offset) {
         val |= 1 << offset;
         return val;
     }
 
+    /**
+     * @param val    byte to read
+     * @param offset offset the offset of the bit to return
+     * @return the byte with the Nth bit set to 0
+     */
     public static byte clearBit(byte val, int offset) {
         val = (byte) (val & ~(1 << offset));
         return val;
     }
 
+    /**
+     * @param b just print the byte in the logs
+     */
     public static void printByte(byte b) {
         String s = "";
         for (int i = 7; i > -1; i--) {
@@ -72,6 +90,11 @@ public class Utility {
         Log.d(TAG, "OUD: " + s);
     }
 
+    /**
+     * @param serverId id of the destination server
+     * @param clientId id of the destination client
+     * @return a byte where first 4 bytes are for server id, 3 for client id and the last (used to indicate if it is the last message in normal messages) is set to 1
+     */
     public static byte byteMessageBuilder(int serverId, int clientId) {
         byte b = 0b00000000;
 
@@ -89,6 +112,11 @@ public class Utility {
         return b;
     }
 
+    /**
+     * @param server1Id id of the a server
+     * @param server2Id id of the another server
+     * @return byte where first half is used to store server1Id and second half for server2Id, used in routing table
+     */
     public static byte byteNearServerBuilder(int server1Id, int server2Id) {
         byte b = 0b00000000;
 
@@ -106,6 +134,13 @@ public class Utility {
         return b;
     }
 
+    /**
+     * @param firstByte contains infos (serverId + clientId + flags) about the sender of the message
+     * @param destByte  contains infos (serverId + clientId + flags) about the destination of the message
+     * @param sInByte   string message in bytes
+     * @param internet  true if the message needs internet, false otherwise
+     * @return list of packets ready to be sent
+     */
     public static byte[][] messageBuilder(byte firstByte, byte destByte, byte[] sInByte, boolean internet) {
         //  Log.d(TAG, "OUD: messageBuilder: length message :" + sInByte.length);
         byte[][] finalMessage;
@@ -141,10 +176,23 @@ public class Utility {
         return finalMessage;
     }
 
+    /**
+     * Utility to pass the message as a string instead of byte-Array
+     *
+     * @param firstByte contains infos (serverId + clientId + flags) about the sender of the message
+     * @param destByte  contains infos (serverId + clientId + flags) about the destination of the message
+     * @param message   string message
+     * @param internet  true if the message needs internet, false otherwise
+     * @return list of packets ready to be sent
+     */
     public static byte[][] messageBuilder(byte firstByte, byte destByte, String message, boolean internet) {
         return messageBuilder(firstByte, destByte, message.getBytes(), internet);
     }
 
+    /**
+     * @param firstByte first byte of a message packet, where sender infos are written
+     * @return easy to read, int-Array, ret[0] is server Id, ret[1] client Id and ret[2] the flag bit
+     */
     public static int[] getByteInfo(byte firstByte) {
         int[] ret = new int[3];
         ret[2] = getBit(firstByte, 0);
@@ -153,6 +201,11 @@ public class Utility {
         return ret;
     }
 
+
+    /**
+     * @param firstByte first byte of a routing table packet, where sender infos are written
+     * @return easy to read, int-Array, ret[0] is a server Id, ret[1] another server Id
+     */
     public static int[] getIdServerByteInfo(byte firstByte) {
         int[] ret = new int[2];
         ret[1] = getBit(firstByte, 0) + getBit(firstByte, 1) * 2 + getBit(firstByte, 2) * 4 + getBit(firstByte, 3) * 8;
@@ -160,6 +213,10 @@ public class Utility {
         return ret;
     }
 
+    /**
+     * @param firstByte first byte of a message packet, where sender infos are written
+     * @return a string representation of the Id
+     */
     public static String getStringId(byte firstByte) {
         int[] ret = new int[2];
         ret[1] = getBit(firstByte, 1) + getBit(firstByte, 2) * 2 + getBit(firstByte, 3) * 4;
@@ -167,6 +224,10 @@ public class Utility {
         return ret[0] + "" + ret[1];
     }
 
+    /**
+     * @param id string representation of the Id
+     * @return easy to read, int-Array, ret[0] is server Id, ret[1] client Id
+     */
     public static int[] getIdArrayByString(String id) {
         int[] res = new int[2];
         Log.d(TAG, "getIdArrayByString: id: " + id);
@@ -179,6 +240,12 @@ public class Utility {
         return res;
     }
 
+    /**
+     * @param packet       the packet to send
+     * @param gatt         the gatt of the receiver
+     * @param onPacketSent listener to be called when the packet is successfully sent
+     * @return true if the characteristic is successfully write, false otherwise
+     */
     public static boolean sendPacket(byte[] packet, BluetoothGatt gatt, Listeners.OnPacketSentListener onPacketSent) {
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
         if (service == null) return false;
@@ -197,6 +264,12 @@ public class Utility {
         return res;
     }
 
+    /**
+     * @param packet       the routing table packet ro send
+     * @param gatt         the gatt of the receiver
+     * @param onPacketSent listener to be called when the packet is successfully sent
+     * @return true if the characteristic is successfully write, false otherwise
+     */
     public static boolean sendRoutingTablePacket(byte[] packet, BluetoothGatt gatt, Listeners.OnPacketSentListener onPacketSent) {
         BluetoothGattService service = gatt.getService(Constants.ServiceUUID);
         if (service == null) return false;
@@ -251,6 +324,16 @@ public class Utility {
         return builder.build();
     }
 
+    /**
+     * creates a client to broadcast the routing table to other servers
+     *
+     * @param device    the device of the destination server
+     * @param routingId version of the routing table
+     * @param context   context
+     * @param value     the routing table
+     * @param id        sender server Id
+     * @return the task that sends the routing table to the specified server
+     */
     public static ConnectBLETask createBroadcastRoutingTableClient(BluetoothDevice device, final String routingId, Context context, final byte[] value, final String id) {
         boolean[] resultHolder = new boolean[1];
         int[] indexHolder = new int[1];
@@ -260,7 +343,7 @@ public class Utility {
 
         byte[][] finalMessage = messageBuilder(byteMessageBuilder(infoSorg[0], infoSorg[1]), byteNearServerBuilder(0, 0), new String(value), false);
 
-        ConnectBLETask client =  new ConnectBLETask(new Server(device, device.getName()), context);
+        ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
         BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -353,6 +436,10 @@ public class Utility {
         return client;
     }
 
+    /**
+     * @param mapString a "string" representation of the actual map of servers and clients in the network
+     * @return the string translated to bytes and divided in ServerNode.MAX_NUM_SERVER packets
+     */
     public static byte[][] buildMapFromString(String mapString) {
         byte[][] res = new byte[ServerNode.MAX_NUM_SERVER][ServerNode.SERVER_PACKET_SIZE];
         byte[] mapByte = mapString.getBytes();
@@ -368,6 +455,12 @@ public class Utility {
         return res;
     }
 
+    /**
+     * @param device  the device of the destination server
+     * @param context context
+     * @param value   the next server ID to be sent
+     * @return the client that sends the next server ID to the specified server
+     */
     public static ConnectBLETask createBroadCastNextServerIdClient(BluetoothDevice device, Context context, final byte[] value) {
         Server u = new Server(device, device.getName());
         ConnectBLETask client = new ConnectBLETask(u, context);
@@ -429,6 +522,12 @@ public class Utility {
         return client;
     }
 
+    /**
+     * @param mBluetoothAdapter bluetooth adapter
+     * @param nearMapDevice     the list of <Id, bluetoothDevice> that represents the near servers
+     * @param nuovoId           id of the server we are looking for
+     * @param listener          the listener called when the new server is found or not
+     */
     public static void updateServerToAsk(BluetoothAdapter mBluetoothAdapter, final HashMap<String, BluetoothDevice> nearMapDevice, final String nuovoId, final Listeners.OnNewServerDiscoveredListener listener) {
         final BluetoothLeScanner mBluetoothScan = mBluetoothAdapter.getBluetoothLeScanner();
         final ScanCallback mScanCallback = new ScanCallback() {
@@ -496,6 +595,13 @@ public class Utility {
         writer.close();
     }
 
+    /**
+     * @param device   the device of the destination server
+     * @param serverId the server ID
+     * @param clientId the new client ID
+     * @param context  context
+     * @return the client that sends the new client ID to the specified server
+     */
     public static ConnectBLETask createBroadcastNewClientOnline(BluetoothDevice device, final int serverId, final int clientId, Context context) {
         ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
         BluetoothGattCallback callback = new BluetoothGattCallback() {
@@ -550,9 +656,15 @@ public class Utility {
         return client;
     }
 
+    /**
+     * @param device   the device of the destination server
+     * @param clientId the ID of the client with internet
+     * @param context  context
+     * @return the client that sends the client ID to the specified server
+     */
     public static ConnectBLETask createBroadcastClientWithInternet(BluetoothDevice device, final String clientId, Context context) {
 
-        ConnectBLETask client =  new ConnectBLETask(new Server(device, device.getName()), context);
+        ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
         BluetoothGattCallback callback = new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -605,6 +717,12 @@ public class Utility {
         return client;
     }
 
+    /**
+     * Check if the devices is online or not
+     *
+     * @param context getApplicationContext
+     * @return true iff online
+     */
     public static boolean isDeviceOnline(Context context) {
         ConnectivityManager cm =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -612,6 +730,12 @@ public class Utility {
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
+    /**
+     * @param device  the device of the destination server
+     * @param message the id of the disconnected node of the network
+     * @param context context
+     * @return the client that sends the disconnected node ID to the specified server
+     */
     public static ConnectBLETask createBroadcastSomeoneDisconnectedClient(BluetoothDevice device, byte[] message, Context context) {
         ConnectBLETask client = new ConnectBLETask(new Server(device, device.getName()), context);
         BluetoothGattCallback callback = new BluetoothGattCallback() {
@@ -664,8 +788,7 @@ public class Utility {
                         BluetoothGattCharacteristic chara = gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID);
                         chara.setValue(suspectedServerId.getBytes());
                         gatt.writeCharacteristic(gatt.getService(Constants.ServiceUUID).getCharacteristic(Constants.CharacteristicNextServerIdUUID));
-                    }
-                    else {
+                    } else {
                         client.setJobDone();
                     }
                 }
@@ -675,7 +798,7 @@ public class Utility {
 
             @Override
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-                if (status== BluetoothGatt.GATT_SUCCESS) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d(TAG, "OUD: I wrote characteristic NEXT SERVER ID" + new String(characteristic.getValue()));
                     client.setJobDone();
                 }

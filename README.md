@@ -1,5 +1,6 @@
 
 BE Mesh: A Bluetooth Low Energy Mesh Network
+[![Twitter URL](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/MeshBle)
 ===================================
 
 <img align="left" src="https://www.uniroma1.it/sites/default/files/images/logo/sapienza-big.png"/>

@@ -21,7 +21,7 @@ import it.drone.mesh.tasks.ConnectBLETask;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 /**
- * This class implements the functionalities needed by a BLE client in our BLE network. It masks the complexity of the job done in the lower tier, the ConnectBLETask
+ * This class implements the functionality needed by a BLE client in our BLE network. It masks the complexity of the job done in the lower tier, the ConnectBLETask
  */
 public class BLEClient {
 
@@ -30,8 +30,6 @@ public class BLEClient {
     private static final long HANDLER_PERIOD = 5000;
     private static BLEClient singleton;
     private Context context;
-    private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothManager mBluetoothManager;
     private ConnectBLETask connectBLETask;
     private BluetoothLeScanner mBluetoothLeScanner;
     private ServerScanCallback mScanCallback;
@@ -44,8 +42,9 @@ public class BLEClient {
 
     private BLEClient(Context context) {
         this.context = context;
-        mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        BluetoothManager mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        assert mBluetoothManager != null;
+        BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         listeners = new LinkedList<>();
     }
@@ -54,14 +53,6 @@ public class BLEClient {
         if (singleton == null)
             singleton = new BLEClient(context);
         return singleton;
-    }
-
-    public BluetoothAdapter getmBluetoothAdapter() {
-        return mBluetoothAdapter;
-    }
-
-    public BluetoothManager getmBluetoothManager() {
-        return mBluetoothManager;
     }
 
     public ConnectBLETask getConnectBLETask() {

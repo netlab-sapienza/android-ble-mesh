@@ -17,10 +17,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.InputFilter;
 import android.util.Log;
 import android.view.Gravity;
@@ -102,7 +104,6 @@ public class InitActivity extends Activity {
     private long startTime; // Per fare test su tempo convergenza rete;
     private boolean alreadyInizialized;
 
-    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long offset = Constants.NO_OFFSET;
@@ -126,10 +127,10 @@ public class InitActivity extends Activity {
         canIBeServerSwitch.setOnClickListener(view -> {
             if (canIBeServer) {
                 canIBeServer = false;
-                Toast.makeText(getApplicationContext(), "I cannot be a server anymore", Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "I cannot be a server anymore", Toast.LENGTH_LONG).show());
             } else {
                 canIBeServer = true;
-                Toast.makeText(getApplicationContext(), "I can be a server now", Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> Toast.makeText(getApplicationContext(), "I can be a server now", Toast.LENGTH_LONG).show());
             }
         });
 
@@ -140,26 +141,28 @@ public class InitActivity extends Activity {
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
 
-        if (Utility.isDeviceOnline(this) && !DEMO_RUN) {
-            TrueTimeRx.build()
-                    .initializeRx("time.google.com")
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(date -> {
-                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
-                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
-                        deviceAdapter.setOffset(offset);
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
-                    }, throwable -> {
-                        // TODO: 22/01/19 vedere se rilancia un eccezione ogni volta che muore internet 
-                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
-                        throwable.printStackTrace();
-                    });
-        }
+//        if (Utility.isDeviceOnline(this) && !DEMO_RUN) {
+//            // TODO: 03/11/2019 marked for delete
+//            TrueTimeRx.build()
+//                    .initializeRx("time.google.com")
+//                    .subscribeOn(Schedulers.io())
+//                    .subscribe(date -> {
+//                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
+//                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
+//                        deviceAdapter.setOffset(offset);
+//                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
+//                    }, throwable -> {
+//                        // TODO: 22/01/19 vedere se rilancia un eccezione ogni volta che muore internet
+//                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
+//                        throwable.printStackTrace();
+//                    });
+//        }
 
         connectionRejectedListener = () -> {
             writeErrorDebug("Connection Rejected, stopping service");
             startServices.performClick();
         };
+
 
         startServices.setOnClickListener(view -> {
             if (isServiceStarted) {
@@ -281,8 +284,6 @@ public class InitActivity extends Activity {
 
                                 });
                             }
-
-
                         });
 
                     });

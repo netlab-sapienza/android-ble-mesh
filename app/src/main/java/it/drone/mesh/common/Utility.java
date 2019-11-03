@@ -151,11 +151,10 @@ public class Utility {
 
         finalMessage = new byte[numPackToSend][PACK_LEN];
         Log.d(TAG, "OUD: numPack: " + numPackToSend);
-        // Log.d(TAG, "OUD: messageBuilder:Entrata foqr");
         Utility.printByte(firstByte);
         Utility.printByte(destByte);
         if (!internet)
-            destByte = Utility.clearBit(destByte, 0); //perchè il bytemssagebuilder setta sempre l'ultimo bit del byte a 1
+            destByte = Utility.clearBit(destByte, 0); // this is done because the byte message builder sets always the last bit of the byte to 1
         for (int i = 0; i < numPackToSend; i++) {
             if (i == numPackToSend - 1) {
                 byte[] pack = new byte[lastLen + 2];

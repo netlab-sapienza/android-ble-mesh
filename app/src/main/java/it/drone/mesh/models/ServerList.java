@@ -53,14 +53,14 @@ public class ServerList {
             }
         }
 
-        Log.e(TAG, "removeUser: Server not found, Lista: \n" + printList());
+        Log.e(TAG, "removeUser: Server not found, List: \n" + printList());
         return null;
     }
 
     public static String printList() {
         StringBuilder res = new StringBuilder();
-        for (Server i : servers)
-            res.append("Username: ").append(i.getUserName()).append("ID mistico da decidere : none\n");
+        for (Server server : servers)
+            res.append("Username: ").append(server.getUserName()).append("ID: ").append(server.getId()).append("\n");
 
         return res.toString();
     }

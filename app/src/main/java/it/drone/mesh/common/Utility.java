@@ -35,6 +35,11 @@ import it.drone.mesh.models.Server;
 import it.drone.mesh.server.ServerNode;
 import it.drone.mesh.tasks.ConnectBLETask;
 
+import static it.drone.mesh.common.ByteUtility.clearBit;
+import static it.drone.mesh.common.ByteUtility.getBit;
+import static it.drone.mesh.common.ByteUtility.printByte;
+import static it.drone.mesh.common.ByteUtility.setBit;
+
 /**
  * Tutte i metodi e le variabile condivise da server e client (quelle per la scansione per esempio) vengono messi qua.
  * Per il momento sia server che client devono avere accesso alla possiblità di eseguire scansioni, in futuro potrebbe cambiare
@@ -50,45 +55,6 @@ public class Utility {
     public static int DEST_PACK_MESSAGE_LEN = 16;
     private static String TAG = Utility.class.getSimpleName();
 
-    /**
-     * @param val    byte to read
-     * @param offset the offset of the bit to return
-     * @return 1 if the Nth bit is 1 or 0 otherwise
-     */
-    public static int getBit(byte val, int offset) {
-        return (val >> offset) & 1;
-    }
-
-    /**
-     * @param val    byte to read
-     * @param offset offset the offset of the bit to return
-     * @return the byte with the Nth bit set to 1
-     */
-    public static byte setBit(byte val, int offset) {
-        val |= 1 << offset;
-        return val;
-    }
-
-    /**
-     * @param val    byte to read
-     * @param offset offset the offset of the bit to return
-     * @return the byte with the Nth bit set to 0
-     */
-    public static byte clearBit(byte val, int offset) {
-        val = (byte) (val & ~(1 << offset));
-        return val;
-    }
-
-    /**
-     * @param b just print the byte in the logs
-     */
-    public static void printByte(byte b) {
-        String s = "";
-        for (int i = 7; i > -1; i--) {
-            s += getBit(b, i);
-        }
-        Log.d(TAG, "OUD: " + s);
-    }
 
     /**
      * @param serverId id of the destination server
@@ -151,10 +117,10 @@ public class Utility {
 
         finalMessage = new byte[numPackToSend][PACK_LEN];
         Log.d(TAG, "OUD: numPack: " + numPackToSend);
-        Utility.printByte(firstByte);
-        Utility.printByte(destByte);
+        printByte(firstByte);
+        printByte(destByte);
         if (!internet)
-            destByte = Utility.clearBit(destByte, 0); // this is done because the byte message builder sets always the last bit of the byte to 1
+            destByte = clearBit(destByte, 0); // this is done because the byte message builder sets always the last bit of the byte to 1
         for (int i = 0; i < numPackToSend; i++) {
             if (i == numPackToSend - 1) {
                 byte[] pack = new byte[lastLen + 2];
@@ -178,8 +144,8 @@ public class Utility {
     /**
      * Utility to pass the message as a string instead of byte-Array
      *
-     * @param firstByte contains infos (serverId + clientId + flags) about the sender of the message
-     * @param destByte  contains infos (serverId + clientId + flags) about the destination of the message
+     * @param firstByte contains info (serverId + clientId + flags) about the sender of the message
+     * @param destByte  contains info (serverId + clientId + flags) about the destination of the message
      * @param message   string message
      * @param internet  true if the message needs internet, false otherwise
      * @return list of packets ready to be sent
@@ -279,7 +245,7 @@ public class Utility {
         boolean res = gatt.writeCharacteristic(chars);
         gatt.executeReliableWrite();
         for (int i = 0; i < packet.length; i++) {
-            Utility.printByte(packet[i]);
+            printByte(packet[i]);
         }
         Log.d(TAG, "OUD: " + "sent? -> " + res);
         if (onPacketSent != null) {
@@ -319,7 +285,7 @@ public class Utility {
     public static ScanSettings buildScanSettings() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
         builder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
+        //builder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE); // uncomment will work better but wil an high energy consumption
         return builder.build();
     }
 

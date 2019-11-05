@@ -65,6 +65,7 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
+import static it.drone.mesh.common.ByteUtility.clearBit;
 import static it.drone.mesh.common.Constants.DEMO_RUN;
 import static it.drone.mesh.common.Constants.SIZE_OF_NETWORK;
 import static it.drone.mesh.common.Constants.TEST_TIME_OF_CONVERGENCE;
@@ -274,7 +275,7 @@ public class InitActivity extends Activity {
                                     }
                                 });
                                 client.addDisconnectedServerListener((serverId, flags) -> {
-                                    lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
+                                    lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
                                     lastServerIdFound[1] = flags;
                                     new Handler(getMainLooper()).post(() -> startServices.performClick());
                                     new Handler(getMainLooper()).postDelayed(() -> {
@@ -325,7 +326,7 @@ public class InitActivity extends Activity {
                                 }
                             });
                             client.addDisconnectedServerListener((serverId, flags) -> {
-                                lastServerIdFound[0] = Utility.clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
+                                lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
                                 lastServerIdFound[1] = flags;
 
                                 new Handler(getMainLooper()).post(() -> startServices.performClick());

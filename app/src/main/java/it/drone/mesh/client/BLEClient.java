@@ -18,6 +18,7 @@ import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.ConnectBLETask;
 
+import static it.drone.mesh.common.ByteUtility.printByte;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 /**
@@ -66,10 +67,10 @@ public class BLEClient {
     public void setLastServerIdFound(byte[] lastServerIdFound) {
         if (lastServerIdFound != null) {
             Log.d(TAG, "OUD: " + "setLastServerIdFound: 1: " + (int) lastServerIdFound[0] + ", 2:" + (int) lastServerIdFound[1]);
-            Utility.printByte(lastServerIdFound[0]);
+            printByte(lastServerIdFound[0]);
             this.lastServerIdFound[0] = lastServerIdFound[0];
             this.lastServerIdFound[1] = lastServerIdFound[1];
-            Utility.printByte(this.lastServerIdFound[0]);
+            printByte(this.lastServerIdFound[0]);
         } else Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
     }
 
@@ -129,8 +130,8 @@ public class BLEClient {
 
                 if (lastServerIdFound == null)
                     Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
-                Utility.printByte(lastServerIdFound[0]);
-                Utility.printByte(lastServerIdFound[1]);
+                printByte(lastServerIdFound[0]);
+                printByte(lastServerIdFound[1]);
                 if (lastServerIdFound[0] != (byte) 0)
                     connectBLE.setLastServerIdFound(lastServerIdFound);
                 //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
@@ -158,7 +159,7 @@ public class BLEClient {
 
     public void startClient() {
         isServiceStarted = true;
-        Log.d(TAG, "OUD: startClient: Scan the background,search servers to join");
+        Log.d(TAG, "OUD: startClient: Scan the background, search servers to join");
         startScanning();
     }
 
@@ -199,6 +200,7 @@ public class BLEClient {
             mScanCallback = null;
             isScanning = false;
         }
+
     }
 
     public void addReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {

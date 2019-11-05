@@ -23,6 +23,9 @@ import it.drone.mesh.common.Utility;
 import it.drone.mesh.listeners.Listeners;
 import it.drone.mesh.models.Server;
 
+import static it.drone.mesh.common.ByteUtility.getBit;
+import static it.drone.mesh.common.ByteUtility.printByte;
+
 
 /**
  * lower tier del BLEClient, implementa le varie primitive di invio e ricezione messaggi, l'inizializzazione del client e la gestione degli errori di base
@@ -103,19 +106,19 @@ public class ConnectBLETask {
                 if (characteristic == null) {
                     return;
                 }
-                Utility.printByte(lastServerIdFound[0]);
+                printByte(lastServerIdFound[0]);
                 if (lastServerIdFound[0] != (byte) 0) {
                     BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorCheckAliveUUID);
                     desc.setValue(lastServerIdFound);
                     boolean res = gatt.writeDescriptor(desc);
                     Log.d(TAG, "OUD: " + "Writing descriptor SERVER DEAD? " + desc.getUuid() + " ---> " + res);
-                    Utility.printByte(lastServerIdFound[0]);
+                    printByte(lastServerIdFound[0]);
                 } else {
                     BluetoothGattDescriptor desc = characteristic.getDescriptor(Constants.DescriptorUUID);
                     boolean res = gatt.readDescriptor(desc);
                     Log.d(TAG, "OUD: " + "descrittore id letto ? " + res);
                 }
-
+                // TODO: 05/11/19 che fa sta roba? 
                 /*
                 for (BluetoothGattService service : gatt.getServices()) {
                     if (service.getUuid().equals(Constants.ServiceUUID)) {
@@ -168,16 +171,17 @@ public class ConnectBLETask {
                     for (int i = 1; i < value.length - 1; i++) { //aggiorno l'upper tier
                         boolean flag = false;
                         for (int j = 0; j < 8; j++) {
-                            if (Utility.getBit(value[i], j) == 1) flag = true;
+                            if (getBit(value[i], j) == 1)
+                                flag = true;
                         }
                         if (flag) {
                             Log.d(TAG, "OUD: SERVER ONLINE ID: " + i);
-                            if (Utility.getBit(value[i], 0) == 1) {
+                            if (getBit(value[i], 0) == 1) {
                                 Log.d(TAG, "OUD: server : " + i);
                                 routingTable.addDevice(i, 0);
                             }
                             for (int j = 1; j < 8; j++) {
-                                if (Utility.getBit(value[i], j) == 1) {
+                                if (getBit(value[i], j) == 1) {
                                     Log.d(TAG, "OUD: client : " + j);
                                     routingTable.addDevice(i, j);
                                 }
@@ -219,12 +223,12 @@ public class ConnectBLETask {
                 Log.d(TAG, "OUD: " + id + " : Notifica dal server,il mittente " + senderId + " mi ha inviato: " + previousMsg + valueReceived);
                 Handler mHandler = new Handler(Looper.getMainLooper());
                 mHandler.post(() -> Toast.makeText(context, "Message received from user " + senderId + " to me ", Toast.LENGTH_LONG).show());
-                if (Utility.getBit(sorgByte, 0) != 0) {
+                if (getBit(sorgByte, 0) != 0) {
                     Log.d(TAG, "OUD: " + "NOT last message");
                 } else {
                     Log.d(TAG, "OUD: " + "YES last message");
 
-                    if (Utility.getBit(destByte, 0) == 1) {
+                    if (getBit(destByte, 0) == 1) {
                         //Internet message
                         Log.d(TAG, "OUD: " + "messaggio con internet");
                         for (Listeners.OnMessageWithInternetListener l : internetListeners) {
@@ -430,8 +434,8 @@ public class ConnectBLETask {
     public void stopClient() {
         if ((temporaryClient && mGatt != null) || serverId.equals("") || !hasCorrectId()) {
             Log.d(TAG, "OUD: Sono un client temporaneo sto morendo");
-            Utility.printByte(lastServerIdFound[0]);
-            Utility.printByte(lastServerIdFound[1]);
+            printByte(lastServerIdFound[0]);
+            printByte(lastServerIdFound[1]);
             if (mGatt != null) {
                 mGatt.close();
                 mGatt = null;

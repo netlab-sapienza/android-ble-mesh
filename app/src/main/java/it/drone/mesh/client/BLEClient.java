@@ -145,6 +145,10 @@ public class BLEClient {
                         for (OnClientOnlineListener l : listeners) {
                             l.onClientOnline();
                         }
+                        connectBLETask.addDisconnectedServerListener((serverId, flags) -> {
+                            lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0),0);
+                            lastServerIdFound[1] = flags;
+                        });
                         serverDevice = newServer.getBluetoothDevice();
                         Log.d(TAG, "OUD: You're a client and your id is " + connectBLETask.getId());
                     } else {

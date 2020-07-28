@@ -99,7 +99,7 @@ public class InitActivity extends Activity {
 
     private AcceptBLETask.OnConnectionRejectedListener connectionRejectedListener;
     private Button startServices, sendTweet, sendEmail;
-    private byte[] lastServerIdFound = new byte[2];
+    //private byte[] lastServerIdFound = new byte[2];
 
 
     private long startTime; // Per fare test su tempo convergenza rete;
@@ -141,23 +141,6 @@ public class InitActivity extends Activity {
         deviceAdapter = new DeviceAdapter();
         recyclerDeviceList.setAdapter(deviceAdapter);
         recyclerDeviceList.setVisibility(View.VISIBLE);
-
-//        if (Utility.isDeviceOnline(this) && !DEMO_RUN) {
-//            // TODO: 03/11/2019 marked for delete
-//            TrueTimeRx.build()
-//                    .initializeRx("time.google.com")
-//                    .subscribeOn(Schedulers.io())
-//                    .subscribe(date -> {
-//                        Log.d(TAG, "TrueTime was initialized and we have a time: " + date);
-//                        Log.d(TAG, "OUD: " + "offset: " + (System.currentTimeMillis() - date.getTime()));
-//                        deviceAdapter.setOffset(offset);
-//                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "You have internet!\nOffset: " + (System.currentTimeMillis() - date.getTime()), Toast.LENGTH_SHORT).show());
-//                    }, throwable -> {
-//                        // TODO: 22/01/19 vedere se rilancia un eccezione ogni volta che muore internet
-//                        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getApplicationContext(), "Error, probably you are not connected with internet", Toast.LENGTH_SHORT).show());
-//                        throwable.printStackTrace();
-//                    });
-//        }
 
         connectionRejectedListener = () -> {
             writeErrorDebug("Connection Rejected, stopping service");
@@ -213,9 +196,11 @@ public class InitActivity extends Activity {
                             writeErrorDebug(message);
                         }
                     });
-                    if (lastServerIdFound[0] != (byte) 0) {
-                        server.setLastServerIdFound(lastServerIdFound);
-                    }
+
+                    //probably useless
+                    //if (lastServerIdFound[0] != (byte) 0) {
+                    //    server.setLastServerIdFound(lastServerIdFound);
+                    //}
                     server.startServer();
                     server.addServerInitializedListener(() -> new Handler(Looper.getMainLooper()).post(() -> {
                         myId.setText(server.getId());
@@ -241,10 +226,10 @@ public class InitActivity extends Activity {
                         server.stopServer();
                         server = null;
                         client = BLEClient.getInstance(getApplicationContext());
-                        if (lastServerIdFound[0] != (byte) 0) {
-                            client.setLastServerIdFound(lastServerIdFound);
-                            lastServerIdFound[0] = (byte) 0;
-                        }
+                        //if (lastServerIdFound[0] != (byte) 0) {
+                        //    client.setLastServerIdFound(lastServerIdFound);
+                        //    lastServerIdFound[0] = (byte) 0;
+                        //}
                         client.setOnConnectionLostListener(() -> {
                             new Handler(getMainLooper()).post(() -> startServices.performClick());
                             new Handler(getMainLooper()).postDelayed(() -> {
@@ -275,14 +260,11 @@ public class InitActivity extends Activity {
                                     }
                                 });
                                 client.addDisconnectedServerListener((serverId, flags) -> {
-                                    lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0); //c'è solo id server nei primi 4 bit
-                                    lastServerIdFound[1] = flags;
                                     new Handler(getMainLooper()).post(() -> startServices.performClick());
                                     new Handler(getMainLooper()).postDelayed(() -> {
                                         Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();
                                         startServices.performClick();
                                     }, 5000);
-
                                 });
                             }
                         });
@@ -291,11 +273,11 @@ public class InitActivity extends Activity {
                     deviceAdapter.setServer(getApplicationContext());
                 } else {
                     client = BLEClient.getInstance(getApplicationContext());
-                    if (lastServerIdFound[0] != (byte) 0) {
-                        client.setLastServerIdFound(lastServerIdFound);
-                        lastServerIdFound[0] = (byte) 0;
-                        lastServerIdFound[1] = (byte) 0;
-                    }
+                    //if (lastServerIdFound[0] != (byte) 0) {
+                    //    client.setLastServerIdFound(lastServerIdFound);
+                    //    lastServerIdFound[0] = (byte) 0;
+                    //    lastServerIdFound[1] = (byte) 0;
+                    //}
                     client.setOnConnectionLostListener(() -> {
                         new Handler(getMainLooper()).post(() -> startServices.performClick());
                         new Handler(getMainLooper()).postDelayed(() -> {
@@ -326,9 +308,6 @@ public class InitActivity extends Activity {
                                 }
                             });
                             client.addDisconnectedServerListener((serverId, flags) -> {
-                                lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0), 0);
-                                lastServerIdFound[1] = flags;
-
                                 new Handler(getMainLooper()).post(() -> startServices.performClick());
                                 new Handler(getMainLooper()).postDelayed(() -> {
                                     Toast.makeText(getApplicationContext(), "Your server is offline, restart service in 5 seconds", Toast.LENGTH_SHORT).show();

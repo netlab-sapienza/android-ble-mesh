@@ -70,7 +70,7 @@ public class AcceptBLETask {
     private ArrayList<Listeners.OnMessageReceivedListener> messageReceivedListeners;
     private RoutingTable routingTable;
     private HashMap<BluetoothDevice, Listeners.OnPacketSentListener> listenerHashMap;
-    private byte[] lastServerIdFound = new byte[2];
+    //private byte[] lastServerIdFound = new byte[2];     //useless
 
     public AcceptBLETask(final BluetoothAdapter mBluetoothAdapter, BluetoothManager mBluetoothManager, final Context context) {
         this.mBluetoothManager = mBluetoothManager;
@@ -1162,9 +1162,10 @@ public class AcceptBLETask {
         this.messageReceivedListeners.add(l);
     }
 
-    public void setLastServerIdFound(byte[] lastServerIdFound) {
-        this.lastServerIdFound = lastServerIdFound;
-    }
+    //useless
+    //public void setLastServerIdFound(byte[] lastServerIdFound) {
+    //    this.lastServerIdFound = lastServerIdFound;
+    //}
 
     public interface OnConnectionRejectedListener {
         void OnConnectionRejected();

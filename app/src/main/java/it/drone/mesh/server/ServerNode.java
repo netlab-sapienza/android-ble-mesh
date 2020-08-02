@@ -8,6 +8,11 @@ import java.util.LinkedList;
 import it.drone.mesh.common.RoutingTable;
 import it.drone.mesh.common.Utility;
 
+import static it.drone.mesh.common.ByteUtility.clearBit;
+import static it.drone.mesh.common.ByteUtility.getBit;
+import static it.drone.mesh.common.ByteUtility.printByte;
+import static it.drone.mesh.common.ByteUtility.setBit;
+
 /**
  * Rappresenta una mappa in cui ogni nodo è un server. Contiene l'informazione dei rispettivi client e dei rispettivi server raggiungibili. Utilizzata in fase di routing
  */
@@ -53,12 +58,12 @@ public class ServerNode {
             Log.d(TAG, "buildRoutingTable: I: " + i);
             for (int j = 0; j < SERVER_PACKET_SIZE; j++) {
                 Log.d(TAG, "buildRoutingTable: J: " + j);
-                Utility.printByte(mapByte[i][j]);
+                printByte(mapByte[i][j]);
             }
         }
         ServerNode[] arrayNode = new ServerNode[MAX_NUM_SERVER]; //perchè al max 16 server
         for (int i = 1; i < 16; i++) {
-            if (Utility.getBit(mapByte[i][0], 0) == 1 || (Utility.getBit(mapByte[i][0], 1)) == 1 || (Utility.getBit(mapByte[i][0], 2)) == 1 || (Utility.getBit(mapByte[i][0], 3)) == 1) {
+            if (getBit(mapByte[i][0], 0) == 1 || (getBit(mapByte[i][0], 1)) == 1 || (getBit(mapByte[i][0], 2)) == 1 || (getBit(mapByte[i][0], 3)) == 1) {
                 arrayNode[i] = new ServerNode("" + i);
                 routingTable.addDevice(i, 0);
             }
@@ -69,7 +74,7 @@ public class ServerNode {
                 byte clientByte = mapByte[i][1];
 
                 for (int k = 0; k < 8; k++) {
-                    if (Utility.getBit(clientByte, k) == 1) {
+                    if (getBit(clientByte, k) == 1) {
                         routingTable.addDevice(i, k);
                         if (!id.equals("" + i)) arrayNode[i].setClientOnline("" + k, null);
                         else arrayNode[i].setClientOnline("" + k, clientList[i]);
@@ -86,7 +91,7 @@ public class ServerNode {
                         arrayNode[i].addNearServer(arrayNode[infoNearServer[1]]);
                     } else break;
                 }
-                if (Utility.getBit(mapByte[i][SERVER_PACKET_SIZE - 1], 0) == 1) //Has Internet Connection
+                if (getBit(mapByte[i][SERVER_PACKET_SIZE - 1], 0) == 1) // check if it has Internet Connection
                     arrayNode[i].setHasInternet(true);
                 else
                     arrayNode[i].setHasInternet(false);
@@ -190,7 +195,7 @@ public class ServerNode {
                 return s;
             }
         }
-        return null; //quindi broadcasta
+        return null; // then make a broadcast
     }
 
     public ServerNode getNearestServerWithInternet(int numRequest, String idAsker) {
@@ -217,17 +222,17 @@ public class ServerNode {
                 return s;
             }
         }
-        return null; //quindi broadcasta
+        return null; // then make a broadcast
     }
 
     public void setClientOnline(String id, BluetoothDevice device) {    //PASSARE SOLO LA PARTE DI ID RELATIVA AL CLIENT
-        clientByte = Utility.setBit(clientByte, Integer.parseInt(id));
+        clientByte = setBit(clientByte, Integer.parseInt(id));
         clientList[Integer.parseInt(id)] = device;
         Log.d(TAG, "OUD: ho aggiunto il client " + id);
     }
 
     public void setClientOffline(String id) {
-        clientByte = Utility.clearBit(clientByte, Integer.parseInt(id));
+        clientByte = clearBit(clientByte, Integer.parseInt(id));
         clientList[Integer.parseInt(id)] = null;
         Log.d(TAG, "OUD: ho rimosso il client " + id);
 
@@ -307,7 +312,7 @@ public class ServerNode {
         Log.d(TAG, "OUD: " + "My clients are: ");
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < clientList.length; i++) {
-            if (Utility.getBit(clientByte, i) == 1)
+            if (getBit(clientByte, i) == 1)
                 s.append(i).append(i == clientList.length - 1 ? "" : ",");
             else s.append("*,");
         }
@@ -328,8 +333,8 @@ public class ServerNode {
         res += "My clients are: " + "\n";
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < clientList.length; i++) {
-            if (Utility.getBit(clientByte, i) == 1)
-                s.append(i).append(" has internet? ").append(Utility.getBit(clientInternetByte, i)).append(i == clientList.length - 1 ? "" : ",");
+            if (getBit(clientByte, i) == 1)
+                s.append(i).append(" has internet? ").append(getBit(clientInternetByte, i)).append(i == clientList.length - 1 ? "" : ",");
             else s.append(" *, ");
         }
         res += "[" + s + "]\n";
@@ -365,7 +370,10 @@ public class ServerNode {
 
     public void parseMapToByte(byte[][] destArrayByte) {
         int index = Integer.parseInt(getId());
-        if (!(Utility.getBit(destArrayByte[index][0], 0) == 1 || (Utility.getBit(destArrayByte[index][0], 1)) == 1 || (Utility.getBit(destArrayByte[index][0], 2)) == 1 || (Utility.getBit(destArrayByte[index][0], 3)) == 1)) {
+        if (!(getBit(destArrayByte[index][0], 0) == 1 ||
+                (getBit(destArrayByte[index][0], 1)) == 1 ||
+                (getBit(destArrayByte[index][0], 2)) == 1 ||
+                (getBit(destArrayByte[index][0], 3)) == 1)) {
             byte[] tempArrayByte = new byte[SERVER_PACKET_SIZE];
             int clientId = Integer.parseInt(getId());
             int serverId = 0;
@@ -373,8 +381,8 @@ public class ServerNode {
             tempArrayByte[0] = firstByte;
             byte secondByte = 0b00000000;
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-                if (Utility.getBit(clientByte, i) == 1) {
-                    secondByte = Utility.setBit(secondByte, i);
+                if (getBit(clientByte, i) == 1) {
+                    secondByte = setBit(secondByte, i);
                 }
             }
             tempArrayByte[1] = secondByte;
@@ -392,15 +400,19 @@ public class ServerNode {
                 tempIndex++;
             }
             if (hasInternet())
-                tempArrayByte[SERVER_PACKET_SIZE - 1] = Utility.setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
+                tempArrayByte[SERVER_PACKET_SIZE - 1] = setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
             System.arraycopy(tempArrayByte, 0, destArrayByte[index], 0, SERVER_PACKET_SIZE);
         }
 
 
         for (ServerNode s : nearServers) {
             index = Integer.parseInt(s.getId());
-            if (Utility.getBit(destArrayByte[index][0], 0) == 1 || (Utility.getBit(destArrayByte[index][0], 1)) == 1 || (Utility.getBit(destArrayByte[index][0], 2)) == 1 || (Utility.getBit(destArrayByte[index][0], 3)) == 1)
+            if (getBit(destArrayByte[index][0], 0) == 1 ||
+                    (getBit(destArrayByte[index][0], 1)) == 1 ||
+                    (getBit(destArrayByte[index][0], 2)) == 1 ||
+                    (getBit(destArrayByte[index][0], 3)) == 1)
                 continue;
+
             byte[] tempArrayByte = new byte[SERVER_PACKET_SIZE];
             int clientId = Integer.parseInt(s.getId());
             int serverId = 0;
@@ -408,8 +420,8 @@ public class ServerNode {
             tempArrayByte[0] = firstByte;
             byte secondByte = 0b00000000;
             for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-                if (Utility.getBit(s.clientByte, i) == 1) {
-                    secondByte = Utility.setBit(secondByte, i);
+                if (getBit(s.clientByte, i) == 1) {
+                    secondByte = setBit(secondByte, i);
                 }
             }
             tempArrayByte[1] = secondByte;
@@ -427,7 +439,7 @@ public class ServerNode {
                 tempIndex++;
             }
             if (s.hasInternet())
-                tempArrayByte[SERVER_PACKET_SIZE - 1] = Utility.setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
+                tempArrayByte[SERVER_PACKET_SIZE - 1] = setBit(tempArrayByte[SERVER_PACKET_SIZE - 1], 0);
             System.arraycopy(tempArrayByte, 0, destArrayByte[index], 0, SERVER_PACKET_SIZE);
             s.parseMapToByte(destArrayByte);
         }
@@ -436,28 +448,28 @@ public class ServerNode {
     public void parseClientMapToByte(byte[] destArrayByte) {
         int index = Integer.parseInt(getId());
         destArrayByte[index] = this.clientByte;
-        destArrayByte[index] = Utility.setBit(destArrayByte[index], 0);
+        destArrayByte[index] = setBit(destArrayByte[index], 0);
         if (index < 9) {
             if (this.hasInternet())
-                destArrayByte[0] = Utility.setBit(destArrayByte[0], index - 1);
+                destArrayByte[0] = setBit(destArrayByte[0], index - 1);
         } else if (this.hasInternet())
-            destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
+            destArrayByte[destArrayByte.length - 1] = setBit(destArrayByte[0], index - 9);
 
         for (ServerNode s : nearServers) {
             index = Integer.parseInt(s.getId());
             boolean alreadyDone = false;
             for (int i = 0; i < 8; i++) {
-                if (Utility.getBit(destArrayByte[index], i) != 0)
+                if (getBit(destArrayByte[index], i) != 0)
                     alreadyDone = true;
             }
             if (alreadyDone) continue;
             destArrayByte[index] = s.clientByte;
-            destArrayByte[index] = Utility.setBit(destArrayByte[index], 0);
+            destArrayByte[index] = setBit(destArrayByte[index], 0);
             if (index < 9) {
                 if (s.hasInternet())
-                    destArrayByte[0] = Utility.setBit(destArrayByte[0], index - 1);
+                    destArrayByte[0] = setBit(destArrayByte[0], index - 1);
             } else if (s.hasInternet())
-                destArrayByte[destArrayByte.length - 1] = Utility.setBit(destArrayByte[0], index - 9);
+                destArrayByte[destArrayByte.length - 1] = setBit(destArrayByte[0], index - 9);
             s.parseClientMapToByte(destArrayByte);
         }
     }
@@ -466,11 +478,11 @@ public class ServerNode {
         Log.d(TAG, "OUD: " + "Near Server :" + nearServers.size());
         byte[] res = new byte[16];
         res[0] = Utility.byteNearServerBuilder(0, Integer.parseInt(this.id));
-        res[1] = Utility.setBit(res[1], 0);
+        res[1] = setBit(res[1], 0);
         if (hasInternet)
-            res[1] = Utility.setBit(res[1], 1);
+            res[1] = setBit(res[1], 1);
         for (int i = 0; i < CLIENT_LIST_SIZE; i++) {
-            if (clientList[i] != null) res[1] = Utility.setBit(res[2], i + 1);
+            if (clientList[i] != null) res[1] = setBit(res[2], i + 1);
         }
         for (int i = 3; i < 16; i++) {
             if (nearServers.size() <= i - 3) break;
@@ -488,33 +500,33 @@ public class ServerNode {
     public boolean updateRoutingTable(byte[] value) {
         boolean res = false;
         byte idByte = value[0];
-        int index = Utility.getBit(idByte, 0) + Utility.getBit(idByte, 1) * 2 + Utility.getBit(idByte, 2) * 4 + Utility.getBit(idByte, 3) * 8;
-        ServerNode nuovoServer = new ServerNode("" + index);
-        if (Utility.getBit(value[1], 1) == 1) //Has Internet Connection
-            nuovoServer.setHasInternet(true);
+        int index = getBit(idByte, 0) + getBit(idByte, 1) * 2 + getBit(idByte, 2) * 4 + getBit(idByte, 3) * 8;
+        ServerNode newServer = new ServerNode("" + index);
+        if (getBit(value[1], 1) == 1) // Has Internet Connection
+            newServer.setHasInternet(true);
         else
-            nuovoServer.setHasInternet(false);
+            newServer.setHasInternet(false);
         for (int i = 2; i < 8; i++) {
-            if (Utility.getBit(value[1], i) == 1) nuovoServer.setClientOnline("" + i, null);
+            if (getBit(value[1], i) == 1) newServer.setClientOnline("" + i, null);
         }
         for (int i = 3; i < 16; i++) {
-            int tempId = Utility.getBit(value[i], 4) + Utility.getBit(value[i], 5) * 2 + Utility.getBit(value[i], 6) * 4 + Utility.getBit(value[i], 7) * 8;
+            int tempId = getBit(value[i], 4) + getBit(value[i], 5) * 2 + getBit(value[i], 6) * 4 + getBit(value[i], 7) * 8;
             if (tempId == 0) break;
             if (("" + tempId).equals(this.id)) {
-                addNearServer(nuovoServer);
+                addNearServer(newServer);
                 res = true;
             } else {
                 ServerNode tempServer = getServer("" + tempId);
-                if (tempServer != null) tempServer.addNearServer(nuovoServer);
+                if (tempServer != null) tempServer.addNearServer(newServer);
             }
-            tempId = Utility.getBit(value[i], 0) + Utility.getBit(value[i], 1) * 2 + Utility.getBit(value[i], 2) * 4 + Utility.getBit(value[i], 3) * 8;
+            tempId = getBit(value[i], 0) + getBit(value[i], 1) * 2 + getBit(value[i], 2) * 4 + getBit(value[i], 3) * 8;
             if (tempId == 0) break;
             if (("" + tempId).equals(this.id)) {
-                addNearServer(nuovoServer);
+                addNearServer(newServer);
                 res = true;
             } else {
                 ServerNode tempServer = getServer("" + tempId);
-                if (tempServer != null) tempServer.addNearServer(nuovoServer);
+                if (tempServer != null) tempServer.addNearServer(newServer);
             }
         }
 
@@ -537,7 +549,7 @@ public class ServerNode {
         if (hasInternet) return true;
         else {
             for (int i = 0; i < 8; i++) {
-                if (Utility.getBit(clientInternetByte, i) == 1) {
+                if (getBit(clientInternetByte, i) == 1) {
                     return true;
                 }
             }
@@ -551,7 +563,7 @@ public class ServerNode {
 
     public void setClientInternet(int id) {
         Log.d(TAG, "OUD: setClientInternet: " + id);
-        clientInternetByte = Utility.setBit(clientInternetByte, id);
+        clientInternetByte = setBit(clientInternetByte, id);
     }
 
     public byte getClientByteInternet() {

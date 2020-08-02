@@ -62,7 +62,7 @@ public class BLEServer {
     private int randomValueScanPeriod;
     private Listeners.OnDebugMessageListener debugMessageListener;
     private Listeners.OnEnoughServerListener enoughServerListener;
-    private byte[] lastServerIdFound = new byte[2];
+    //private byte[] lastServerIdFound = new byte[2];
 
     private BLEServer(Context context) {
         randomValueScanPeriod = ThreadLocalRandom.current().nextInt(SCAN_PERIOD_MIN, SCAN_PERIOD_MAX) * 1000;
@@ -95,8 +95,8 @@ public class BLEServer {
         return mBluetoothManager;
     }
 
-    public void setLastServerIdFound(byte[] lastServerIdFound) {
-        this.lastServerIdFound = lastServerIdFound;
+//    public void setLastServerIdFound//(byte[] lastServerIdFound) {
+//        this//.lastServerIdFound = lastServerIdFound;
     }
 
     /**
@@ -117,7 +117,7 @@ public class BLEServer {
                 acceptBLETask.addConnectionRejectedListener(connectionRejectedListener);
                 acceptBLETask.insertMapDevice(nearDeviceMap);
                 acceptBLETask.addRoutingTableUpdatedListener(message -> debugMessageListener.OnDebugMessage("RoutingTable updated: \n" + message));
-                acceptBLETask.setLastServerIdFound(lastServerIdFound);
+//                acceptBLETask//.setLastServerIdFound(lastServerIdFound);
                 acceptBLETask.startServer();
             }
         } else {
@@ -258,7 +258,7 @@ public class BLEServer {
                 acceptBLETask = new AcceptBLETask(mBluetoothAdapter, mBluetoothManager, context);
                 nearDeviceMap.clear();
                 attemptsUntilServer = 1;
-                lastServerIdFound = new byte[2];
+                //lastServerIdFound = new byte[2];
                 context.stopService(new Intent(context, AdvertiserService.class));
             }
             debugMessageListener.OnDebugMessage("stopServer: Service stopped");

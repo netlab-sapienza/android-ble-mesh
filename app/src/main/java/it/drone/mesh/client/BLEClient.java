@@ -18,10 +18,11 @@ import it.drone.mesh.models.Server;
 import it.drone.mesh.models.ServerList;
 import it.drone.mesh.tasks.ConnectBLETask;
 
+import static it.drone.mesh.common.ByteUtility.printByte;
 import static it.drone.mesh.common.Utility.SCAN_PERIOD;
 
 /**
- * This class implements the functionalities needed by a BLE client in our BLE network. It masks the complexity of the job done in the lower tier, the ConnectBLETask
+ * This class implements the functionality needed by a BLE client in our BLE network. It masks the complexity of the job done in the lower tier, the ConnectBLETask
  */
 public class BLEClient {
 
@@ -30,8 +31,6 @@ public class BLEClient {
     private static final long HANDLER_PERIOD = 5000;
     private static BLEClient singleton;
     private Context context;
-    private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothManager mBluetoothManager;
     private ConnectBLETask connectBLETask;
     private BluetoothLeScanner mBluetoothLeScanner;
     private ServerScanCallback mScanCallback;
@@ -44,8 +43,9 @@ public class BLEClient {
 
     private BLEClient(Context context) {
         this.context = context;
-        mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        BluetoothManager mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        assert mBluetoothManager != null;
+        BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         listeners = new LinkedList<>();
     }
@@ -54,14 +54,6 @@ public class BLEClient {
         if (singleton == null)
             singleton = new BLEClient(context);
         return singleton;
-    }
-
-    public BluetoothAdapter getmBluetoothAdapter() {
-        return mBluetoothAdapter;
-    }
-
-    public BluetoothManager getmBluetoothManager() {
-        return mBluetoothManager;
     }
 
     public ConnectBLETask getConnectBLETask() {
@@ -75,10 +67,10 @@ public class BLEClient {
     public void setLastServerIdFound(byte[] lastServerIdFound) {
         if (lastServerIdFound != null) {
             Log.d(TAG, "OUD: " + "setLastServerIdFound: 1: " + (int) lastServerIdFound[0] + ", 2:" + (int) lastServerIdFound[1]);
-            Utility.printByte(lastServerIdFound[0]);
+            printByte(lastServerIdFound[0]);
             this.lastServerIdFound[0] = lastServerIdFound[0];
             this.lastServerIdFound[1] = lastServerIdFound[1];
-            Utility.printByte(this.lastServerIdFound[0]);
+            printByte(this.lastServerIdFound[0]);
         } else Log.d(TAG, "OUD: " + "setLastServerIdFound: è null");
     }
 
@@ -138,8 +130,8 @@ public class BLEClient {
 
                 if (lastServerIdFound == null)
                     Log.d(TAG, "OUD: " + "setLastServerIdFound: è null nella try connection " + offset);
-                Utility.printByte(lastServerIdFound[0]);
-                Utility.printByte(lastServerIdFound[1]);
+                printByte(lastServerIdFound[0]);
+                printByte(lastServerIdFound[1]);
                 if (lastServerIdFound[0] != (byte) 0)
                     connectBLE.setLastServerIdFound(lastServerIdFound);
                 //connectBLE.addReceivedListener((idMitt, message, hop, sendTimeStamp) -> Log.d(TAG, "OnMessageReceived: Messaggio ricevuto dall'utente " + idMitt + ": " + message));
@@ -153,6 +145,10 @@ public class BLEClient {
                         for (OnClientOnlineListener l : listeners) {
                             l.onClientOnline();
                         }
+                        connectBLETask.addDisconnectedServerListener((serverId, flags) -> {
+                            lastServerIdFound[0] = clearBit(Utility.byteMessageBuilder(Integer.parseInt(serverId), 0),0);
+                            lastServerIdFound[1] = flags;
+                        });
                         serverDevice = newServer.getBluetoothDevice();
                         Log.d(TAG, "OUD: You're a client and your id is " + connectBLETask.getId());
                     } else {
@@ -167,7 +163,7 @@ public class BLEClient {
 
     public void startClient() {
         isServiceStarted = true;
-        Log.d(TAG, "OUD: startClient: Scan the background,search servers to join");
+        Log.d(TAG, "OUD: startClient: Scan the background, search servers to join");
         startScanning();
     }
 
@@ -208,6 +204,7 @@ public class BLEClient {
             mScanCallback = null;
             isScanning = false;
         }
+
     }
 
     public void addReceivedListener(Listeners.OnMessageReceivedListener onMessageReceivedListener) {

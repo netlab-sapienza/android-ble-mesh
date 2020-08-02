@@ -41,9 +41,15 @@ public class Constants {
     public static final UUID RoutingTableDescriptorUUID = UUID.fromString("2322b81d-0000-1000-8000-00805f9b34fb");
 
 
-    // Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
+    /**
+     * Numero massimo di tentativi di connessione (MAX_ATTEMPTS_UNTIL_SERVER -1)
+     */
     public static final int MAX_ATTEMPTS_UNTIL_SERVER = 4;
-    // periodo minimo e max di attesa in secondi
+
+    /**
+     * periodo minimo e max di attesa in secondi
+     *
+     */
     public static final int SCAN_PERIOD_MIN = 2;
     public static final int SCAN_PERIOD_MAX = 8;
     public static final long NO_OFFSET = Long.MAX_VALUE;

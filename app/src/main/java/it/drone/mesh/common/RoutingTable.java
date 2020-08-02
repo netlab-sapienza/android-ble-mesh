@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import it.drone.mesh.models.Device;
 
 /**
- * Rappresenta la routing table complessiva
+ * This class represents the routing table
  */
 public class RoutingTable {
 

@@ -18,7 +18,7 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 - Follow our Official BE Mesh Twitter account: [@MeshBle](https://twitter.com/MeshBle).
 - This work was presented at [Infocom 2019](https://infocom2019.ieee-infocom.org/postersdemos).
 - Lower tier of [HIRO-NET](https://github.com/HIRO-NET-Emergency-Network/HIRO-NET).
-- Read the [demo paper](https://ieeexplore-ieee-org.ezproxy.uniroma1.it/document/8845084/).
+- Read the [demo paper](https://doi-org.ezproxy.uniroma1.it/10.1109/INFCOMW.2019.8845084).
 
 # Create a Be Mesh!
 

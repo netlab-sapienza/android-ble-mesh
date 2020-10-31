@@ -6,7 +6,7 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 <img align="left" src="https://www.uniroma1.it/sites/default/files/images/logo/sapienza-big.png"/>
 <img align="right" src="https://infocom2019.ieee-infocom.org/sites/infocom2019.ieee-infocom.org/files/ieee-infocom2.png"/>
 
-
+<br><br><br><br><br><br><br><br><br><br>
 
 
 ***Andrea Lacava∗, Gianluigi Nero∗, Pierluigi Locatelli∗, Francesca Cuomo∗, Tommaso Melodia†***

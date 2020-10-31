@@ -5,7 +5,7 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 
 <img align="left" src="https://www.uniroma1.it/sites/default/files/images/logo/sapienza-big.png"/>
 <img align="right" src="https://infocom2019.ieee-infocom.org/sites/infocom2019.ieee-infocom.org/files/ieee-infocom2.png"/>
-<br/><br/><br/><br/><br/>
+
 
 
 
@@ -15,9 +15,10 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 
 *Abstract* - We   propose   and   discuss BE-Mesh-Bluetooth low Energy-Meshed network,  a  new  paradigm  for  BLE  (BluetoothLow  Energy)  that  enables  mesh  networking  among  wirelessly interconnected   devices,   both   in   a   single   hop   and   multi-hop fashion.  Starting  from  the  classical  Master/Slave  paradigm  of Bluetooth,  we  build  two  new  layers  based  on  BLE  stack  that allow the final user to set-up, in a fast way, the desired network topology while hiding the complexity and low-level details of the BLE  stack.  We  also  prototype,  as  a  proof  of  concept,  an  open source  Android  library that  implements  our  communication paradigm  and  an  Android  application  that  allows  the  exchange of text messages across the mesh network. Last, we demonstrate how  BE-Mesh  enables  Internet  access  sharing  with  the  whole mesh  from  a  single  Internet-connected  device.
 
-- Follow our Official BE Mesh Twitter account: [@MeshBle](https://twitter.com/MeshBle)
-- Our demo proposal was accepted at [Infocom 2019](https://infocom2019.ieee-infocom.org/postersdemos).
-- We're also the lower tier of [HIRO-NET](https://github.com/HIRO-NET-Emergency-Network/HIRO-NET).
+- Follow our Official BE Mesh Twitter account: [@MeshBle](https://twitter.com/MeshBle).
+- This work was presented at [Infocom 2019](https://infocom2019.ieee-infocom.org/postersdemos).
+- Lower tier of [HIRO-NET](https://github.com/HIRO-NET-Emergency-Network/HIRO-NET).
+- Read the [demo paper](https://ieeexplore-ieee-org.ezproxy.uniroma1.it/document/8845084/).
 
 # Create a Be Mesh!
 
@@ -28,6 +29,8 @@ BE Mesh: A Bluetooth Low Energy Mesh Network
 
 
 # Build the app from source
+
+Please note that the current version of the repository does not reflect the version onthe google play store and compatibility between versions is not guaranteed.
 
 
 ## Pre-requisites

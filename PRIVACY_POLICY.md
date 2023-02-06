@@ -1,7 +1,7 @@
 ## BE-MESH: Privacy policy
 
 This is an open source Android app developed by Andrea Lacava, Pierluigi Locatelli and Gianluigi Nero while they were Master Student at Sapienza, University of Rome.
-The source code is available on GitHub under the MIT license; the app is also available on Google Play.
+The source code is available on GitHub under the Apache license; the app is also available on Google Play.
 
 We state, to the best of my knowledge and belief, that we have not programmed this app to collect any personally identifiable information. 
 All data is the one used to create the BLE Mesh network and it is not stored in the app through each reboot.
